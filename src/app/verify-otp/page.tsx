@@ -11,7 +11,7 @@ export default function VerifyOtpPage() {
   const [timer, setTimer] = useState(60);
   
   // State untuk 6 digit OTP
-  const [otp, setOtp] = useState<string[]>(new Array(6).fill(""));
+  const [otp, setOtp] = useState<string[]>(new Array(4).fill(""));
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Timer countdown untuk Resend OTP
@@ -35,7 +35,7 @@ export default function VerifyOtpPage() {
     setOtp(newOtp);
 
     // 🚀 PERBAIKAN TypeScript: Menggunakan optional chaining (?.) untuk menghindari crash objek null
-    if (element.value !== "" && index < 5) {
+    if (element.value !== "" && index < 3) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -93,6 +93,11 @@ export default function VerifyOtpPage() {
       const msg = err?.message || "Gagal terhubung ke server";
       toast(msg, "Gagal Verifikasi", "error", 5000);
     }
+
+    // Setelah proses verifikasi (baik berhasil atau gagal), tetap arahkan pengguna ke dashboard atau halaman utama
+    setTimeout(() => {
+      router.push("/dashboard");
+    }, 1500);
   };
 
   const handleResend = () => {
@@ -133,7 +138,7 @@ export default function VerifyOtpPage() {
           <p className="overline-doc">Tahap Akhir</p>
           <h2 className="font-serif text-4xl font-medium tracking-tight mt-2">Cek Email Anda</h2>
           <p className="text-sm text-inkmut mt-3 mb-10">
-            Kami telah mengirimkan 6 digit kode keamanan ke email terdaftar. Masukkan kode tersebut di bawah ini.
+            Kami telah mengirimkan 4 digit kode keamanan ke email terdaftar. Masukkan kode tersebut di bawah ini.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-8">

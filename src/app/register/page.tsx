@@ -43,10 +43,16 @@ export default function RegisterPage() {
         4000,
       );
 
-      // Ambil userId dari response untuk disimpan sementara (jika diperlukan) sebelum verifikasi OTP
-      if (data.data?.id || data.userId) {
-        const saveId = data.data?.id || data.userId;
-        sessionStorage.setItem("pendingUserId", saveId);
+      // Simpan userId sementara untuk proses verifikasi OTP di halaman selanjutnya
+
+      const finalUserId = data?.data?.userId // Sesuaikan dengan struktur respons aktual dari API
+
+      if (finalUserId) {
+        // Simpan userId di sessionStorage untuk digunakan di halaman verify-otp
+        sessionStorage.setItem("pendingUserId", String(finalUserId));
+        console.log("User ID sementara disimpan untuk OTP:", finalUserId);
+      } else {
+        console.warn("User ID tidak ditemukan dalam respons pendaftaran:", data);
       }
       
       // Dialihkan ke halaman verify-otp untuk menyelesaikan alur auth service timmu
