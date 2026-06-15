@@ -42,6 +42,12 @@ export default function RegisterPage() {
         "success",
         4000,
       );
+
+      // Ambil userId dari response untuk disimpan sementara (jika diperlukan) sebelum verifikasi OTP
+      if (data.data?.id || data.userId) {
+        const saveId = data.data?.id || data.userId;
+        sessionStorage.setItem("pendingUserId", saveId);
+      }
       
       // Dialihkan ke halaman verify-otp untuk menyelesaikan alur auth service timmu
       setTimeout(() => {
