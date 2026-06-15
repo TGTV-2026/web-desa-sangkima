@@ -46,20 +46,53 @@ export default function VerifyOtpPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    // 🚀 BYPASS MODE: Langsung tembus ke Dashboard tanpa hit API auth service
-    setTimeout(() => {
+    const otpCode = otp.join("");
+
+    // Ambil userId yang disimpan sementara dari sessionStorage (jika diperlukan untuk verifikasi OTP)
+    const pendingUserId = sessionStorage.getItem("pendingUserId");
+
+    if (!pendingUserId) {
       toast(
-        "Identitas Anda telah diverifikasi secara resmi.",
-        "Akses Diberikan",
+        "Sesi verifikasi hilang, silakan daftar ulang.",
+        "Gagal", 
+        "error", 
+        5000);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          userId: pendingUserId, 
+          otp: otpCode 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Gagal memverifikasi kode OTP");
+      }
+      toast(
+        "Identitas Anda telah diverifikasi. Selamat datang di Dashboard!",
+        "Verifikasi Berhasil",
         "success",
-        3000
+        4000,
       );
-      router.push("/dashboard");
-    }, 1000);
+
+      // Hapus userId sementara setelah verifikasi berhasil
+      sessionStorage.removeItem("pendingUserId");
+    } catch (err: any) {
+      const msg = err?.message || "Gagal terhubung ke server";
+      toast(msg, "Gagal Verifikasi", "error", 5000);
+    }
   };
 
   const handleResend = () => {
