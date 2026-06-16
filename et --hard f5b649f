@@ -1,0 +1,55 @@
+[33m3b3a069[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfrontend/verify-otp[m[33m, [m[1;31morigin/frontend/verify-otp[m[33m)[m style(verify-otp): Add verify-otp page
+[33mf5b649f[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Merge pull request #4 from Dapaaaaaa/frontend/register
+[33mf7cc9aa[m[33m ([m[1;31morigin/frontend/register[m[33m, [m[1;32mfrontend/register[m[33m)[m style(register): Adding register page
+[33m9d25de9[m style(register): Adding register page
+[33m0bc21fd[m Merge pull request #3 from Dapaaaaaa/frontend/toast-error
+[33md6e892e[m[33m ([m[1;31morigin/frontend/toast-error[m[33m)[m style(toast.tsx): Add & change toast style - Slider - Font - Close button
+[33m9b8a138[m fix: Conflict meger
+[33md0849bb[m Merge pull request #12 from TGTV-2026/feature/esurat-ui
+[33m5dc9bbc[m feat: redesign ui with institutional village-archive design language
+[33m082f948[m feat: add e-surat dashboard ui for warga and petugas
+[33m37950c1[m Merge pull request #11 from TGTV-2026/fix/backend-audit
+[33mdfe0015[m feat: support lampiran pendukung on letter requests
+[33m3253238[m fix: backend audit fixes (auth, uniqueness, pdf title, email guard)
+[33m9f147fb[m Merge pull request #2 from Dapaaaaaa/backend/role-user
+[33md4206a5[m[33m ([m[1;31morigin/backend/role-user[m[33m)[m feat: Add default role for user
+[33mc215df0[m Merge pull request #1 from Dapaaaaaa/frontend/homepage-all-user
+[33m376e810[m[33m ([m[1;31morigin/frontend/homepage-all-user[m[33m)[m style: Add design - User page - Staff page - Admin page
+[33m843d53c[m style: Change text on homepage
+[33mdac50a7[m Merge pull request #10 from TGTV-2026/docs/backend
+[33madb5462[m docs: add backend documentation
+[33m0661d69[m Merge pull request #9 from TGTV-2026/feature/esurat-pdf
+[33m35baac4[m refactor: use shared ACL middleware for e-surat routes
+[33m87dc6c6[m feat: add letter pdf generation, qr code and public verification
+[33m6bef691[m feat: add letter pdf generation, qr code and public verification
+[33m14142ab[m Merge pull request #7 from TGTV-2026/feature/crud-user
+[33mc21c98d[m fix: block soft-deleted accounts on login and prevent self-deletion
+[33m7d71a2d[m feat: crud user sementara
+[33m0b09fdd[m Merge pull request #6 from Dapaaaaaa/frontend/toast-error
+[33m7b33c5c[m Merge branch 'TGTV-2026:main' into main
+[33m167a10d[m Merge pull request #5 from TGTV-2026/feature/crud-position-api
+[33mc658115[m feat: add position CRUD API with ACL middleware - Implement position management endpoints (GET, POST, PUT, DELETE) - Add reusable ACL middleware for role-based access control
+[33mc51f8c4[m Merge branch 'TGTV-2026:main' into main
+[33mfb94681[m Merge pull request #4 from TGTV-2026/feature/esurat-request-api
+[33mb92c3a9[m Merge pull request #3 from TGTV-2026/feature/esurat-letter-types-api
+[33m5a352c9[m feat: add letter request submission and two-level approval flow
+[33m811dc10[m feat: add letter types CRUD api
+[33m1553178[m Merge pull request #2 from TGTV-2026/feature/esurat-schema
+[33mdcdef50[m feat: add e-surat database schema and api contract
+[33mca19d00[m style: Using font NextJs
+[33m5dc250f[m perf(toast feature): Changing for making responsive design
+[33me72d481[m refactor: Toast design
+[33m6a6081d[m feat: Adding animation for toast
+[33m8f73340[m feat: Adding toast to page.tsx
+[33ma4c243f[m feat(page.tsx): Landing page for E-Surat
+[33m0e3476b[m setup: Initial Commit
+[33m5c5fb12[m Merge pull request #1 from TGTV-2026/feature/auth
+[33m4633128[m refactor: auth routes architecture + feat: change email with OTP
+[33m3a8f55b[m feat: implement change email with OTP
+[33md6a95fb[m refactor: auth routes structure
+[33ma92bbde[m feat: implement forgot password with token and change password
+[33mb38e5e5[m feat: implement email OTP verification for user registration
+[33m62c968a[m feat: more setup and basic auth
+[33md69d5b7[m feat: setup database schema, drizzle orm, and swagger docs
+[33macb6d27[m init commit
+[33m4a3291f[m Initial commit from Create Next App
