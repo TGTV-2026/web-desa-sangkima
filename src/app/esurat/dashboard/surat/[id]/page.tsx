@@ -5,14 +5,12 @@ import LampiranList from "@/components/esurat/LampiranList";
 import { getSessionUser } from "@/server/utils/session";
 import { letterRequestService } from "@/server/services/letterRequest.service";
 import { formatTanggalWaktu } from "@/lib/format";
-import PermohonanActions from "./PermohonanActions";
 
 type PageProps = { params: Promise<{ id: string }> };
 
-export default async function DetailPermohonanPage({ params }: PageProps) {
+export default async function DetailSuratPage({ params }: PageProps) {
   const session = await getSessionUser();
-  if (!session) redirect("/");
-  if (session.role === "user") redirect("/dashboard");
+  if (!session) redirect("/esurat");
 
   const { id } = await params;
   let surat;
@@ -22,19 +20,23 @@ export default async function DetailPermohonanPage({ params }: PageProps) {
     notFound();
   }
 
+  const bisaUnduh = surat.status === "DISETUJUI" || surat.status === "SELESAI";
+
   return (
     <div className="max-w-2xl">
       <Link
-        href="/dashboard/permohonan"
+        href="/esurat/dashboard/surat"
         className="text-xs font-semibold text-brass hover:underline underline-offset-2 rise-in inline-block"
       >
-        ← Kembali ke Permohonan
+        ← Kembali ke Surat Saya
       </Link>
 
       <div className="card-doc p-6 md:p-8 mt-4 rise-in" style={{ animationDelay: "80ms" }}>
         <div className="flex items-start justify-between gap-4 pb-6 border-b border-line">
           <div>
-            <p className="overline-doc !text-inkmut">{surat.letterType.code}</p>
+            <p className="overline-doc !text-inkmut">
+              {surat.letterType.code}
+            </p>
             <h1 className="font-serif text-3xl font-medium tracking-tight mt-1">
               {surat.letterType.name}
             </h1>
@@ -57,16 +59,6 @@ export default async function DetailPermohonanPage({ params }: PageProps) {
         )}
 
         <dl className="text-sm mt-6">
-          <div className="flex justify-between gap-6 py-2.5 border-b border-dotted border-line">
-            <dt className="text-inkmut">Pemohon</dt>
-            <dd className="font-medium text-right">{surat.requester.name}</dd>
-          </div>
-          <div className="flex justify-between gap-6 py-2.5 border-b border-dotted border-line">
-            <dt className="text-inkmut">NIK</dt>
-            <dd className="font-mono text-[13px] text-right">
-              {surat.requester.nik}
-            </dd>
-          </div>
           <div className="flex justify-between gap-6 py-2.5 border-b border-dotted border-line">
             <dt className="text-inkmut">Keperluan</dt>
             <dd className="font-medium text-right">{surat.purpose}</dd>
@@ -101,11 +93,26 @@ export default async function DetailPermohonanPage({ params }: PageProps) {
 
         <LampiranList requestId={surat.id} attachments={surat.attachments} />
 
-        <PermohonanActions
-          id={surat.id}
-          status={surat.status}
-          role={session.role}
-        />
+        {bisaUnduh && (
+          <div className="mt-8 flex flex-col sm:flex-row gap-3">
+            <a
+              href={`/esurat/api/letter-requests/${surat.id}/pdf`}
+              target="_blank"
+              className="btn-primary flex-1"
+            >
+              Unduh Surat (PDF)
+            </a>
+            {surat.verificationCode && (
+              <a
+                href={`/esurat/verifikasi/${surat.verificationCode}`}
+                target="_blank"
+                className="btn-outline flex-1"
+              >
+                Cek Keaslian
+              </a>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

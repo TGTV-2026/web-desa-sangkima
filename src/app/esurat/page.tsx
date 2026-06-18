@@ -4,10 +4,8 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
 
-export default function RegisterPage() {
+export default function LoginPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [nik, setNik] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -18,57 +16,42 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/register", {
+      const response = await fetch("/esurat/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, nik, email, password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Logika menangkap error validasi berlapis (Zod / Express Validator) dari backend
         if (response.status === 400 && data.errors) {
           const firstField = Object.keys(data.errors)[0];
           const firstMsg = data.errors[firstField]?.[0] ?? data.message;
-          throw new Error(firstMsg || "Data pendaftaran tidak valid");
+          throw new Error(firstMsg || "Data yang dimasukkan tidak valid");
         }
-        throw new Error(data.message || "Gagal mendaftarkan akun Anda");
+        throw new Error(data.message || "Gagal masuk ke akun Anda");
       }
 
       toast(
-        "Pendaftaran berhasil. Silahkan verifikasi kode OTP yang dikirimkan.",
-        "Akun Terdaftar",
+        "Selamat datang kembali. Mengalihkan ke dasbor...",
+        "Berhasil Masuk",
         "success",
         4000,
       );
-
-      // Simpan userId sementara untuk proses verifikasi OTP di halaman selanjutnya
-
-      const finalUserId = data?.data?.userId // Sesuaikan dengan struktur respons aktual dari API
-
-      if (finalUserId) {
-        // Simpan userId di sessionStorage untuk digunakan di halaman verify-otp
-        sessionStorage.setItem("pendingUserId", String(finalUserId));
-        console.log("User ID sementara disimpan untuk OTP:", finalUserId);
-      } else {
-        console.warn("User ID tidak ditemukan dalam respons pendaftaran:", data);
-      }
-      
-      // Dialihkan ke halaman verify-otp untuk menyelesaikan alur auth service timmu
       setTimeout(() => {
-        router.push("/verify-otp");
-      }, 1500);
+        router.push("/esurat/dashboard");
+      }, 1000);
     } catch (err: any) {
       const msg = err?.message || "Gagal terhubung ke server";
-      toast(msg, "Gagal Daftar", "error", 5000);
+      toast(msg, "Gagal Masuk", "error", 5000);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <main className="h-screen grid lg:grid-cols-[1.1fr_1fr]">
+    <main className="min-h-screen grid lg:grid-cols-[1.1fr_1fr]">
       {/* ---------- Panel institusional (kiri) ---------- */}
       <section className="relative hidden lg:flex flex-col justify-between bg-pine-900 text-paper overflow-hidden px-14 py-12">
         {/* bingkai dokumen */}
@@ -119,8 +102,8 @@ export default function RegisterPage() {
         </footer>
       </section>
 
-      {/* ---------- Form pendaftaran (kanan) ---------- */}
-      <section className="flex flex-col justify-center px-6 py-6 sm:px-12 lg:px-16 xl:px-24 bg-paper h-full overflow-y-auto">
+      {/* ---------- Form masuk (kanan) ---------- */}
+      <section className="flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 xl:px-24 bg-paper">
         {/* kop ringkas untuk layar kecil */}
         <header className="lg:hidden mb-10 rise-in">
           <div className="flex items-center gap-3">
@@ -145,53 +128,20 @@ export default function RegisterPage() {
             className="font-serif text-4xl font-medium tracking-tight mt-2 rise-in"
             style={{ animationDelay: "60ms" }}
           >
-            Daftar Akun Baru
+            Masuk ke akun Anda
           </h2>
           <p
-            className="text-sm text-inkmut mt-1 mb-4 rise-in"
+            className="text-sm text-inkmut mt-3 mb-10 rise-in"
             style={{ animationDelay: "120ms" }}
           >
-            Lengkapi data diri Anda sesuai dengan KTP untuk mendaftar sistem layanan surat.
+            Gunakan email dan kata sandi yang terdaftar di kantor desa.
           </p>
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col gap-4 rise-in"
+            className="flex flex-col gap-5 rise-in"
             style={{ animationDelay: "180ms" }}
           >
-            <div>
-              <label htmlFor="name" className="label-doc">
-                Nama Lengkap
-              </label>
-              <input
-                type="text"
-                id="name"
-                placeholder="Masukkan nama lengkap sesuai KTP"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="input-doc"
-                autoComplete="name"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="nik" className="label-doc">
-                NIK (Nomor Induk Kependudukan)
-              </label>
-              <input
-                type="text"
-                id="nik"
-                placeholder="16 digit nomor NIK Anda"
-                maxLength={16}
-                value={nik}
-                onChange={(e) => setNik(e.target.value)}
-                required
-                className="input-doc"
-                autoComplete="off"
-              />
-            </div>
-
             <div>
               <label htmlFor="email" className="label-doc">
                 Email
@@ -209,9 +159,17 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="label-doc">
-                Kata Sandi
-              </label>
+              <div className="flex items-baseline justify-between mb-2">
+                <label htmlFor="password" className="label-doc !mb-0">
+                  Kata Sandi
+                </label>
+                <a
+                  href="/forgot-password"
+                  className="text-xs font-semibold text-brass hover:underline underline-offset-2"
+                >
+                  Lupa sandi?
+                </a>
+              </div>
               <input
                 type="password"
                 id="password"
@@ -220,21 +178,21 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="input-doc"
-                autoComplete="new-password"
+                autoComplete="current-password"
               />
             </div>
 
             <button type="submit" disabled={isLoading} className="btn-primary mt-2">
-              {isLoading ? "Memproses..." : "Daftar Sekarang"}
+              {isLoading ? "Memproses..." : "Masuk"}
             </button>
 
             <div className="border-t border-line pt-5 text-center text-xs text-inkmut">
-              Sudah memiliki akun?{" "}
+              Belum punya akun?{" "}
               <a
-                href="/"
+                href="/esurat/register"
                 className="font-semibold text-brass hover:underline underline-offset-2"
               >
-                Masuk ke akun Anda
+                Daftar sebagai warga
               </a>
             </div>
           </form>

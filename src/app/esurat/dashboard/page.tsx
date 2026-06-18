@@ -8,7 +8,7 @@ import { formatTanggal } from "@/lib/format";
 
 export default async function DashboardPage() {
   const session = await getSessionUser();
-  if (!session) redirect("/");
+  if (!session) redirect("/esurat");
 
   const requests =
     session.role === "user"
@@ -53,7 +53,7 @@ export default async function DashboardPage() {
         {session.role === "user" && (
           <div className="w-full sm:w-auto shrink-0">
             <Link 
-              href="/dashboard/ajukan" 
+              href="/esurat/dashboard/ajukan"
               className="btn-primary block w-full sm:inline-block sm:w-auto text-center shadow-sm hover:shadow transition-all text-xs sm:text-sm py-3 px-5"
             >
               Ajukan Surat Baru
@@ -100,7 +100,7 @@ export default async function DashboardPage() {
               </h2>
             </div>
             <Link
-              href={isPetugas ? "/dashboard/permohonan" : "/dashboard/surat"}
+              href={isPetugas ? "/esurat/dashboard/permohonan" : "/esurat/dashboard/surat"}
               className="text-[10px] sm:text-xs font-bold tracking-wide uppercase text-brass hover:text-pine-900 hover:underline underline-offset-4 transition-colors shrink-0"
             >
               Lihat semua →
@@ -125,7 +125,7 @@ export default async function DashboardPage() {
               {recent.map((r) => (
                 <li key={r.id}>
                   <Link
-                    href={isPetugas ? `/dashboard/permohonan/${r.id}` : `/dashboard/surat/${r.id}`}
+                    href={isPetugas ? `/esurat/dashboard/permohonan/${r.id}` : `/esurat/dashboard/surat/${r.id}`}
                     className="flex items-center justify-between gap-4 px-4 sm:px-6 py-4 hover:bg-paper2/40 transition-colors"
                   >
                     <div className="min-w-0 flex-1">

@@ -49,23 +49,23 @@ const ROLE_LABEL: Record<Role, string> = {
 
 function navForRole(role: Role): NavItem[] {
   const items: NavItem[] = [
-    { href: "/dashboard", label: "Beranda", icon: ICONS.home },
+    { href: "/esurat/dashboard", label: "Beranda", icon: ICONS.home },
   ];
   if (role === "user") {
     items.push(
-      { href: "/dashboard/ajukan", label: "Ajukan Surat", icon: ICONS.plus },
-      { href: "/dashboard/surat", label: "Surat Saya", icon: ICONS.doc },
+      { href: "/esurat/dashboard/ajukan", label: "Ajukan Surat", icon: ICONS.plus },
+      { href: "/esurat/dashboard/surat", label: "Surat Saya", icon: ICONS.doc },
     );
   } else {
     items.push({
-      href: "/dashboard/permohonan",
+      href: "/esurat/dashboard/permohonan",
       label: "Permohonan",
       icon: ICONS.inbox,
     });
   }
   if (role === "admin") {
     items.push({
-      href: "/dashboard/jenis-surat",
+      href: "/esurat/dashboard/jenis-surat",
       label: "Jenis Surat",
       icon: ICONS.tag,
     });
@@ -86,12 +86,12 @@ export default function Sidebar({
   const items = navForRole(role);
 
   const isActive = (href: string) =>
-    href === "/dashboard" ? pathname === href : pathname.startsWith(href);
+    href === "/esurat/dashboard" ? pathname === href : pathname.startsWith(href);
 
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/esurat/api/auth/logout", { method: "POST" });
     } finally {
       router.push("/");
       router.refresh();

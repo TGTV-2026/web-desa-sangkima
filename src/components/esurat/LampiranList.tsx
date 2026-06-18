@@ -28,7 +28,7 @@ export default function LampiranList({
       <p className="label-doc">Lampiran Pendukung</p>
       <ul className="flex flex-col gap-2 mt-2">
         {attachments.map((a, i) => {
-          const targetApiUrl = `/api/letter-requests/${requestId}/lampiran/${i}`;
+          const targetApiUrl = `/esurat/api/letter-requests/${requestId}/lampiran/${i}`;
           
           // 🔑 CEK APAKAH FILE INI ADALAH PDF
           const isPdf = a.name.toLowerCase().endsWith(".pdf");

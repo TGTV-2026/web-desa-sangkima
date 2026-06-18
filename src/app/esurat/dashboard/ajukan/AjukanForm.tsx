@@ -98,7 +98,7 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
       fd.append("data", JSON.stringify(payload));
       for (const file of files) fd.append("lampiran", file);
 
-      const res = await fetch("/api/letter-requests", {
+      const res = await fetch("/esurat/api/letter-requests", {
         method: "POST",
         body: fd,
       });
@@ -115,7 +115,7 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
         "success",
         4000,
       );
-      router.push("/dashboard/surat");
+      router.push("/esurat/dashboard/surat");
       router.refresh();
     } catch (err: any) {
       toast(err.message || "Gagal terhubung ke server", "Sistem Bermasalah", "error", 5000);
