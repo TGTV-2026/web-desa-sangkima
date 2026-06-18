@@ -63,13 +63,13 @@ Lihat [Environment Variables](#environment-variables) untuk detail.
 ### 5. Jalankan Migration
 
 ```bash
-npm run db:migrate
+npx drizzle-kit migrate
 ```
 
-atau dengan Drizzle Kit:
+atau dengan 
 
 ```bash
-npx drizzle-kit migrate
+npx drizzle-kit push
 ```
 
 ### 6. Jalankan Development Server

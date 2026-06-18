@@ -74,6 +74,22 @@ export const letterFieldDefSchema = z.object({
 
 export type LetterFieldDef = z.infer<typeof letterFieldDefSchema>;
 
+
+// Kolom JSON MySQL kadang dikembalikan driver sebagai string (bukan array hasil
+// parse). Normalisasi agar konsumen selalu menerima array LetterFieldDef.
+export function normalizeRequiredFields(value: unknown): LetterFieldDef[] {
+  if (Array.isArray(value)) return value as LetterFieldDef[];
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? (parsed as LetterFieldDef[]) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 // Nilai jawaban field tambahan dari warga
 export type LetterRequestData = Record<string, string | number | null>;
 
@@ -127,7 +143,9 @@ export const createLetterRequestSchema = z.object({
   letterTypeId: z.string().min(1, "Jenis surat wajib dipilih"),
   purpose: z.string().min(3, "Keperluan wajib diisi"),
   // jawaban field tambahan; divalidasi lebih lanjut di service sesuai requiredFields
-  data: z.record(z.string(), z.union([z.string(), z.number(), z.null()])).optional(),
+  data: z
+    .record(z.string(), z.union([z.string(), z.number(), z.null()]))
+    .optional(),
 });
 
 export type TCreateLetterRequestInput = z.infer<

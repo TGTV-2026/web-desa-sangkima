@@ -11,13 +11,28 @@ type LetterTypeRow = NonNullable<
   Awaited<ReturnType<typeof letterTypeRepository.findById>>
 >;
 
+// Kolom JSON MySQL kadang dikembalikan driver sebagai string (bukan array
+// hasil parse), jadi normalisasi di sini agar requiredFields selalu array.
+function normalizeRequiredFields(value: unknown): LetterFieldDef[] {
+  if (Array.isArray(value)) return value as LetterFieldDef[];
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? (parsed as LetterFieldDef[]) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function toDTO(row: LetterTypeRow): LetterTypeDTO {
   return {
     id: row.id,
     code: row.code,
     name: row.name,
     description: row.description ?? null,
-    requiredFields: (row.requiredFields ?? []) as LetterFieldDef[],
+    requiredFields: normalizeRequiredFields(row.requiredFields),
     active: row.active,
   };
 }
