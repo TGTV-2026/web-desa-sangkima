@@ -12,8 +12,8 @@ import {
   rejectLetterRequestSchema,
   processLetterRequestSchema,
   approveLetterRequestSchema,
+  normalizeRequiredFields,
   type LetterAttachment,
-  type LetterFieldDef,
   type LetterRequestDTO,
   type LetterStatus,
   type LetterVerificationDTO,
@@ -70,7 +70,7 @@ export const letterRequestService = {
     if (!type.active) throw new Error("Jenis surat sedang tidak aktif");
 
     // pastikan field wajib (sesuai jenis surat) terisi
-    const fields = (type.requiredFields ?? []) as LetterFieldDef[];
+    const fields = normalizeRequiredFields(type.requiredFields);
     for (const f of fields) {
       if (!f.required) continue;
       const v = data.data?.[f.name];
