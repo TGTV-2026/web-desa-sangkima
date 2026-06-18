@@ -4,6 +4,36 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
 
+// ─── Aturan validasi (selaras dengan Zod schema di server) ─────────────────
+function validateField(field: string, value: string, allValues?: { password?: string }): string {
+  switch (field) {
+    case "name":
+      if (!value.trim()) return "Nama lengkap tidak boleh kosong";
+      if (value.trim().length < 3) return "Nama minimal 3 karakter";
+      return "";
+    case "nik":
+      if (!value) return "NIK tidak boleh kosong";
+      if (!/^\d*$/.test(value)) return "NIK hanya boleh berisi angka";
+      if (value.length !== 16) return "NIK harus tepat 16 digit angka";
+      return "";
+    case "email":
+      if (!value) return "Email tidak boleh kosong";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Format email tidak valid (contoh: nama@email.com)";
+      return "";
+    case "password":
+      if (!value) return "Kata sandi tidak boleh kosong";
+      if (value.length < 8) return "Kata sandi minimal 8 karakter";
+      return "";
+    case "confirmPassword":
+      if (!value) return "Konfirmasi kata sandi tidak boleh kosong";
+      if (allValues?.password && value !== allValues.password)
+        return "Kata sandi dan konfirmasi kata sandi tidak cocok";
+      return "";
+    default:
+      return "";
+  }
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -13,19 +43,51 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // Track field yang sudah pernah di-blur agar error tidak muncul saat pertama ketik
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
+
+  // Helper: set error untuk satu field
+  const setError = (field: string, msg: string) =>
+    setFieldErrors((prev) => ({ ...prev, [field]: msg }));
+
+  // Handler blur – validasi saat user meninggalkan field
+  const handleBlur = (field: string, value: string) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    const err = validateField(field, value, { password });
+    setError(field, err);
+
+    // Jika blur di password dan confirmPassword sudah diisi, validasi ulang cocok/tidak
+    if (field === "password" && confirmPassword && touched.confirmPassword) {
+      setError("confirmPassword", validateField("confirmPassword", confirmPassword, { password: value }));
+    }
+  };
+
+  // Validasi semua field sekaligus (saat submit)
+  const validateAll = (): boolean => {
+    const errors: Record<string, string> = {};
+    errors.name = validateField("name", name);
+    errors.nik = validateField("nik", nik);
+    errors.email = validateField("email", email);
+    errors.password = validateField("password", password);
+    errors.confirmPassword = validateField("confirmPassword", confirmPassword, { password });
+
+    // Hapus key yang kosong (valid)
+    const filtered: Record<string, string> = {};
+    for (const [k, v] of Object.entries(errors)) {
+      if (v) filtered[k] = v;
+    }
+    setFieldErrors(filtered);
+    // Tandai semua field sebagai touched
+    setTouched({ name: true, nik: true, email: true, password: true, confirmPassword: true });
+    return Object.keys(filtered).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setFieldErrors({});
 
-    // Pastikan konfirmasi password cocok sebelum dikirim ke server
-    if (password !== confirmPassword) {
-      setFieldErrors({
-        confirmPassword: "Password dan konfirmasi password tidak cocok",
-      });
-      return;
-    }
+    // Validasi client-side menyeluruh
+    if (!validateAll()) return;
 
     setIsLoading(true);
 
@@ -168,6 +230,7 @@ export default function RegisterPage() {
             className="flex flex-col gap-4 rise-in"
             style={{ animationDelay: "180ms" }}
           >
+            {/* ── Nama Lengkap ── */}
             <div>
               <label htmlFor="name" className="label-doc">
                 Nama Lengkap
@@ -177,13 +240,21 @@ export default function RegisterPage() {
                 id="name"
                 placeholder="Masukkan nama lengkap sesuai KTP"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (fieldErrors.name) setError("name", validateField("name", e.target.value));
+                }}
+                onBlur={() => handleBlur("name", name)}
                 required
-                className="input-doc"
+                className={`input-doc ${fieldErrors.name ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""}`}
                 autoComplete="name"
               />
+              {fieldErrors.name && (
+                <p className="text-xs text-oxide mt-1.5">{fieldErrors.name}</p>
+              )}
             </div>
 
+            {/* ── NIK ── */}
             <div>
               <label htmlFor="nik" className="label-doc">
                 NIK (Nomor Induk Kependudukan)
@@ -195,9 +266,12 @@ export default function RegisterPage() {
                 maxLength={16}
                 value={nik}
                 onChange={(e) => {
-                  setNik(e.target.value);
-                  if (fieldErrors.nik) setFieldErrors((prev) => ({ ...prev, nik: "" }));
+                  // Hanya terima angka
+                  const val = e.target.value.replace(/\D/g, "");
+                  setNik(val);
+                  if (fieldErrors.nik) setError("nik", validateField("nik", val));
                 }}
+                onBlur={() => handleBlur("nik", nik)}
                 required
                 className={`input-doc ${fieldErrors.nik ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""}`}
                 autoComplete="off"
@@ -207,6 +281,7 @@ export default function RegisterPage() {
               )}
             </div>
 
+            {/* ── Email ── */}
             <div>
               <label htmlFor="email" className="label-doc">
                 Email
@@ -218,8 +293,9 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: "" }));
+                  if (fieldErrors.email) setError("email", validateField("email", e.target.value));
                 }}
+                onBlur={() => handleBlur("email", email)}
                 required
                 className={`input-doc ${fieldErrors.email ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""}`}
                 autoComplete="email"
@@ -229,6 +305,7 @@ export default function RegisterPage() {
               )}
             </div>
 
+            {/* ── Kata Sandi ── */}
             <div>
               <label htmlFor="password" className="label-doc">
                 Kata Sandi
@@ -241,25 +318,24 @@ export default function RegisterPage() {
                 onChange={(e) => {
                   const val = e.target.value;
                   setPassword(val);
-                  // Hapus error jika keduanya sudah cocok, atau kosongkan error password
-                  setFieldErrors((prev) => ({
-                    ...prev,
-                    password: "",
-                    confirmPassword:
-                      confirmPassword && val !== confirmPassword
-                        ? "Kata sandi dan konfirmasi kata sandi tidak cocok"
-                        : "",
-                  }));
+                  // Hapus error password sendiri saat mengetik
+                  if (fieldErrors.password) setError("password", validateField("password", val));
+                  // Validasi ulang confirmPassword jika sudah diisi
+                  if (confirmPassword && touched.confirmPassword) {
+                    setError("confirmPassword", validateField("confirmPassword", confirmPassword, { password: val }));
+                  }
                 }}
+                onBlur={() => handleBlur("password", password)}
                 required
-                className={`input-doc ${fieldErrors.confirmPassword ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""}`}
+                className={`input-doc ${fieldErrors.password ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""}`}
                 autoComplete="new-password"
               />
-              {fieldErrors.confirmPassword && (
-                <p className="text-xs text-oxide mt-1.5">Kata sandi tidak cocok dengan konfirmasi</p>
+              {fieldErrors.password && (
+                <p className="text-xs text-oxide mt-1.5">{fieldErrors.password}</p>
               )}
             </div>
 
+            {/* ── Konfirmasi Kata Sandi ── */}
             <div>
               <label htmlFor="confirmPassword" className="label-doc">
                 Konfirmasi Kata Sandi
@@ -272,15 +348,11 @@ export default function RegisterPage() {
                 onChange={(e) => {
                   const val = e.target.value;
                   setConfirmPassword(val);
-                  // Validasi real-time: tampil error segera jika tidak cocok
-                  setFieldErrors((prev) => ({
-                    ...prev,
-                    confirmPassword:
-                      val && password && val !== password
-                        ? "Kata sandi dan konfirmasi kata sandi tidak cocok"
-                        : "",
-                  }));
+                  if (fieldErrors.confirmPassword) {
+                    setError("confirmPassword", validateField("confirmPassword", val, { password }));
+                  }
                 }}
+                onBlur={() => handleBlur("confirmPassword", confirmPassword)}
                 required
                 className={`input-doc ${fieldErrors.confirmPassword ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""}`}
                 autoComplete="new-password"
