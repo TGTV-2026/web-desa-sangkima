@@ -344,7 +344,8 @@ src/
 │   ├── repositories/
 │   │   └── user.repository.ts (Data access)
 │   ├── middlewares/
-│   │   └── auth.middleware.ts (JWT verification)
+│   │   ├── role.middleware.ts (getAuthUser: verifikasi JWT + ambil user/role dari DB)
+│   │   └── acl.middleware.ts (requireRole: gerbang role-based access)
 │   ├── types/
 │   │   └── auth.ts (Zod schemas & types)
 │   ├── utils/
@@ -362,7 +363,7 @@ src/
 ```
 API Routes (route.ts)
     ↓
-Middleware (auth.middleware.ts)
+Middleware (role.middleware.ts / acl.middleware.ts)
     ↓
 Services (auth.service.ts) - Business logic
     ↓

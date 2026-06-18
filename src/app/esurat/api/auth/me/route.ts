@@ -54,16 +54,16 @@
  */
 
 import { NextResponse } from "next/server";
-import { verifyAuth } from "@/server/middlewares/auth.middleware";
+import { getAuthUser } from "@/server/middlewares/role.middleware";
 import { userRepository } from "@/server/repositories/user.repository";
 
 export async function GET(req: Request) {
   try {
-    // Verify JWT token
-    const authHeader = req.headers.get("authorization");
-    const authPayload = await verifyAuth(authHeader || undefined);
+    // Verifikasi sesi: terima Bearer header maupun cookie access_token,
+    // dan tolak akun nonaktif (deletedAt) — konsisten dengan route lain.
+    const auth = await getAuthUser(req);
 
-    if (!authPayload) {
+    if (!auth) {
       return NextResponse.json(
         {
           success: false,
@@ -74,7 +74,7 @@ export async function GET(req: Request) {
     }
 
     // Get user from database
-    const user = await userRepository.findById(authPayload.id);
+    const user = await userRepository.findById(auth.id);
 
     if (!user) {
       return NextResponse.json(

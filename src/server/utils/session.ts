@@ -35,3 +35,40 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     role: user.role as UserRole,
   };
 }
+
+/**
+ * Cookie penanda "user ini sedang menunggu verifikasi OTP".
+ * Dipakai agar alur verifikasi tahan terhadap tab yang tertutup: nilainya
+ * (userId) bertahan di browser (httpOnly) sampai verifikasi selesai atau
+ * kedaluwarsa, menggantikan sessionStorage yang hilang saat tab ditutup.
+ */
+const PENDING_VERIFICATION_COOKIE = "pending_verification";
+
+export async function setPendingVerification(userId: string): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set({
+    name: PENDING_VERIFICATION_COOKIE,
+    value: userId,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24, // 1 hari — cukup longgar untuk kembali & resend OTP
+  });
+}
+
+export async function clearPendingVerification(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set({
+    name: PENDING_VERIFICATION_COOKIE,
+    value: "",
+    httpOnly: true,
+    path: "/",
+    maxAge: 0,
+  });
+}
+
+export async function getPendingVerificationUserId(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(PENDING_VERIFICATION_COOKIE)?.value ?? null;
+}

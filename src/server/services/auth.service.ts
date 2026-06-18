@@ -40,10 +40,14 @@ export const authService = {
 
     if (existingUser) {
       if (existingUser.email === validatedData.email) {
-        throw new Error("Email sudah terdaftar");
+        throw Object.assign(new Error("Email sudah terdaftar"), {
+          field: "email" as const,
+        });
       }
       if (existingUser.nik === validatedData.nik) {
-        throw new Error("NIK sudah terdaftar");
+        throw Object.assign(new Error("NIK sudah terdaftar"), {
+          field: "nik" as const,
+        });
       }
     }
 
@@ -264,21 +268,27 @@ export const authService = {
       throw new Error("Email atau password salah");
     }
 
-    if (user.deletedAt) {
-      throw new Error("Akun ini telah dinonaktifkan. Hubungi administrator.");
-    }
-
-    // Check if email is verified
-    if (!user.emailVerifiedAt) {
-      throw new Error("Email belum diaktifkan. Silakan verifikasi email Anda.");
-    }
-
+    // Verifikasi password lebih dulu — status akun (nonaktif / belum verifikasi)
+    // baru diungkap setelah kredensial terbukti benar, agar tidak bocor ke publik.
     const isPasswordValid = await comparePassword(
       validatedData.password,
       user.password,
     );
     if (!isPasswordValid) {
       throw new Error("Email atau password salah");
+    }
+
+    if (user.deletedAt) {
+      throw new Error("Akun ini telah dinonaktifkan. Hubungi administrator.");
+    }
+
+    // Email belum diaktifkan → tandai supaya pemanggil bisa mengarahkan ke
+    // halaman verifikasi OTP (bukan sekadar menampilkan error).
+    if (!user.emailVerifiedAt) {
+      throw Object.assign(
+        new Error("Email belum diaktifkan. Silakan verifikasi email Anda."),
+        { code: "EMAIL_NOT_VERIFIED" as const, userId: user.id },
+      );
     }
 
     const token = await signToken({

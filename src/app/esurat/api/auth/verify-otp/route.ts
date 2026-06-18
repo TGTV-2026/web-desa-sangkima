@@ -42,6 +42,7 @@
 
 import { NextResponse } from "next/server";
 import { authService } from "@/server/services/auth.service";
+import { clearPendingVerification } from "@/server/utils/session";
 import z from "zod";
 
 export async function POST(req: Request) {
@@ -49,6 +50,9 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     const result = await authService.verifyOTP(body);
+
+    // Verifikasi selesai — hapus penanda pending agar tidak terjebak di verify-otp.
+    await clearPendingVerification();
 
     return NextResponse.json(
       { success: result.success, message: result.message },

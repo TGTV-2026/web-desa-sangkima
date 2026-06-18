@@ -62,6 +62,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { authService } from "@/server/services/auth.service";
+import { setPendingVerification } from "@/server/utils/session";
 import { z } from "zod";
 
 export async function POST(req: Request) {
@@ -78,7 +79,7 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      maxAge: 60 * 60 * 24, // 1 Hari
+      maxAge: 60 * 60, // 1 jam — samakan dengan JWT_EXPIRES_IN (1h)
     });
 
     return NextResponse.json(
@@ -101,6 +102,21 @@ export async function POST(req: Request) {
           errors: error.flatten().fieldErrors,
         },
         { status: 400 },
+      );
+    }
+
+    // Kredensial benar tapi email belum diverifikasi: tandai sesi pending dan
+    // beri kode khusus agar klien mengarahkan user ke halaman verifikasi OTP.
+    if (error?.code === "EMAIL_NOT_VERIFIED" && error?.userId) {
+      await setPendingVerification(String(error.userId));
+      return NextResponse.json(
+        {
+          success: false,
+          code: "EMAIL_NOT_VERIFIED",
+          message: error.message,
+          data: { userId: error.userId },
+        },
+        { status: 403 },
       );
     }
 
