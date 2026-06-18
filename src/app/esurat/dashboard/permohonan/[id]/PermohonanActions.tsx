@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/hooks/useToast";
+import { useSubmitAction } from "@/hooks/useSubmitAction";
 import type { LetterStatus } from "@/server/types/letter";
+import RejectionPanel from "./RejectionPanel";
 
 type Props = {
   id: string;
@@ -13,31 +14,26 @@ type Props = {
 
 export default function PermohonanActions({ id, status, role }: Props) {
   const router = useRouter();
-  const { toast } = useToast();
-  const [busy, setBusy] = useState(false);
+  const { busy, submit } = useSubmitAction();
   const [showReject, setShowReject] = useState(false);
-  const [reason, setReason] = useState("");
 
-  const doAction = async (body: Record<string, string>, successMsg: string) => {
-    setBusy(true);
-    try {
-      const res = await fetch(`/esurat/api/letter-requests/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.message || "Aksi gagal");
-
-      toast(successMsg, "Berhasil", "success", 4000);
-      setShowReject(false);
-      router.refresh();
-    } catch (err: any) {
-      toast(err.message || "Gagal terhubung ke server", "Gagal", "error", 5000);
-    } finally {
-      setBusy(false);
-    }
-  };
+  const doAction = (body: Record<string, string>, successMessage: string) =>
+    submit(
+      () =>
+        fetch(`/esurat/api/letter-requests/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }),
+      {
+        successMessage,
+        errorFallback: "Aksi gagal",
+        onSuccess: () => {
+          setShowReject(false);
+          router.refresh();
+        },
+      },
+    ).catch(() => {});
 
   if (status === "DITOLAK" || status === "SELESAI") {
     return status === "SELESAI" ? (
@@ -54,35 +50,11 @@ export default function PermohonanActions({ id, status, role }: Props) {
   return (
     <div className="mt-8 border-t border-line pt-6">
       {showReject ? (
-        <div className="flex flex-col gap-3">
-          <label htmlFor="reason" className="label-doc !mb-0">
-            Alasan Penolakan
-          </label>
-          <textarea
-            id="reason"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Contoh: Data alamat tidak sesuai KTP"
-            rows={3}
-            className="input-doc focus:!border-oxide focus:!ring-oxide/15"
-          />
-          <div className="flex gap-3">
-            <button
-              onClick={() => doAction({ action: "reject", reason }, "Permohonan ditolak.")}
-              disabled={busy || reason.trim().length < 3}
-              className="btn-danger flex-1 !bg-oxide !text-paper !border-oxide hover:!bg-oxide/90"
-            >
-              {busy ? "Memproses..." : "Konfirmasi Tolak"}
-            </button>
-            <button
-              onClick={() => setShowReject(false)}
-              disabled={busy}
-              className="btn-outline flex-1"
-            >
-              Batal
-            </button>
-          </div>
-        </div>
+        <RejectionPanel
+          busy={busy}
+          onConfirm={(reason) => doAction({ action: "reject", reason }, "Permohonan ditolak.")}
+          onCancel={() => setShowReject(false)}
+        />
       ) : (
         <div className="flex flex-col sm:flex-row gap-3">
           {status === "DIAJUKAN" && (
