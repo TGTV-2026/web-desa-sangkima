@@ -62,12 +62,35 @@ export const updateUserSchema = z
     message: "Minimal satu field harus diisi",
   });
 
+/** Self-update profil oleh warga — semua field kependudukan wajib diisi. */
+export const updateProfileSchema = z.object({
+  gender: z.enum(["L", "P"], "Jenis kelamin wajib dipilih"),
+  placeOfBirth: z.string().min(1, "Tempat lahir wajib diisi"),
+  birthday: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD"),
+  religion: z.enum(religions, "Agama wajib dipilih"),
+  address: z.string().min(1, "Alamat wajib diisi"),
+  job: z.string().min(1, "Pekerjaan wajib diisi"),
+  telp: z
+    .string()
+    .min(1, "No. HP wajib diisi")
+    .regex(
+      /^(\+62|62|0)8[1-9]\d{6,10}$/,
+      "Format nomor HP tidak valid (contoh: 081234567890)",
+    ),
+  citizenship: z.enum(["wni", "wna"], "Kewarganegaraan wajib dipilih"),
+  status: z.enum(maritalStatus, "Status perkawinan wajib dipilih"),
+  education: z.enum(educations, "Pendidikan terakhir wajib dipilih"),
+});
+
 /* ---------- */
 /* Types      */
 /* ---------- */
 
 export type TCreateUserByAdminInput = z.infer<typeof createUserByAdminSchema>;
 export type TUpdateUserInput = z.infer<typeof updateUserSchema>;
+export type TUpdateProfileInput = z.infer<typeof updateProfileSchema>;
 
 export type UserDTO = {
   id: string;
@@ -91,6 +114,46 @@ export type UserDTO = {
   createdAt: Date | null;
   updatedAt: Date | null;
 };
+
+/** Field yang harus non-null agar profil dianggap lengkap. */
+export const PROFILE_REQUIRED_FIELDS = [
+  "gender",
+  "placeOfBirth",
+  "birthday",
+  "religion",
+  "address",
+  "job",
+  "telp",
+  "citizenship",
+  "status",
+  "education",
+] as const;
+
+/** Cek apakah semua field kependudukan sudah diisi. */
+export function isProfileComplete(user: UserDTO): boolean {
+  return PROFILE_REQUIRED_FIELDS.every(
+    (field) => user[field] !== null && user[field] !== undefined,
+  );
+}
+
+/** Daftar nama field yang masih kosong. */
+export function getMissingProfileFields(user: UserDTO): string[] {
+  const labels: Record<string, string> = {
+    gender: "Jenis Kelamin",
+    placeOfBirth: "Tempat Lahir",
+    birthday: "Tanggal Lahir",
+    religion: "Agama",
+    address: "Alamat",
+    job: "Pekerjaan",
+    telp: "No. HP",
+    citizenship: "Kewarganegaraan",
+    status: "Status Perkawinan",
+    education: "Pendidikan Terakhir",
+  };
+  return PROFILE_REQUIRED_FIELDS.filter(
+    (field) => user[field] === null || user[field] === undefined,
+  ).map((field) => labels[field] ?? field);
+}
 
 export type PaginationMeta = {
   page: number;

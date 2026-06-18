@@ -9,7 +9,22 @@ export type SessionUser = {
   email: string;
   nik: string;
   role: UserRole;
+  isProfileComplete: boolean;
 };
+
+/** Field yang harus non-null agar profil dianggap lengkap (sinkron dengan PROFILE_REQUIRED_FIELDS di types/user). */
+const PROFILE_FIELDS = [
+  "gender",
+  "placeOfBirth",
+  "birthday",
+  "religion",
+  "address",
+  "job",
+  "telp",
+  "citizenship",
+  "status",
+  "education",
+] as const;
 
 /**
  * Ambil user yang sedang login dari cookie httpOnly "access_token".
@@ -27,12 +42,17 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const user = await userRepository.findById(payload.id as string);
   if (!user || user.deletedAt) return null;
 
+  const isProfileComplete = PROFILE_FIELDS.every(
+    (f) => user[f] !== null && user[f] !== undefined,
+  );
+
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     nik: user.nik,
     role: user.role as UserRole,
+    isProfileComplete,
   };
 }
 

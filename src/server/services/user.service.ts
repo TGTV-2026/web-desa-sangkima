@@ -3,6 +3,7 @@ import { hashPassword } from "../utils/hash";
 import {
   createUserByAdminSchema,
   updateUserSchema,
+  updateProfileSchema,
   type UserDTO,
   type PaginationMeta,
 } from "../types/user";
@@ -117,6 +118,25 @@ export const userService = {
       updateData as Partial<typeof import("../db/schema").users.$inferInsert>,
     );
     if (!row) throw new Error("Gagal memperbarui user");
+    return toDTO(row);
+  },
+
+  /** Self-update profil oleh warga — hanya field kependudukan, tanpa field sensitif. */
+  async updateProfile(userId: string, input: unknown): Promise<UserDTO> {
+    const data = updateProfileSchema.parse(input);
+
+    const current = await userRepository.findByIdWithPosition(userId);
+    if (!current) throw new Error("User tidak ditemukan");
+
+    const { birthday, ...rest } = data;
+    const updateData: Record<string, unknown> = { ...rest };
+    updateData.birthday = new Date(birthday);
+
+    const row = await userRepository.updateUser(
+      userId,
+      updateData as Partial<typeof import("../db/schema").users.$inferInsert>,
+    );
+    if (!row) throw new Error("Gagal memperbarui profil");
     return toDTO(row);
   },
 

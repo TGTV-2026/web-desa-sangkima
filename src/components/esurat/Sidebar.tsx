@@ -34,6 +34,11 @@ const ICONS = {
       <path d="M20.6 13.4 12 22l-8.6-8.6a2 2 0 0 1-.6-1.4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 1.4.6L22 10.4a2 2 0 0 1 0 2.8z" transform="rotate(90 12 12)" /><circle cx="9" cy="9" r="1.5" />
     </svg>
   ),
+  user: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-[18px] h-[18px]" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
   logout: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-[18px] h-[18px]" strokeLinecap="round" strokeLinejoin="round">
       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5M21 12H9" />
@@ -55,6 +60,7 @@ function navForRole(role: Role): NavItem[] {
     items.push(
       { href: "/esurat/dashboard/ajukan", label: "Ajukan Surat", icon: ICONS.plus },
       { href: "/esurat/dashboard/surat", label: "Surat Saya", icon: ICONS.doc },
+      { href: "/esurat/dashboard/profil", label: "Profil Saya", icon: ICONS.user },
     );
   } else {
     items.push({
