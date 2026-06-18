@@ -48,17 +48,17 @@
  */
 
 import { NextResponse } from "next/server";
-import { verifyAuth } from "@/server/middlewares/auth.middleware";
+import { getAuthUser } from "@/server/middlewares/role.middleware";
 import { authService } from "@/server/services/auth.service";
 import z from "zod";
 
 export async function POST(req: Request) {
   try {
-    // Verify authentication
-    const authHeader = req.headers.get("authorization");
-    const authPayload = await verifyAuth(authHeader || undefined);
+    // Verifikasi sesi: terima Bearer header maupun cookie access_token,
+    // dan tolak akun nonaktif (deletedAt) — konsisten dengan route lain.
+    const auth = await getAuthUser(req);
 
-    if (!authPayload) {
+    if (!auth) {
       return NextResponse.json(
         {
           success: false,
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
 
     // Use userId dari token, bukan dari body (lebih aman)
     const result = await authService.changeEmail({
-      userId: authPayload.id,
+      userId: auth.id,
       newEmail: body.newEmail,
     });
 
