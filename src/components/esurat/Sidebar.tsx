@@ -99,9 +99,10 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="bg-pine-900 text-paper md:w-64 md:min-h-screen flex md:flex-col shrink-0">
+    <aside className="bg-pine-900 text-paper md:w-64 md:h-screen flex flex-col md:sticky md:top-0 shrink-0 z-30">
+      
       {/* Identitas */}
-      <div className="hidden md:flex items-center gap-3 px-6 pt-7 pb-6">
+      <div className="hidden md:flex items-center gap-3 px-6 pt-7 pb-6 shrink-0">
         <div className="relative w-10 h-10 rounded-full border border-paper/40 grid place-items-center shrink-0">
           <div className="absolute inset-[4px] rounded-full border border-paper/20" />
           <span className="font-serif font-semibold text-sm">DS</span>
@@ -114,10 +115,10 @@ export default function Sidebar({
         </div>
       </div>
 
-      <div className="hidden md:block mx-6 border-t border-paper/10" />
+      <div className="hidden md:block mx-6 border-t border-paper/10 shrink-0" />
 
       {/* Navigasi */}
-      <nav className="flex md:flex-col flex-1 items-center md:items-stretch gap-0.5 px-3 md:px-4 py-2 md:py-4 overflow-x-auto">
+      <nav className="flex md:flex-col flex-1 items-center md:items-stretch gap-0.5 px-3 md:px-4 py-2 md:py-4 overflow-x-auto md:overflow-y-auto custom-scrollbar">
         {items.map((item) => {
           const active = isActive(item.href);
           return (
@@ -141,7 +142,7 @@ export default function Sidebar({
       </nav>
 
       {/* Pengguna */}
-      <div className="flex md:flex-col items-center md:items-stretch gap-2 px-3 md:px-6 py-3 md:py-6 md:border-t border-paper/10">
+      <div className="flex md:flex-col items-center md:items-stretch gap-2 px-3 md:px-6 py-3 md:py-6 border-t border-paper/10 mt-auto shrink-0 bg-pine-900">
         <div className="hidden md:block pb-1">
           <p className="text-sm font-semibold truncate">{name}</p>
           <p className="text-[10px] uppercase tracking-[0.16em] text-brass mt-0.5">
