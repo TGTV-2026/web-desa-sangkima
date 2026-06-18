@@ -14,8 +14,8 @@ type PageProps = { searchParams: Promise<{ status?: string }> };
 
 export default async function PermohonanPage({ searchParams }: PageProps) {
   const session = await getSessionUser();
-  if (!session) redirect("/");
-  if (session.role === "user") redirect("/dashboard");
+  if (!session) redirect("/esurat");
+  if (session.role === "user") redirect("/esurat/dashboard");
 
   const { status: statusParam } = await searchParams;
   const status = LETTER_STATUSES.includes(statusParam as LetterStatus)
@@ -25,10 +25,10 @@ export default async function PermohonanPage({ searchParams }: PageProps) {
   const requests = await letterRequestService.listAll(status);
 
   const filters: { label: string; href: string; active: boolean }[] = [
-    { label: "Semua", href: "/dashboard/permohonan", active: !status },
+    { label: "Semua", href: "/esurat/dashboard/permohonan", active: !status },
     ...LETTER_STATUSES.map((s) => ({
       label: LETTER_STATUS_META[s].label,
-      href: `/dashboard/permohonan?status=${s}`,
+      href: `/esurat/dashboard/permohonan?status=${s}`,
       active: status === s,
     })),
   ];
@@ -104,7 +104,7 @@ export default async function PermohonanPage({ searchParams }: PageProps) {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link
-                        href={`/dashboard/permohonan/${r.id}`}
+                        href={`/esurat/dashboard/permohonan/${r.id}`}
                         className="text-xs font-semibold text-brass hover:underline underline-offset-2 whitespace-nowrap"
                       >
                         Periksa →

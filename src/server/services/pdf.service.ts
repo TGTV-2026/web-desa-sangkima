@@ -170,7 +170,7 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
   page.drawText("( ............................ )", { x: signX, y: sy, size: 11, font: bold });
 
   // === QR VERIFIKASI (kiri bawah) ===
-  const verifyUrl = `${input.appUrl.replace(/\/$/, "")}/verifikasi/${input.verificationCode}`;
+  const verifyUrl = `${input.appUrl.replace(/\/$/, "")}/esurat/verifikasi/${input.verificationCode}`;
   const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 200 });
   const qrPng = await doc.embedPng(qrDataUrl);
   const qrSize = 90;

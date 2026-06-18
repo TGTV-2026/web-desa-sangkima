@@ -8,7 +8,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await getSessionUser();
-  if (!session) redirect("/");
+  if (!session) redirect("/esurat");
 
   return (
     <div className="min-h-screen bg-paper flex flex-col md:flex-row">

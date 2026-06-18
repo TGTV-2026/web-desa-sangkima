@@ -13,14 +13,16 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:3000",
+        // Routes live under the /esurat prefix, so the documented `/api/...`
+        // paths resolve against this base in Swagger "Try it out".
+        url: "http://localhost:3000/esurat",
         description: "Development server",
       },
       ...(process.env.NEXT_PUBLIC_API_URL &&
       process.env.NEXT_PUBLIC_API_URL !== "http://localhost:3000"
         ? [
             {
-              url: process.env.NEXT_PUBLIC_API_URL,
+              url: `${process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")}/esurat`,
               description: "Production server",
             },
           ]
@@ -36,7 +38,7 @@ const options = {
       },
     },
   },
-  apis: ["./src/app/api/**/*.ts"],
+  apis: ["./src/app/esurat/api/**/*.ts"],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

@@ -66,7 +66,7 @@ export default function VerifyOtpPage() {
     }
 
     try {
-      const response = await fetch("/api/auth/verify-otp", {
+      const response = await fetch("/esurat/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -96,7 +96,7 @@ export default function VerifyOtpPage() {
 
     // Setelah proses verifikasi (baik berhasil atau gagal), tetap arahkan pengguna ke dashboard atau halaman utama
     setTimeout(() => {
-      router.push("/dashboard");
+      router.push("/esurat/dashboard");
     }, 1500);
   };
 
@@ -180,7 +180,7 @@ export default function VerifyOtpPage() {
             </div>
 
             <div className="border-t border-line pt-6 text-center">
-              <a href="/register" className="text-xs font-semibold text-inkmut hover:text-pine-900">
+              <a href="/esurat/register" className="text-xs font-semibold text-inkmut hover:text-pine-900">
                 ← Kembali ke pendaftaran
               </a>
             </div>

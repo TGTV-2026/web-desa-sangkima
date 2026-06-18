@@ -5,7 +5,7 @@ import AjukanForm from "./AjukanForm";
 
 export default async function AjukanPage() {
   const session = await getSessionUser();
-  if (!session) redirect("/");
+  if (!session) redirect("/esurat");
 
   const types = await letterTypeService.list(true);
 

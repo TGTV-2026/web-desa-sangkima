@@ -8,7 +8,7 @@ const SwaggerUI = dynamic(() => import("swagger-ui-react"), { ssr: false });
 export default function DocsPage() {
   return (
     <div className="min-h-screen bg-white">
-      <SwaggerUI url="/api/docs" />
+      <SwaggerUI url="/esurat/api/docs" />
     </div>
   );
 }

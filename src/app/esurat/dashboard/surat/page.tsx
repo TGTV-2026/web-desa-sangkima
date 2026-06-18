@@ -7,7 +7,7 @@ import { formatTanggal } from "@/lib/format";
 
 export default async function SuratSayaPage() {
   const session = await getSessionUser();
-  if (!session) redirect("/");
+  if (!session) redirect("/esurat");
 
   const requests = await letterRequestService.listForUser(session.id);
 
@@ -23,7 +23,7 @@ export default async function SuratSayaPage() {
             Riwayat seluruh pengajuan surat Anda.
           </p>
         </div>
-        <Link href="/dashboard/ajukan" className="btn-primary">
+        <Link href="/esurat/dashboard/ajukan" className="btn-primary">
           Ajukan Surat Baru
         </Link>
       </div>
@@ -41,7 +41,7 @@ export default async function SuratSayaPage() {
             {requests.map((r) => (
               <li key={r.id}>
                 <Link
-                  href={`/dashboard/surat/${r.id}`}
+                  href={`/esurat/dashboard/surat/${r.id}`}
                   className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-paper2/40 transition-colors"
                 >
                   <div className="min-w-0">

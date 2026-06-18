@@ -21,7 +21,7 @@ export default function PermohonanActions({ id, status, role }: Props) {
   const doAction = async (body: Record<string, string>, successMsg: string) => {
     setBusy(true);
     try {
-      const res = await fetch(`/api/letter-requests/${id}`, {
+      const res = await fetch(`/esurat/api/letter-requests/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -42,7 +42,7 @@ export default function PermohonanActions({ id, status, role }: Props) {
   if (status === "DITOLAK" || status === "SELESAI") {
     return status === "SELESAI" ? (
       <a
-        href={`/api/letter-requests/${id}/pdf`}
+        href={`/esurat/api/letter-requests/${id}/pdf`}
         target="_blank"
         className="btn-outline w-full mt-8"
       >
@@ -127,7 +127,7 @@ export default function PermohonanActions({ id, status, role }: Props) {
                 {busy ? "Memproses..." : "Tandai Selesai"}
               </button>
               <a
-                href={`/api/letter-requests/${id}/pdf`}
+                href={`/esurat/api/letter-requests/${id}/pdf`}
                 target="_blank"
                 className="btn-outline flex-1"
               >

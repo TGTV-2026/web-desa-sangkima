@@ -5,8 +5,8 @@ import ToggleActiveButton from "./ToggleActiveButton";
 
 export default async function JenisSuratPage() {
   const session = await getSessionUser();
-  if (!session) redirect("/");
-  if (session.role !== "admin") redirect("/dashboard");
+  if (!session) redirect("/esurat");
+  if (session.role !== "admin") redirect("/esurat/dashboard");
 
   const types = await letterTypeService.list(false);
 

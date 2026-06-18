@@ -20,7 +20,7 @@ export default function ToggleActiveButton({
   const toggle = async () => {
     setBusy(true);
     try {
-      const res = await fetch(`/api/letter-types/${id}`, {
+      const res = await fetch(`/esurat/api/letter-types/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active: !active }),
