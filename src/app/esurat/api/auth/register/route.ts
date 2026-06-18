@@ -18,6 +18,7 @@
  *               - email
  *               - nik
  *               - password
+ *               - confirmPassword
  *             properties:
  *               name:
  *                 type: string
@@ -34,6 +35,11 @@
  *               password:
  *                 type: string
  *                 minLength: 8
+ *                 example: password123
+ *               confirmPassword:
+ *                 type: string
+ *                 minLength: 8
+ *                 description: Harus sama persis dengan password
  *                 example: password123
  *     responses:
  *       201:
@@ -64,12 +70,18 @@
 
 import { NextResponse } from "next/server";
 import { authService } from "@/server/services/auth.service";
+import { setPendingVerification } from "@/server/utils/session";
 import z from "zod";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const result = await authService.register(body);
+
+    // Tandai user ini sedang menunggu verifikasi OTP (tahan tab tertutup).
+    if (result.data?.userId) {
+      await setPendingVerification(String(result.data.userId));
+    }
 
     return NextResponse.json(
       {
@@ -86,6 +98,20 @@ export async function POST(req: Request) {
           success: false,
           message: "Validasi gagal",
           errors: error.flatten().fieldErrors,
+        },
+        { status: 400 },
+      );
+    }
+
+    // Email/NIK sudah terdaftar: petakan ke struktur errors per-field yang
+    // sama dengan output Zod, agar frontend bisa menampilkan border merah
+    // pada input yang tepat tanpa logika tambahan.
+    if (error?.field) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Validasi gagal",
+          errors: { [error.field]: [error.message] },
         },
         { status: 400 },
       );

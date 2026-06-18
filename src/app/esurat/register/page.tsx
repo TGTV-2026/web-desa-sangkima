@@ -10,25 +10,45 @@ export default function RegisterPage() {
   const [nik, setNik] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setFieldErrors({});
+
+    // Pastikan konfirmasi password cocok sebelum dikirim ke server
+    if (password !== confirmPassword) {
+      setFieldErrors({
+        confirmPassword: "Password dan konfirmasi password tidak cocok",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const response = await fetch("/esurat/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, nik, email, password }),
+        body: JSON.stringify({ name, nik, email, password, confirmPassword }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        // Logika menangkap error validasi berlapis (Zod / Express Validator) dari backend
+        // Logika menangkap error validasi berlapis (Zod) dari backend, lalu
+        // tampilkan sebagai border merah + keterangan pada field yang tepat
         if (response.status === 400 && data.errors) {
+          const mapped: Record<string, string> = {};
+          for (const [field, messages] of Object.entries(data.errors)) {
+            const firstMsg = Array.isArray(messages) ? messages[0] : undefined;
+            if (firstMsg) mapped[field] = firstMsg;
+          }
+          setFieldErrors(mapped);
+
           const firstField = Object.keys(data.errors)[0];
           const firstMsg = data.errors[firstField]?.[0] ?? data.message;
           throw new Error(firstMsg || "Data pendaftaran tidak valid");
@@ -43,19 +63,8 @@ export default function RegisterPage() {
         4000,
       );
 
-      // Simpan userId sementara untuk proses verifikasi OTP di halaman selanjutnya
-
-      const finalUserId = data?.data?.userId // Sesuaikan dengan struktur respons aktual dari API
-
-      if (finalUserId) {
-        // Simpan userId di sessionStorage untuk digunakan di halaman verify-otp
-        sessionStorage.setItem("pendingUserId", String(finalUserId));
-        console.log("User ID sementara disimpan untuk OTP:", finalUserId);
-      } else {
-        console.warn("User ID tidak ditemukan dalam respons pendaftaran:", data);
-      }
-      
-      // Dialihkan ke halaman verify-otp untuk menyelesaikan alur auth service timmu
+      // Status "menunggu verifikasi" sudah ditandai server lewat cookie httpOnly
+      // (tahan tab tertutup), jadi tidak perlu menyimpan userId di sessionStorage.
       setTimeout(() => {
         router.push("/esurat/verify-otp");
       }, 1500);
@@ -185,11 +194,17 @@ export default function RegisterPage() {
                 placeholder="16 digit nomor NIK Anda"
                 maxLength={16}
                 value={nik}
-                onChange={(e) => setNik(e.target.value)}
+                onChange={(e) => {
+                  setNik(e.target.value);
+                  if (fieldErrors.nik) setFieldErrors((prev) => ({ ...prev, nik: "" }));
+                }}
                 required
-                className="input-doc"
+                className={`input-doc ${fieldErrors.nik ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""}`}
                 autoComplete="off"
               />
+              {fieldErrors.nik && (
+                <p className="text-xs text-oxide mt-1.5">{fieldErrors.nik}</p>
+              )}
             </div>
 
             <div>
@@ -201,11 +216,17 @@ export default function RegisterPage() {
                 id="email"
                 placeholder="nama@contoh.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: "" }));
+                }}
                 required
-                className="input-doc"
+                className={`input-doc ${fieldErrors.email ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""}`}
                 autoComplete="email"
               />
+              {fieldErrors.email && (
+                <p className="text-xs text-oxide mt-1.5">{fieldErrors.email}</p>
+              )}
             </div>
 
             <div>
@@ -217,11 +238,56 @@ export default function RegisterPage() {
                 id="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setPassword(val);
+                  // Hapus error jika keduanya sudah cocok, atau kosongkan error password
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    password: "",
+                    confirmPassword:
+                      confirmPassword && val !== confirmPassword
+                        ? "Kata sandi dan konfirmasi kata sandi tidak cocok"
+                        : "",
+                  }));
+                }}
                 required
-                className="input-doc"
+                className={`input-doc ${fieldErrors.confirmPassword ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""}`}
                 autoComplete="new-password"
               />
+              {fieldErrors.confirmPassword && (
+                <p className="text-xs text-oxide mt-1.5">Kata sandi tidak cocok dengan konfirmasi</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="label-doc">
+                Konfirmasi Kata Sandi
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setConfirmPassword(val);
+                  // Validasi real-time: tampil error segera jika tidak cocok
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    confirmPassword:
+                      val && password && val !== password
+                        ? "Kata sandi dan konfirmasi kata sandi tidak cocok"
+                        : "",
+                  }));
+                }}
+                required
+                className={`input-doc ${fieldErrors.confirmPassword ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""}`}
+                autoComplete="new-password"
+              />
+              {fieldErrors.confirmPassword && (
+                <p className="text-xs text-oxide mt-1.5">{fieldErrors.confirmPassword}</p>
+              )}
             </div>
 
             <button type="submit" disabled={isLoading} className="btn-primary mt-2">
