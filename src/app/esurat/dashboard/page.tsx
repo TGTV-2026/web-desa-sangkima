@@ -56,6 +56,27 @@ export default async function DashboardPage() {
         }
       />
 
+      {/* Banner peringatan jika profil belum lengkap */}
+      {session.role === "user" && !session.isProfileComplete && (
+        <div className="rise-in mb-6 sm:mb-8 bg-brass/5 border border-brass/30 rounded-sm px-4 sm:px-5 py-3.5 flex items-start gap-3">
+          <span className="text-brass text-lg leading-none mt-0.5 shrink-0">⚠</span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-pine-900">
+              Data Profil Belum Lengkap
+            </p>
+            <p className="text-xs text-inkmut mt-0.5 leading-relaxed">
+              Lengkapi data kependudukan Anda agar dapat mengajukan surat resmi.{" "}
+              <Link
+                href="/esurat/dashboard/profil"
+                className="font-semibold text-brass hover:text-pine-900 underline underline-offset-2 transition-colors"
+              >
+                Lengkapi sekarang →
+              </Link>
+            </p>
+          </div>
+        </div>
+      )}
+
       <StatCardsGrid cards={statCards} />
 
       {/* ---------- TWO-COLUMN LAYOUT (SUDAH DISAMA RATAKAN TINGGINYA) ---------- */}
