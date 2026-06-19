@@ -7,6 +7,7 @@ import FormField from "@/components/esurat/FormField";
 import FileDropzone, { formatSize } from "@/components/esurat/FileDropzone";
 import DynamicLetterFields from "@/components/esurat/DynamicLetterFields";
 import type { LetterTypeDTO } from "@/server/types/letter";
+import { isProfileComplete } from "@/server/types/user";
 import UserPicker, { type PickedUser } from "./UserPicker";
 
 const MAX_FILES = 3;
@@ -26,13 +27,14 @@ export default function TambahPengajuanForm({ types }: { types: LetterTypeDTO[] 
     () => types.find((t) => t.id === typeId),
     [types, typeId],
   );
+  const requesterReady = !!requester && isProfileComplete(requester);
 
   const setField = (name: string, value: string) =>
     setData((d) => ({ ...d, [name]: value }));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!requester || !selected) return;
+    if (!requesterReady || !requester || !selected) return;
 
     const payload: Record<string, string | number> = {};
     for (const f of selected.requiredFields) {
@@ -152,7 +154,7 @@ export default function TambahPengajuanForm({ types }: { types: LetterTypeDTO[] 
       <div className="pt-2">
         <button
           type="submit"
-          disabled={submitting || !requester || !typeId}
+          disabled={submitting || !requesterReady || !typeId}
           className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Menyimpan..." : "Simpan Pengajuan"}

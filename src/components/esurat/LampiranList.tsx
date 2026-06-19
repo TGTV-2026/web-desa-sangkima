@@ -54,7 +54,7 @@ export default function LampiranList({
                   </span>
                   
                   <span className="text-xs font-semibold text-brass group-hover:underline underline-offset-2 shrink-0">
-                    Buka Lapangan ↗
+                    Lihat ↗
                   </span>
                 </a>
               ) : (

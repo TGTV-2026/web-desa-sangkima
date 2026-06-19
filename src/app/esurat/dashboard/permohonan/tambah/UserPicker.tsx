@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { isProfileComplete } from "@/server/types/user";
+import type { UserDTO } from "@/server/types/user";
 
-export interface PickedUser {
-  id: string;
-  name: string;
-  nik: string;
-  email: string;
-}
+export type PickedUser = UserDTO;
 
 interface UserPickerProps {
   value: PickedUser | null;
@@ -49,21 +47,41 @@ export default function UserPicker({ value, onChange }: UserPickerProps) {
   }, []);
 
   if (value) {
+    const complete = isProfileComplete(value);
     return (
-      <div className="flex items-center justify-between gap-3 input-doc !flex bg-paper2/30">
-        <div className="min-w-0">
-          <p className="font-semibold truncate">{value.name}</p>
-          <p className="font-mono text-xs text-inkmut truncate">
-            {value.nik} · {value.email}
-          </p>
+      <div>
+        <div className="flex items-center justify-between gap-3 input-doc !flex bg-paper2/30">
+          <div className="min-w-0">
+            <p className="font-semibold truncate">{value.name}</p>
+            <p className="font-mono text-xs text-inkmut truncate">
+              {value.nik} · {value.email}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="text-xs font-semibold text-brass hover:underline underline-offset-2 shrink-0"
+          >
+            Ganti
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => onChange(null)}
-          className="text-xs font-semibold text-brass hover:underline underline-offset-2 shrink-0"
-        >
-          Ganti
-        </button>
+
+        {!complete && (
+          <div className="bg-oxide/[0.05] border border-oxide/30 rounded-[4px] px-4 py-3 mt-2 flex items-center justify-between gap-3">
+            <p className="text-xs text-oxide">
+              Data profil warga ini belum lengkap. Pengajuan tidak bisa dibuat
+              sampai dilengkapi.
+            </p>
+            <Link
+              href={`/esurat/dashboard/pengguna/${value.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-semibold text-oxide hover:underline underline-offset-2 shrink-0"
+            >
+              Lengkapi →
+            </Link>
+          </div>
+        )}
       </div>
     );
   }

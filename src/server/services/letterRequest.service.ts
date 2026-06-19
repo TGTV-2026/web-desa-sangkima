@@ -7,6 +7,7 @@ import {
 } from "../repositories/letterRequest.repository";
 import { userRepository } from "../repositories/user.repository";
 import type { AuthUser } from "../middlewares/role.middleware";
+import { isProfileComplete, getMissingProfileFields } from "../types/user";
 import {
   createLetterRequestSchema,
   rejectLetterRequestSchema,
@@ -80,6 +81,11 @@ export const letterRequestService = {
       const requester = await userRepository.findById(data.userId);
       if (!requester || requester.deletedAt) {
         throw new Error("Pengguna pemohon tidak ditemukan");
+      }
+      if (!isProfileComplete(requester)) {
+        throw new Error(
+          `Data profil pemohon belum lengkap: ${getMissingProfileFields(requester).join(", ")}. Lengkapi dulu lewat menu Kelola Pengguna.`,
+        );
       }
       requesterId = data.userId;
     }

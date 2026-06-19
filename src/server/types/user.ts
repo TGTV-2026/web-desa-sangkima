@@ -129,15 +129,17 @@ export const PROFILE_REQUIRED_FIELDS = [
   "education",
 ] as const;
 
+type ProfileFields = Pick<UserDTO, (typeof PROFILE_REQUIRED_FIELDS)[number]>;
+
 /** Cek apakah semua field kependudukan sudah diisi. */
-export function isProfileComplete(user: UserDTO): boolean {
+export function isProfileComplete(user: ProfileFields): boolean {
   return PROFILE_REQUIRED_FIELDS.every(
     (field) => user[field] !== null && user[field] !== undefined,
   );
 }
 
 /** Daftar nama field yang masih kosong. */
-export function getMissingProfileFields(user: UserDTO): string[] {
+export function getMissingProfileFields(user: ProfileFields): string[] {
   const labels: Record<string, string> = {
     gender: "Jenis Kelamin",
     placeOfBirth: "Tempat Lahir",
