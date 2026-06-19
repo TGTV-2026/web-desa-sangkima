@@ -5,7 +5,10 @@
  *     tags:
  *       - Users
  *     summary: "📋 Daftar user (staff/admin)"
- *     description: Mengambil daftar user secara pagination. Untuk staff & admin (staff hanya untuk keperluan baca, mis. mencari pemohon).
+ *     description: |
+ *       Mengambil daftar user secara pagination. Untuk staff & admin.
+ *       Staff hanya melihat akun ber-role warga (filter `role` diabaikan & dipaksa `user`);
+ *       admin bebas melihat semua role dan boleh memakai parameter `role`.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -29,6 +32,12 @@
  *         description: Kata kunci pencarian (cocok dengan nama, email, atau NIK)
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: role
+ *         description: "Filter role (hanya berlaku untuk admin — staff selalu dipaksa `user`)"
+ *         schema:
+ *           type: string
+ *           enum: [user, staff, admin]
  *     responses:
  *       200:
  *         description: Daftar user dengan pagination
@@ -39,9 +48,11 @@
  *   post:
  *     tags:
  *       - Users
- *     summary: "➕ Tambah user baru (admin)"
+ *     summary: "➕ Tambah user baru (staff/admin)"
  *     description: |
- *       Admin menambah user baru beserta role dan jabatan.
+ *       Staff/admin menambah user baru. Staff hanya bisa membuat akun ber-role
+ *       warga (field `role` di body diabaikan & dipaksa `user`); admin bebas
+ *       memilih role.
  *       **Field wajib**: name, email, nik, password.
  *       **Field opsional**: semua field lainnya. Jika tidak diisi, nilainya null.
  *       Role default adalah `user` jika tidak diisi.
@@ -152,7 +163,7 @@
  *       401:
  *         description: Unauthorized — token tidak ada atau tidak valid
  *       403:
- *         description: Forbidden — hanya admin yang boleh menambah user
+ *         description: Forbidden — hanya staff/admin yang boleh menambah user
  */
 
 import { NextResponse } from "next/server";
@@ -163,17 +174,27 @@ import {
   handleACLError,
 } from "@/server/middlewares/acl.middleware";
 
+const ROLES = ["user", "staff", "admin"] as const;
+
 export async function GET(req: Request) {
   try {
-    // staff juga boleh membaca daftar untuk mencari pemohon saat input pengajuan manual
-    await requireRole(req, ["staff", "admin"]);
+    // staff juga boleh membaca daftar (untuk mencari pemohon saat input pengajuan manual
+    // & kelola akun warga), tapi dibatasi hanya melihat akun ber-role warga
+    const auth = await requireRole(req, ["staff", "admin"]);
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
     const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") ?? "10")));
     const q = searchParams.get("q") ?? undefined;
+    const roleParam = searchParams.get("role");
+    const role =
+      auth.role === "staff"
+        ? "user"
+        : roleParam && ROLES.includes(roleParam as (typeof ROLES)[number])
+          ? (roleParam as (typeof ROLES)[number])
+          : undefined;
 
-    const result = await userService.list(page, limit, q);
+    const result = await userService.list(page, limit, q, role);
 
     return NextResponse.json(
       { success: true, message: "Daftar user berhasil diambil", ...result },
@@ -190,9 +211,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    await requireRole(req, ["admin"]);
+    const auth = await requireRole(req, ["staff", "admin"]);
 
     const body = await req.json();
+    // staff hanya boleh menambah akun warga, walaupun body memuat role lain
+    if (auth.role === "staff") body.role = "user";
     const data = await userService.createByAdmin(body);
 
     return NextResponse.json(

@@ -216,19 +216,26 @@ export const userRepository = {
 
   // ─── Admin User Management ────────────────────────────────────────────────
 
-  async findAllPaginated(page: number, limit: number, search?: string) {
+  async findAllPaginated(
+    page: number,
+    limit: number,
+    search?: string,
+    role?: "user" | "staff" | "admin",
+  ) {
     const offset = (page - 1) * limit;
     const term = `%${search}%`;
-    const where = search
-      ? and(
-          isNull(users.deletedAt),
-          or(
-            like(users.name, term),
-            like(users.email, term),
-            like(users.nik, term),
-          ),
-        )
-      : isNull(users.deletedAt);
+    const conditions = [isNull(users.deletedAt)];
+    if (role) conditions.push(eq(users.role, role));
+    if (search) {
+      conditions.push(
+        or(
+          like(users.name, term),
+          like(users.email, term),
+          like(users.nik, term),
+        )!,
+      );
+    }
+    const where = and(...conditions);
 
     const [rows, countResult] = await Promise.all([
       db

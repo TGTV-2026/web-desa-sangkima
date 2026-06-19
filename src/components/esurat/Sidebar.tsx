@@ -68,11 +68,18 @@ function navForRole(role: Role): NavItem[] {
       { href: "/esurat/dashboard/profil", label: "Profil Saya", icon: ICONS.user },
     );
   } else {
-    items.push({
-      href: "/esurat/dashboard/permohonan",
-      label: "Permohonan",
-      icon: ICONS.inbox,
-    });
+    items.push(
+      {
+        href: "/esurat/dashboard/permohonan",
+        label: "Permohonan",
+        icon: ICONS.inbox,
+      },
+      {
+        href: "/esurat/dashboard/pengguna",
+        label: "Pengguna",
+        icon: ICONS.user,
+      },
+    );
   }
   if (role === "admin") {
     items.push(

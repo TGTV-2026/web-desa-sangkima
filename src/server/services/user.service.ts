@@ -42,6 +42,7 @@ export const userService = {
     page: number,
     limit: number,
     search?: string,
+    role?: "user" | "staff" | "admin",
   ): Promise<{ data: UserDTO[]; pagination: PaginationMeta }> {
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(100, Math.max(1, limit));
@@ -51,6 +52,7 @@ export const userService = {
       safePage,
       safeLimit,
       term,
+      role,
     );
 
     return {
