@@ -85,6 +85,9 @@ export const userService = {
       throw new Error(`${conflict} sudah digunakan`);
     }
 
+    // warga tidak boleh punya jabatan
+    if (data.role === "user") data.positionId = null;
+
     const passwordHash = await hashPassword(data.password);
     const row = await userRepository.createByAdmin({ ...data, passwordHash });
     if (!row) throw new Error("Gagal membuat user");
@@ -109,6 +112,17 @@ export const userService = {
 
     const { password, birthday, ...rest } = data;
     const updateData: Record<string, unknown> = { ...rest };
+
+    const finalRole = data.role ?? current.user.role;
+    const finalPositionId =
+      data.positionId !== undefined ? data.positionId : current.user.positionId;
+
+    // warga tidak boleh punya jabatan
+    if (finalRole === "user") updateData.positionId = null;
+    // staff wajib punya jabatan
+    if (finalRole === "staff" && !finalPositionId) {
+      throw new Error("Jabatan wajib diisi untuk role staff");
+    }
 
     if (password) {
       updateData.password = await hashPassword(password);

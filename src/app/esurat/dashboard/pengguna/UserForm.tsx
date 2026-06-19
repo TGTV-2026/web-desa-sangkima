@@ -75,6 +75,13 @@ export default function UserForm(props: Props) {
   const [education, setEducation] = useState(initial?.education ?? "");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const isWarga = role === "user";
+  const isStaff = role === "staff";
+
+  const handleRoleChange = (v: string) => {
+    setRole(v as typeof role);
+    if (v === "user") setPositionId(""); // warga tidak boleh punya jabatan
+  };
 
   const handleBlur = (field: string, value: string) =>
     setErrors((e) => ({ ...e, [field]: validateField(field, value, password) }));
@@ -91,6 +98,7 @@ export default function UserForm(props: Props) {
         props.mode === "create" && !confirmPassword
           ? "Konfirmasi password wajib diisi"
           : validateField("confirmPassword", confirmPassword, password),
+      positionId: isStaff && !positionId ? "Jabatan wajib diisi untuk role staff" : "",
     };
     setErrors(fieldErrors);
     if (Object.values(fieldErrors).some(Boolean)) return;
@@ -100,7 +108,7 @@ export default function UserForm(props: Props) {
       email,
       nik,
       role,
-      positionId: positionId || null,
+      positionId: isWarga ? null : positionId || null,
       religion: religion || null,
       address: address || null,
       birthday: birthday || null,
@@ -141,6 +149,7 @@ export default function UserForm(props: Props) {
       const message = err instanceof Error ? err.message : "";
       if (message.includes("Email")) setErrors((er) => ({ ...er, email: message }));
       if (message.includes("NIK")) setErrors((er) => ({ ...er, nik: message }));
+      if (message.includes("Jabatan")) setErrors((er) => ({ ...er, positionId: message }));
     });
   };
 
@@ -185,7 +194,7 @@ export default function UserForm(props: Props) {
         />
         <FormField
           id="role" label="Role" type="select" value={role}
-          onChange={(v) => setRole(v as typeof role)} required
+          onChange={handleRoleChange} required
           disabled={roleLocked}
           labelAction={
             roleLocked && (
@@ -201,8 +210,19 @@ export default function UserForm(props: Props) {
           ]}
         />
         <FormField
-          id="positionId" label="Jabatan" type="select" value={positionId}
-          onChange={setPositionId} optionalHint placeholder="— Tanpa jabatan —"
+          id="positionId" label="Jabatan" type="select" value={isWarga ? "" : positionId}
+          onChange={setPositionId}
+          optionalHint={!isStaff}
+          required={isStaff}
+          disabled={isWarga}
+          error={errors.positionId}
+          onBlur={() =>
+            setErrors((er) => ({
+              ...er,
+              positionId: isStaff && !positionId ? "Jabatan wajib diisi untuk role staff" : "",
+            }))
+          }
+          placeholder={isWarga ? "— Warga tidak punya jabatan —" : "— Tanpa jabatan —"}
           options={props.positions.map((p) => ({ value: p.id, label: p.name }))}
         />
         <FormField
