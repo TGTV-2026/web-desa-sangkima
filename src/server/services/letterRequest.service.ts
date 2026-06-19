@@ -16,6 +16,7 @@ import {
   normalizeRequiredFields,
   parseJsonColumn,
   type LetterAttachment,
+  type LetterLogDTO,
   type LetterRequestDTO,
   type LetterRequestData,
   type LetterStatus,
@@ -192,6 +193,19 @@ export const letterRequestService = {
       throw new Error("Anda tidak berhak melihat pengajuan ini");
     }
     return toDTO(row);
+  },
+
+  // Timeline riwayat status — dipanggil setelah getForActor() di halaman detail
+  // (kepemilikan sudah tervalidasi di sana, tidak diulang di sini)
+  async getLogs(id: string): Promise<LetterLogDTO[]> {
+    const logs = await letterRequestRepository.findLogs(id);
+    return logs.map((l) => ({
+      id: l.id,
+      status: l.status as LetterStatus,
+      note: l.note ?? null,
+      changedByName: l.changedByName ?? null,
+      createdAt: (l.createdAt ?? new Date()).toISOString(),
+    }));
   },
 
   // Operator menerima & memproses: DIAJUKAN -> DIPROSES

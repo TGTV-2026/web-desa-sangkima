@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, isNotNull, lt } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, isNotNull, lt } from "drizzle-orm";
 import { db } from "../db";
 import {
   letterRequestLogs,
@@ -111,6 +111,22 @@ export const letterRequestRepository = {
     changedBy: string;
   }) {
     await db.insert(letterRequestLogs).values(values);
+  },
+
+  // Riwayat perubahan status (timeline) untuk halaman detail
+  async findLogs(requestId: string) {
+    return db
+      .select({
+        id: letterRequestLogs.id,
+        status: letterRequestLogs.status,
+        note: letterRequestLogs.note,
+        changedByName: users.name,
+        createdAt: letterRequestLogs.createdAt,
+      })
+      .from(letterRequestLogs)
+      .leftJoin(users, eq(letterRequestLogs.changedBy, users.id))
+      .where(eq(letterRequestLogs.requestId, requestId))
+      .orderBy(asc(letterRequestLogs.createdAt));
   },
 
   // Hitung surat yang sudah disetujui dalam satu tahun (untuk nomor urut)

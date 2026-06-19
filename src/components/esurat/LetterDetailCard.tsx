@@ -3,10 +3,12 @@ import StatusBadge from "@/components/esurat/StatusBadge";
 import LampiranList from "@/components/esurat/LampiranList";
 import RejectionReasonAlert from "@/components/esurat/RejectionReasonAlert";
 import LetterMetaList from "@/components/esurat/LetterMetaList";
-import type { LetterRequestDTO } from "@/server/types/letter";
+import LetterTimeline from "@/components/esurat/LetterTimeline";
+import type { LetterLogDTO, LetterRequestDTO } from "@/server/types/letter";
 
 export interface LetterDetailCardProps {
   request: LetterRequestDTO;
+  logs: LetterLogDTO[];
   backHref: string;
   backLabel: string;
   showRequester?: boolean;
@@ -16,6 +18,7 @@ export interface LetterDetailCardProps {
 /** Shell halaman detail surat: tautan kembali, kartu kop+status, alasan tolak, metadata, lampiran, dan slot aksi. */
 export default function LetterDetailCard({
   request,
+  logs,
   backHref,
   backLabel,
   showRequester,
@@ -53,6 +56,8 @@ export default function LetterDetailCard({
         <LetterMetaList request={request} showRequester={showRequester} />
 
         <LampiranList requestId={request.id} attachments={request.attachments} />
+
+        <LetterTimeline logs={logs} />
 
         {children}
       </div>

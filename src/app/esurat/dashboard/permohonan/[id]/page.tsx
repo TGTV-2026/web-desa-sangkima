@@ -18,10 +18,12 @@ export default async function DetailPermohonanPage({ params }: PageProps) {
   } catch {
     notFound();
   }
+  const logs = await letterRequestService.getLogs(id);
 
   return (
     <LetterDetailCard
       request={surat}
+      logs={logs}
       backHref="/esurat/dashboard/permohonan"
       backLabel="Kembali ke Permohonan"
       showRequester

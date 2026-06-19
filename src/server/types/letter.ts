@@ -220,6 +220,15 @@ export type LetterRequestDTO = {
   approvedAt: string | null;
 };
 
+// Satu entri riwayat perubahan status (timeline) pengajuan
+export type LetterLogDTO = {
+  id: number;
+  status: LetterStatus;
+  note: string | null;
+  changedByName: string | null;
+  createdAt: string; // ISO string
+};
+
 // Hasil verifikasi publik via QR code (tanpa data pribadi sensitif)
 export type LetterVerificationDTO = {
   valid: boolean;
