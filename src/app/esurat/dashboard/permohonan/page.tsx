@@ -52,7 +52,6 @@ export default async function PermohonanPage({ searchParams }: PageProps) {
 
       <div className="flex items-start justify-between gap-3">
         <StatusFilterPills filters={filters} />
-        <LimitSelect value={limit} />
       </div>
 
       <div className="card-doc overflow-hidden rise-in" style={{ animationDelay: "120ms" }}>
@@ -69,17 +68,19 @@ export default async function PermohonanPage({ searchParams }: PageProps) {
           <PermohonanTable requests={requests} />
         )}
       </div>
-
-      <Pagination
-        pagination={pagination}
-        makeHref={(p) =>
-          `/esurat/dashboard/permohonan?${new URLSearchParams({
-            ...(status ? { status } : {}),
-            limit: String(limit),
-            page: String(p),
-          })}`
-        }
-      />
+      <div className="flex items-center justify-between gap-3 rise-in" style={{ animationDelay: "180ms" }}>
+        <LimitSelect value={limit} />
+        <Pagination
+          pagination={pagination}
+          makeHref={(p) =>
+            `/esurat/dashboard/permohonan?${new URLSearchParams({
+              ...(status ? { status } : {}),
+              limit: String(limit),
+              page: String(p),
+            })}`
+          }
+        />
+      </div>
     </div>
   );
 }

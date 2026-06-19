@@ -28,13 +28,19 @@ export default async function PenggunaPage({ searchParams }: PageProps) {
         title="Pengguna"
         description="Kelola akun warga, staff, dan admin."
         action={
-          <Link href="/esurat/dashboard/pengguna/tambah" className="btn-primary">
+          <Link
+            href="/esurat/dashboard/pengguna/tambah"
+            className="btn-primary"
+          >
             + Tambah Pengguna
           </Link>
         }
       />
 
-      <div className="flex items-center justify-between gap-3 mb-6 rise-in" style={{ animationDelay: "60ms" }}>
+      <div
+        className="flex items-center justify-between gap-3 mb-6 rise-in"
+        style={{ animationDelay: "60ms" }}
+      >
         <form method="GET">
           <input type="hidden" name="limit" value={limit} />
           <input
@@ -45,22 +51,27 @@ export default async function PenggunaPage({ searchParams }: PageProps) {
             className="input-doc max-w-sm"
           />
         </form>
-        <LimitSelect value={limit} />
       </div>
 
-      <div className="card-doc overflow-hidden rise-in" style={{ animationDelay: "120ms" }}>
+      <div
+        className="card-doc overflow-hidden rise-in"
+        style={{ animationDelay: "120ms" }}
+      >
         {users.length === 0 ? (
           <EmptyState
             title="Tidak ada pengguna"
             description={
-              q ? `Tidak ditemukan pengguna untuk "${q}".` : "Belum ada pengguna terdaftar."
+              q
+                ? `Tidak ditemukan pengguna untuk "${q}".`
+                : "Belum ada pengguna terdaftar."
             }
           />
         ) : (
           <PenggunaTable users={users} currentUserId={session.id} />
         )}
       </div>
-
+      <div className="flex items-center justify-between gap-3 rise-in" style={{ animationDelay: "180ms" }}>
+      <LimitSelect value={limit} />
       <Pagination
         pagination={pagination}
         makeHref={(p) =>
@@ -71,6 +82,7 @@ export default async function PenggunaPage({ searchParams }: PageProps) {
           })}`
         }
       />
+      </div>
     </div>
   );
 }
