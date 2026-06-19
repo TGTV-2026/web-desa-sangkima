@@ -1,4 +1,4 @@
-import { eq, or, and, gt, isNull, not, count, desc } from "drizzle-orm";
+import { eq, or, and, gt, isNull, not, count, desc, like } from "drizzle-orm";
 import { db } from "../db";
 import { users, userTokens, positions } from "../db/schema";
 import { TRegisterInput } from "../types/auth";
@@ -216,21 +216,30 @@ export const userRepository = {
 
   // ─── Admin User Management ────────────────────────────────────────────────
 
-  async findAllPaginated(page: number, limit: number) {
+  async findAllPaginated(page: number, limit: number, search?: string) {
     const offset = (page - 1) * limit;
+    const term = `%${search}%`;
+    const where = search
+      ? and(
+          isNull(users.deletedAt),
+          or(
+            like(users.name, term),
+            like(users.email, term),
+            like(users.nik, term),
+          ),
+        )
+      : isNull(users.deletedAt);
+
     const [rows, countResult] = await Promise.all([
       db
         .select({ user: users, positionName: positions.name })
         .from(users)
         .leftJoin(positions, eq(users.positionId, positions.id))
-        .where(isNull(users.deletedAt))
+        .where(where)
         .orderBy(desc(users.createdAt))
         .limit(limit)
         .offset(offset),
-      db
-        .select({ total: count() })
-        .from(users)
-        .where(isNull(users.deletedAt)),
+      db.select({ total: count() }).from(users).where(where),
     ]);
     return { rows, total: countResult[0]?.total ?? 0 };
   },

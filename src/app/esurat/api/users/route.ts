@@ -24,6 +24,11 @@
  *           default: 10
  *           minimum: 1
  *           maximum: 100
+ *       - in: query
+ *         name: q
+ *         description: Kata kunci pencarian (cocok dengan nama, email, atau NIK)
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: Daftar user dengan pagination
@@ -165,8 +170,9 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
     const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") ?? "10")));
+    const q = searchParams.get("q") ?? undefined;
 
-    const result = await userService.list(page, limit);
+    const result = await userService.list(page, limit, q);
 
     return NextResponse.json(
       { success: true, message: "Daftar user berhasil diambil", ...result },

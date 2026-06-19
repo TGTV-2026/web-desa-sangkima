@@ -155,9 +155,4 @@ export function getMissingProfileFields(user: UserDTO): string[] {
   ).map((field) => labels[field] ?? field);
 }
 
-export type PaginationMeta = {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-};
+export type { PaginationMeta } from "./pagination";
