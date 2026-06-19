@@ -18,6 +18,7 @@ import {
   type LetterStatus,
   type LetterVerificationDTO,
 } from "../types/letter";
+import type { PaginationMeta } from "../types/pagination";
 import { formatLetterNumber } from "../utils/letter-number";
 import { generateLetterPdf } from "./pdf.service";
 
@@ -107,6 +108,29 @@ export const letterRequestService = {
   async listAll(status?: LetterStatus): Promise<LetterRequestDTO[]> {
     const rows = await letterRequestRepository.findAll(status);
     return rows.map(toDTO);
+  },
+
+  async listAllPaginated(
+    status: LetterStatus | undefined,
+    page: number,
+    limit: number,
+  ): Promise<{ data: LetterRequestDTO[]; pagination: PaginationMeta }> {
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(100, Math.max(1, limit));
+    const { rows, total } = await letterRequestRepository.findAllPaginated(
+      status,
+      safePage,
+      safeLimit,
+    );
+    return {
+      data: rows.map(toDTO),
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    };
   },
 
   // Detail; warga hanya boleh melihat miliknya sendiri

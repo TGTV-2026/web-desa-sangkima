@@ -70,11 +70,18 @@ function navForRole(role: Role): NavItem[] {
     });
   }
   if (role === "admin") {
-    items.push({
-      href: "/esurat/dashboard/jenis-surat",
-      label: "Jenis Surat",
-      icon: ICONS.tag,
-    });
+    items.push(
+      {
+        href: "/esurat/dashboard/jenis-surat",
+        label: "Jenis Surat",
+        icon: ICONS.tag,
+      },
+      {
+        href: "/esurat/dashboard/pengguna",
+        label: "Pengguna",
+        icon: ICONS.user,
+      },
+    );
   }
   return items;
 }

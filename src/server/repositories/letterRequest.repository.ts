@@ -82,6 +82,24 @@ export const letterRequestRepository = {
     return q.orderBy(desc(letterRequests.createdAt));
   },
 
+  async findAllPaginated(status: LetterStatus | undefined, page: number, limit: number) {
+    const offset = (page - 1) * limit;
+    const where = status ? eq(letterRequests.status, status) : undefined;
+
+    const [rows, countResult] = await Promise.all([
+      joinedQuery()
+        .where(where)
+        .orderBy(desc(letterRequests.createdAt))
+        .limit(limit)
+        .offset(offset),
+      db
+        .select({ total: count() })
+        .from(letterRequests)
+        .where(where),
+    ]);
+    return { rows, total: countResult[0]?.total ?? 0 };
+  },
+
   async update(id: string, values: Partial<typeof letterRequests.$inferInsert>) {
     await db.update(letterRequests).set(values).where(eq(letterRequests.id, id));
   },

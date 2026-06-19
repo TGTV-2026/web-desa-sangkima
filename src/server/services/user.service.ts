@@ -41,13 +41,16 @@ export const userService = {
   async list(
     page: number,
     limit: number,
+    search?: string,
   ): Promise<{ data: UserDTO[]; pagination: PaginationMeta }> {
     const safePage = Math.max(1, page);
     const safeLimit = Math.min(100, Math.max(1, limit));
+    const term = search?.trim() || undefined;
 
     const { rows, total } = await userRepository.findAllPaginated(
       safePage,
       safeLimit,
+      term,
     );
 
     return {

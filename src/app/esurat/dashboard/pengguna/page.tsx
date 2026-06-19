@@ -1,0 +1,76 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import PageHeader from "@/components/esurat/PageHeader";
+import EmptyState from "@/components/esurat/EmptyState";
+import Pagination from "@/components/esurat/Pagination";
+import LimitSelect from "@/components/esurat/LimitSelect";
+import { getSessionUser } from "@/server/utils/session";
+import { userService } from "@/server/services/user.service";
+import PenggunaTable from "./PenggunaTable";
+
+type PageProps = { searchParams: Promise<{ q?: string; page?: string; limit?: string }> };
+
+export default async function PenggunaPage({ searchParams }: PageProps) {
+  const session = await getSessionUser();
+  if (!session) redirect("/esurat");
+  if (session.role !== "admin") redirect("/esurat/dashboard");
+
+  const { q, page: pageParam, limit: limitParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const limit = Math.min(100, Math.max(1, Number(limitParam) || 10));
+
+  const { data: users, pagination } = await userService.list(page, limit, q);
+
+  return (
+    <div>
+      <PageHeader
+        overline="Manajemen Akun"
+        title="Pengguna"
+        description="Kelola akun warga, staff, dan admin."
+        action={
+          <Link href="/esurat/dashboard/pengguna/tambah" className="btn-primary">
+            + Tambah Pengguna
+          </Link>
+        }
+      />
+
+      <div className="flex items-center justify-between gap-3 mb-6 rise-in" style={{ animationDelay: "60ms" }}>
+        <form method="GET">
+          <input type="hidden" name="limit" value={limit} />
+          <input
+            type="text"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="Cari nama, email, atau NIK..."
+            className="input-doc max-w-sm"
+          />
+        </form>
+        <LimitSelect value={limit} />
+      </div>
+
+      <div className="card-doc overflow-hidden rise-in" style={{ animationDelay: "120ms" }}>
+        {users.length === 0 ? (
+          <EmptyState
+            title="Tidak ada pengguna"
+            description={
+              q ? `Tidak ditemukan pengguna untuk "${q}".` : "Belum ada pengguna terdaftar."
+            }
+          />
+        ) : (
+          <PenggunaTable users={users} currentUserId={session.id} />
+        )}
+      </div>
+
+      <Pagination
+        pagination={pagination}
+        makeHref={(p) =>
+          `/esurat/dashboard/pengguna?${new URLSearchParams({
+            ...(q ? { q } : {}),
+            limit: String(limit),
+            page: String(p),
+          })}`
+        }
+      />
+    </div>
+  );
+}
