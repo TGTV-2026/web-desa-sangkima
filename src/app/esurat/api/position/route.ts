@@ -30,7 +30,8 @@
  *             properties:
  *               category:
  *                 type: string
- *                 example: "Pemerintahan"
+ *                 enum: [Staff, "Kepala Urusan", "Kepala Seksi", "Sekretaris Desa", "Wakil Kepala Desa", "Kepala Desa"]
+ *                 example: "Kepala Urusan"
  *               name:
  *                 type: string
  *                 example: "Kepala Desa"
@@ -77,7 +78,8 @@
  *             properties:
  *               category:
  *                 type: string
- *                 example: "Pemerintahan"
+ *                 enum: [Staff, "Kepala Urusan", "Kepala Seksi", "Sekretaris Desa", "Wakil Kepala Desa", "Kepala Desa"]
+ *                 example: "Kepala Urusan"
  *               name:
  *                 type: string
  *                 example: "Kepala Desa"

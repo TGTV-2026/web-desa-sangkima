@@ -5,18 +5,18 @@ import { useRouter } from "next/navigation";
 import { useSubmitAction } from "@/hooks/useSubmitAction";
 import ConfirmModal from "@/components/esurat/ConfirmModal";
 
-export default function DeleteUserButton({ id, name }: { id: string; name: string }) {
+export default function DeletePosisiButton({ id, name }: { id: string; name: string }) {
   const router = useRouter();
   const { busy, submit } = useSubmitAction();
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleDelete = () =>
-    submit(() => fetch(`/esurat/api/users/${id}`, { method: "DELETE" }), {
-      successMessage: `${name} berhasil dihapus.`,
+    submit(() => fetch(`/esurat/api/position/${id}`, { method: "DELETE" }), {
+      successMessage: `Jabatan "${name}" berhasil dihapus.`,
       successTitle: "Terhapus",
-      errorFallback: "Gagal menghapus pengguna",
+      errorFallback: "Gagal menghapus jabatan",
       onSuccess: () => {
-        router.push("/esurat/dashboard/pengguna");
+        setShowConfirm(false);
         router.refresh();
       },
     }).catch(() => {});
@@ -32,8 +32,8 @@ export default function DeleteUserButton({ id, name }: { id: string; name: strin
 
       <ConfirmModal
         isOpen={showConfirm}
-        title="Hapus Pengguna"
-        message={`Hapus pengguna "${name}"? Akun ini tidak akan bisa login lagi.`}
+        title="Hapus Jabatan"
+        message={`Hapus jabatan "${name}"? Pengguna yang masih memakai jabatan ini akan kehilangan jabatannya (tidak ikut terhapus).`}
         confirmLabel="Hapus"
         busy={busy}
         onConfirm={handleDelete}

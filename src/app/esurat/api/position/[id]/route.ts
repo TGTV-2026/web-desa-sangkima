@@ -40,6 +40,7 @@
  *             properties:
  *               category:
  *                 type: string
+ *                 enum: [Staff, "Kepala Urusan", "Kepala Seksi", "Sekretaris Desa", "Wakil Kepala Desa", "Kepala Desa"]
  *               name:
  *                 type: string
  *     responses:
@@ -57,7 +58,9 @@
  *     tags:
  *       - Position
  *     summary: "🚫 Hapus jabatan (admin)"
- *     description: Menghapus jabatan permanen.
+ *     description: |
+ *       Menghapus jabatan permanen. Pengguna yang masih memakai jabatan ini
+ *       akan otomatis di-set `positionId` menjadi `null` (tidak ikut terhapus).
  *     security:
  *       - BearerAuth: []
  *     parameters:

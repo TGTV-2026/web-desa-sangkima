@@ -4,6 +4,7 @@ import {
   updatePositionSchema,
   type PositionDTO,
 } from "../types/position";
+import type { PaginationMeta } from "../types/pagination";
 
 // Bentuk baris dari database -> DTO yang dikirim ke frontend
 type PositionRow = NonNullable<
@@ -13,7 +14,8 @@ type PositionRow = NonNullable<
 function toDTO(row: PositionRow): PositionDTO {
   return {
     id: row.id,
-    category: row.category,
+    // kolom DB tetap varchar (lihat db/schema/positions.ts), Zod yang menjamin nilainya valid saat ditulis
+    category: row.category as PositionDTO["category"],
     name: row.name,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -24,6 +26,31 @@ export const positionService = {
   async list(): Promise<PositionDTO[]> {
     const rows = await positionRepository.findAll();
     return rows.map(toDTO);
+  },
+
+  async listPaginated(
+    page: number,
+    limit: number,
+    search?: string,
+  ): Promise<{ data: PositionDTO[]; pagination: PaginationMeta }> {
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(100, Math.max(1, limit));
+    const term = search?.trim() || undefined;
+
+    const { rows, total } = await positionRepository.findAllPaginated(
+      safePage,
+      safeLimit,
+      term,
+    );
+    return {
+      data: rows.map(toDTO),
+      pagination: {
+        page: safePage,
+        limit: safeLimit,
+        total,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    };
   },
 
   async getById(id: string): Promise<PositionDTO> {
