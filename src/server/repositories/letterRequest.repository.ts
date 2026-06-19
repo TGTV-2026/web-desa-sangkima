@@ -1,4 +1,3 @@
-import { createId } from "@paralleldrive/cuid2";
 import { and, count, desc, eq, gte, isNotNull, lt } from "drizzle-orm";
 import { db } from "../db";
 import {
@@ -16,6 +15,7 @@ const detailSelect = {
   requesterNik: users.nik,
   typeCode: letterTypes.code,
   typeName: letterTypes.name,
+  typeRequiredFields: letterTypes.requiredFields,
 };
 
 function joinedQuery() {
@@ -32,6 +32,7 @@ export type LetterRequestJoinedRow = Awaited<
 >[number];
 
 type CreateValues = {
+  id: string;
   userId: string;
   letterTypeId: string;
   purpose: string;
@@ -41,9 +42,8 @@ type CreateValues = {
 
 export const letterRequestRepository = {
   async create(values: CreateValues) {
-    const id = createId();
     await db.insert(letterRequests).values({
-      id,
+      id: values.id,
       userId: values.userId,
       letterTypeId: values.letterTypeId,
       purpose: values.purpose,
@@ -51,7 +51,7 @@ export const letterRequestRepository = {
       attachments: values.attachments,
       status: "DIAJUKAN",
     });
-    return id;
+    return values.id;
   },
 
   async findById(id: string) {

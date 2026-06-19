@@ -13,8 +13,10 @@ import {
   processLetterRequestSchema,
   approveLetterRequestSchema,
   normalizeRequiredFields,
+  parseJsonColumn,
   type LetterAttachment,
   type LetterRequestDTO,
+  type LetterRequestData,
   type LetterStatus,
   type LetterVerificationDTO,
 } from "../types/letter";
@@ -28,8 +30,8 @@ function toDTO(row: LetterRequestJoinedRow): LetterRequestDTO {
     id: r.id,
     status: r.status as LetterStatus,
     purpose: r.purpose,
-    data: r.data ?? null,
-    attachments: (r.attachments ?? []).map((a) => ({
+    data: parseJsonColumn<LetterRequestData | null>(r.data, null),
+    attachments: parseJsonColumn<LetterAttachment[]>(r.attachments, []).map((a) => ({
       name: a.name,
       mime: a.mime,
       size: a.size,
@@ -38,7 +40,12 @@ function toDTO(row: LetterRequestJoinedRow): LetterRequestDTO {
     rejectionReason: r.rejectionReason ?? null,
     verificationCode: r.verificationCode ?? null,
     requester: { id: r.userId, name: row.requesterName, nik: row.requesterNik },
-    letterType: { id: r.letterTypeId, code: row.typeCode, name: row.typeName },
+    letterType: {
+      id: r.letterTypeId,
+      code: row.typeCode,
+      name: row.typeName,
+      requiredFields: normalizeRequiredFields(row.typeRequiredFields),
+    },
     createdAt: (r.createdAt ?? new Date()).toISOString(),
     approvedAt: r.approvedAt ? r.approvedAt.toISOString() : null,
   };
@@ -63,8 +70,19 @@ export const letterRequestService = {
     actor: AuthUser,
     input: unknown,
     attachments: LetterAttachment[] = [],
+    requestId: string,
   ): Promise<LetterRequestDTO> {
     const data = createLetterRequestSchema.parse(input);
+
+    // staff/admin boleh mengajukan atas nama warga lain (mis. warga datang langsung ke kantor desa)
+    let requesterId = actor.id;
+    if (actor.role !== "user" && data.userId) {
+      const requester = await userRepository.findById(data.userId);
+      if (!requester || requester.deletedAt) {
+        throw new Error("Pengguna pemohon tidak ditemukan");
+      }
+      requesterId = data.userId;
+    }
 
     const type = await letterTypeRepository.findById(data.letterTypeId);
     if (!type) throw new Error("Jenis surat tidak ditemukan");
@@ -81,7 +99,8 @@ export const letterRequestService = {
     }
 
     const id = await letterRequestRepository.create({
-      userId: actor.id,
+      id: requestId,
+      userId: requesterId,
       letterTypeId: data.letterTypeId,
       purpose: data.purpose,
       data: data.data ?? null,
@@ -321,7 +340,7 @@ export const letterRequestService = {
         job: user?.job ?? null,
       },
       purpose: row.request.purpose,
-      data: row.request.data ?? null,
+      data: parseJsonColumn<LetterRequestData | null>(row.request.data, null),
       appUrl,
     });
   },

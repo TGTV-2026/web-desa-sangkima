@@ -22,7 +22,7 @@
  *   post:
  *     tags:
  *       - E-Surat - Pengajuan
- *     summary: "➕ Ajukan surat (warga)"
+ *     summary: "➕ Ajukan surat (warga, atau staff/admin atas nama warga)"
  *     security:
  *       - BearerAuth: []
  *     requestBody:
@@ -41,6 +41,9 @@
  *               data:
  *                 type: object
  *                 description: Jawaban field tambahan sesuai jenis surat
+ *               userId:
+ *                 type: string
+ *                 description: "Opsional — hanya berlaku untuk staff/admin, untuk mengajukan atas nama warga lain"
  *     responses:
  *       201:
  *         description: Pengajuan berhasil dibuat
@@ -52,6 +55,7 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { createId } from "@paralleldrive/cuid2";
 import { letterRequestService } from "@/server/services/letterRequest.service";
 import {
   requireRole,
@@ -79,10 +83,12 @@ async function parseCreateBody(req: Request): Promise<{
 
   const fd = await req.formData();
   const rawData = fd.get("data");
+  const rawUserId = fd.get("userId");
   const body = {
     letterTypeId: fd.get("letterTypeId"),
     purpose: fd.get("purpose"),
     data: typeof rawData === "string" && rawData ? JSON.parse(rawData) : undefined,
+    userId: typeof rawUserId === "string" && rawUserId ? rawUserId : undefined,
   };
 
   const files: IncomingFile[] = [];
@@ -132,15 +138,16 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const requestId = createId();
   let saved: Awaited<ReturnType<typeof saveAttachments>> = [];
   try {
     const auth = await requireRole(req, ["user", "staff", "admin"]);
 
     const { body, files } = await parseCreateBody(req);
     validateAttachments(files);
-    saved = await saveAttachments(files);
+    saved = await saveAttachments(files, requestId);
 
-    const data = await letterRequestService.create(auth, body, saved);
+    const data = await letterRequestService.create(auth, body, saved, requestId);
 
     return NextResponse.json(
       { success: true, message: "Pengajuan surat berhasil dibuat", data },
@@ -148,7 +155,7 @@ export async function POST(req: Request) {
     );
   } catch (error: any) {
     // rollback file yang terlanjur tersimpan bila pengajuan gagal dibuat
-    if (saved.length > 0) await deleteAttachments(saved);
+    if (saved.length > 0) await deleteAttachments(requestId);
     if (error.name === "ACLError") return handleACLError(error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -2,7 +2,10 @@ import { formatTanggalWaktu } from "@/lib/format";
 import type { LetterRequestDTO } from "@/server/types/letter";
 
 export interface LetterMetaListProps {
-  request: Pick<LetterRequestDTO, "requester" | "purpose" | "data" | "createdAt" | "approvedAt">;
+  request: Pick<
+    LetterRequestDTO,
+    "requester" | "purpose" | "data" | "letterType" | "createdAt" | "approvedAt"
+  >;
   showRequester?: boolean;
 }
 
@@ -32,13 +35,12 @@ export default function LetterMetaList({ request, showRequester }: LetterMetaLis
       <MetaRow label="Keperluan" value={request.purpose} />
 
       {request.data &&
-        Object.entries(request.data).map(([k, v]) => (
-          <MetaRow
-            key={k}
-            label={k.replace(/([A-Z])/g, " $1").toLowerCase()}
-            value={String(v ?? "-")}
-          />
-        ))}
+        Object.entries(request.data).map(([k, v]) => {
+          const label =
+            request.letterType.requiredFields.find((f) => f.name === k)?.label ??
+            k.replace(/([A-Z])/g, " $1").toLowerCase();
+          return <MetaRow key={k} label={label} value={String(v ?? "-")} />;
+        })}
 
       <MetaRow label="Diajukan" value={formatTanggalWaktu(request.createdAt)} />
 

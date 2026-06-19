@@ -4,8 +4,8 @@
  *   get:
  *     tags:
  *       - Users
- *     summary: "📋 Daftar user (admin)"
- *     description: Mengambil daftar user secara pagination. Hanya untuk admin.
+ *     summary: "📋 Daftar user (staff/admin)"
+ *     description: Mengambil daftar user secara pagination. Untuk staff & admin (staff hanya untuk keperluan baca, mis. mencari pemohon).
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -35,7 +35,7 @@
  *       401:
  *         description: Unauthorized — token tidak ada atau tidak valid
  *       403:
- *         description: Forbidden — hanya admin yang boleh mengakses
+ *         description: Forbidden — hanya staff/admin yang boleh mengakses
  *   post:
  *     tags:
  *       - Users
@@ -165,7 +165,8 @@ import {
 
 export async function GET(req: Request) {
   try {
-    await requireRole(req, ["admin"]);
+    // staff juga boleh membaca daftar untuk mencari pemohon saat input pengajuan manual
+    await requireRole(req, ["staff", "admin"]);
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") ?? "1"));
