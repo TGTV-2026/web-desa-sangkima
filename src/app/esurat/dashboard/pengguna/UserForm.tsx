@@ -39,12 +39,13 @@ function validateField(field: string, value: string, password?: string): string 
 
 type Props =
   | { mode: "create"; positions: PositionDTO[] }
-  | { mode: "edit"; positions: PositionDTO[]; user: UserDTO };
+  | { mode: "edit"; positions: PositionDTO[]; user: UserDTO; currentUserId: string };
 
 export default function UserForm(props: Props) {
   const router = useRouter();
   const { busy, submit } = useSubmitAction();
   const initial = props.mode === "edit" ? props.user : undefined;
+  const isSelf = props.mode === "edit" && props.currentUserId === props.user.id;
 
   const [name, setName] = useState(initial?.name ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
@@ -178,6 +179,14 @@ export default function UserForm(props: Props) {
         <FormField
           id="role" label="Role" type="select" value={role}
           onChange={(v) => setRole(v as typeof role)} required
+          disabled={isSelf}
+          labelAction={
+            isSelf && (
+              <span className="text-[10px] font-normal normal-case tracking-normal text-inkmut/60 italic">
+                Tidak bisa ubah role sendiri
+              </span>
+            )
+          }
           options={[
             { value: "user", label: "Warga" },
             { value: "staff", label: "Staff" },

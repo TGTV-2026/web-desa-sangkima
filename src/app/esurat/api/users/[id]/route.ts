@@ -212,10 +212,12 @@ export async function GET(req: Request, { params }: RouteContext) {
 
 export async function PUT(req: Request, { params }: RouteContext) {
   try {
-    await requireRole(req, ["admin"]);
+    const auth = await requireRole(req, ["admin"]);
 
     const { id } = await params;
     const body = await req.json();
+    // admin tidak boleh mengubah role akun sendiri (cegah self-demote/escalate tak sengaja)
+    if (auth.id === id) delete body.role;
     const data = await userService.update(id, body);
 
     return NextResponse.json(

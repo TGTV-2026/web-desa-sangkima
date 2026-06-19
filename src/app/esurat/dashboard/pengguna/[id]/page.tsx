@@ -27,7 +27,7 @@ export default async function EditPenggunaPage({ params }: PageProps) {
       <PageHeader breadcrumb={{ parent: "Pengguna", current: user.name }} title="Edit Pengguna" />
 
       <div className="card-doc rise-in max-w-2xl" style={{ animationDelay: "100ms" }}>
-        <UserForm mode="edit" user={user} positions={positions} />
+        <UserForm mode="edit" user={user} positions={positions} currentUserId={session.id} />
       </div>
     </div>
   );

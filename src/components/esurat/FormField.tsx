@@ -24,6 +24,7 @@ export interface FormFieldProps {
   error?: string;
   placeholder?: string;
   required?: boolean;
+  disabled?: boolean;
   optionalHint?: boolean;
   options?: FormFieldOption[];
   rows?: number;
@@ -44,6 +45,7 @@ export default function FormField({
   error,
   placeholder,
   required,
+  disabled,
   optionalHint,
   options,
   rows = 3,
@@ -53,7 +55,7 @@ export default function FormField({
   labelClassName = "",
   inputClassName = "",
 }: FormFieldProps) {
-  const sharedClassName = `input-doc ${error ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""} ${inputClassName}`;
+  const sharedClassName = `input-doc ${error ? "!border-oxide focus:!border-oxide focus:!ring-oxide/15" : ""} ${disabled ? "opacity-60 cursor-not-allowed bg-paper2/40" : ""} ${inputClassName}`;
 
   return (
     <div>
@@ -88,6 +90,7 @@ export default function FormField({
           onBlur={onBlur}
           placeholder={placeholder}
           required={required}
+          disabled={disabled}
           rows={rows}
           className={sharedClassName}
         />
@@ -98,6 +101,7 @@ export default function FormField({
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
           required={required}
+          disabled={disabled}
           className={sharedClassName}
         >
           {placeholder && (
@@ -120,6 +124,7 @@ export default function FormField({
           onBlur={onBlur}
           placeholder={placeholder}
           required={required}
+          disabled={disabled}
           maxLength={maxLength}
           autoComplete={autoComplete}
           className={sharedClassName}
