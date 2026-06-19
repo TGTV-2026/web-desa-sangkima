@@ -104,7 +104,8 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
     const { id } = await params;
     const body = await req.json();
-    const data = await letterRequestService.changeStatus(auth, id, body);
+    const appUrl = new URL(req.url).origin;
+    const data = await letterRequestService.changeStatus(auth, id, body, appUrl);
 
     return NextResponse.json(
       { success: true, message: "Status pengajuan diperbarui", data },

@@ -23,7 +23,7 @@ import {
 } from "../types/letter";
 import type { PaginationMeta } from "../types/pagination";
 import { formatLetterNumber } from "../utils/letter-number";
-import { generateLetterPdf } from "./pdf.service";
+import { generateLetterPdf, savePdf, readPdf } from "./pdf.service";
 
 function toDTO(row: LetterRequestJoinedRow): LetterRequestDTO {
   const r = row.request;
@@ -63,6 +63,33 @@ async function getRowOrThrow(id: string) {
   const row = await letterRequestRepository.findById(id);
   if (!row) throw new Error("Pengajuan surat tidak ditemukan");
   return row;
+}
+
+// Render PDF dari data SAAT INI (dipanggil sekali saat approve, lalu hasilnya
+// disimpan ke disk lewat pdfPath supaya tidak ikut berubah kalau profil
+// warga diedit belakangan).
+async function renderPdf(row: LetterRequestJoinedRow, appUrl: string): Promise<Uint8Array> {
+  const user = await userRepository.findById(row.request.userId);
+  const type = await letterTypeRepository.findById(row.request.letterTypeId);
+
+  return generateLetterPdf({
+    letterNumber: row.request.letterNumber ?? "-",
+    verificationCode: row.request.verificationCode ?? "",
+    approvedAt: row.request.approvedAt ?? new Date(),
+    template: type?.template ?? null,
+    letterTypeName: row.typeName,
+    requester: {
+      name: row.requesterName,
+      nik: row.requesterNik,
+      address: user?.address ?? null,
+      placeOfBirth: user?.placeOfBirth ?? null,
+      birthday: user?.birthday ?? null,
+      job: user?.job ?? null,
+    },
+    purpose: row.request.purpose,
+    data: parseJsonColumn<LetterRequestData | null>(row.request.data, null),
+    appUrl,
+  });
 }
 
 export const letterRequestService = {
@@ -198,6 +225,7 @@ export const letterRequestService = {
     actor: AuthUser,
     id: string,
     input: unknown,
+    appUrl: string,
   ): Promise<LetterRequestDTO> {
     if (actor.role !== "admin") {
       throw new Error("Hanya kepala desa (admin) yang boleh menyetujui surat");
@@ -237,6 +265,13 @@ export const letterRequestService = {
       note: note ?? null,
       changedBy: actor.id,
     });
+
+    // terbitkan PDF sekali saat ini juga, supaya isinya jadi snapshot tetap
+    const approvedRow = await getRowOrThrow(id);
+    const pdf = await renderPdf(approvedRow, appUrl);
+    const pdfPath = await savePdf(id, pdf);
+    await letterRequestRepository.update(id, { pdfPath });
+
     return toDTO(await getRowOrThrow(id));
   },
 
@@ -328,27 +363,15 @@ export const letterRequestService = {
       throw new Error("Surat belum disetujui, PDF belum bisa dibuat");
     }
 
-    const user = await userRepository.findById(row.request.userId);
-    const type = await letterTypeRepository.findById(row.request.letterTypeId);
-
-    return generateLetterPdf({
-      letterNumber: row.request.letterNumber ?? "-",
-      verificationCode: row.request.verificationCode ?? "",
-      approvedAt: row.request.approvedAt ?? new Date(),
-      template: type?.template ?? null,
-      letterTypeName: row.typeName,
-      requester: {
-        name: row.requesterName,
-        nik: row.requesterNik,
-        address: user?.address ?? null,
-        placeOfBirth: user?.placeOfBirth ?? null,
-        birthday: user?.birthday ?? null,
-        job: user?.job ?? null,
-      },
-      purpose: row.request.purpose,
-      data: parseJsonColumn<LetterRequestData | null>(row.request.data, null),
-      appUrl,
-    });
+    // surat normalnya sudah punya PDF tersimpan sejak di-approve (snapshot data
+    // saat itu); fallback render+simpan di sini hanya untuk surat lama sebelum fitur ini ada
+    if (row.request.pdfPath) {
+      const stored = await readPdf(id);
+      if (stored) return stored;
+    }
+    const pdf = await renderPdf(row, appUrl);
+    await letterRequestRepository.update(id, { pdfPath: await savePdf(id, pdf) });
+    return pdf;
   },
 
   // Dispatcher aksi petugas dari satu endpoint PATCH
@@ -356,6 +379,7 @@ export const letterRequestService = {
     actor: AuthUser,
     id: string,
     input: unknown,
+    appUrl: string,
   ): Promise<LetterRequestDTO> {
     const { action } = z
       .object({
@@ -367,7 +391,7 @@ export const letterRequestService = {
       case "process":
         return this.process(actor, id, input);
       case "approve":
-        return this.approve(actor, id, input);
+        return this.approve(actor, id, input, appUrl);
       case "reject":
         return this.reject(actor, id, input);
       case "complete":

@@ -3,6 +3,25 @@ import path from "node:path";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import QRCode from "qrcode";
 
+// PDF surat disimpan sekali saat DISETUJUI agar isinya tidak ikut berubah
+// kalau data warga (alamat, pekerjaan, dst.) diedit belakangan.
+const PDF_DIR = path.join(process.cwd(), "uploads", "surat");
+
+export async function savePdf(requestId: string, bytes: Uint8Array): Promise<string> {
+  await fs.promises.mkdir(PDF_DIR, { recursive: true });
+  const fileName = `${requestId}.pdf`;
+  await fs.promises.writeFile(path.join(PDF_DIR, fileName), bytes);
+  return fileName;
+}
+
+export async function readPdf(requestId: string): Promise<Buffer | null> {
+  try {
+    return await fs.promises.readFile(path.join(PDF_DIR, `${requestId}.pdf`));
+  } catch {
+    return null;
+  }
+}
+
 const MONTHS_ID = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
