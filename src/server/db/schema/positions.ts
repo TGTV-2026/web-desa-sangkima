@@ -5,6 +5,17 @@ import {
     varchar,
 } from "drizzle-orm/mysql-core";
 
+// Daftar kategori jabatan ditegakkan di aplikasi (Zod) saja, bukan di kolom DB
+// — kolom tetap varchar supaya tidak perlu migration tiap kali daftar berubah.
+export const positionCategories = [
+    "Staff",
+    "Kepala Urusan",
+    "Kepala Seksi",
+    "Sekretaris Desa",
+    "Wakil Kepala Desa",
+    "Kepala Desa",
+] as const;
+
 export const positions = mysqlTable("positions", {
     id: varchar({ length: 128 })
         .primaryKey()

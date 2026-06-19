@@ -105,7 +105,7 @@ export default function FormField({
           className={sharedClassName}
         >
           {placeholder && (
-            <option value="" disabled>
+            <option value="" disabled={required}>
               {placeholder}
             </option>
           )}

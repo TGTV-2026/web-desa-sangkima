@@ -12,6 +12,7 @@ interface ConfirmModalProps {
   onCancel: () => void;
 }
 
+/** Modal konfirmasi generik (mis. untuk aksi hapus), dipakai lintas halaman dashboard. */
 export default function ConfirmModal({
   isOpen,
   title,
