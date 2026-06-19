@@ -1,5 +1,4 @@
-import { createId } from "@paralleldrive/cuid2";
-import { and, count, desc, eq, gte, isNotNull, lt } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, isNotNull, lt } from "drizzle-orm";
 import { db } from "../db";
 import {
   letterRequestLogs,
@@ -16,6 +15,7 @@ const detailSelect = {
   requesterNik: users.nik,
   typeCode: letterTypes.code,
   typeName: letterTypes.name,
+  typeRequiredFields: letterTypes.requiredFields,
 };
 
 function joinedQuery() {
@@ -32,6 +32,7 @@ export type LetterRequestJoinedRow = Awaited<
 >[number];
 
 type CreateValues = {
+  id: string;
   userId: string;
   letterTypeId: string;
   purpose: string;
@@ -41,9 +42,8 @@ type CreateValues = {
 
 export const letterRequestRepository = {
   async create(values: CreateValues) {
-    const id = createId();
     await db.insert(letterRequests).values({
-      id,
+      id: values.id,
       userId: values.userId,
       letterTypeId: values.letterTypeId,
       purpose: values.purpose,
@@ -51,7 +51,7 @@ export const letterRequestRepository = {
       attachments: values.attachments,
       status: "DIAJUKAN",
     });
-    return id;
+    return values.id;
   },
 
   async findById(id: string) {
@@ -111,6 +111,22 @@ export const letterRequestRepository = {
     changedBy: string;
   }) {
     await db.insert(letterRequestLogs).values(values);
+  },
+
+  // Riwayat perubahan status (timeline) untuk halaman detail
+  async findLogs(requestId: string) {
+    return db
+      .select({
+        id: letterRequestLogs.id,
+        status: letterRequestLogs.status,
+        note: letterRequestLogs.note,
+        changedByName: users.name,
+        createdAt: letterRequestLogs.createdAt,
+      })
+      .from(letterRequestLogs)
+      .leftJoin(users, eq(letterRequestLogs.changedBy, users.id))
+      .where(eq(letterRequestLogs.requestId, requestId))
+      .orderBy(asc(letterRequestLogs.createdAt));
   },
 
   // Hitung surat yang sudah disetujui dalam satu tahun (untuk nomor urut)

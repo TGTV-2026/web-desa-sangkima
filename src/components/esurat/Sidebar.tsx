@@ -67,15 +67,28 @@ function navForRole(role: Role): NavItem[] {
       { href: "/esurat/dashboard/surat", label: "Surat Saya", icon: ICONS.doc },
       { href: "/esurat/dashboard/profil", label: "Profil Saya", icon: ICONS.user },
     );
-  } else {
-    items.push({
-      href: "/esurat/dashboard/permohonan",
-      label: "Permohonan",
-      icon: ICONS.inbox,
-    });
+  }
+  if( role === "staff") {
+    items.push(
+      {
+        href: "/esurat/dashboard/permohonan",
+        label: "Permohonan",
+        icon: ICONS.inbox,
+      },
+      {
+        href: "/esurat/dashboard/pengguna",
+        label: "Pengguna",
+        icon: ICONS.user,
+      },
+    );
   }
   if (role === "admin") {
     items.push(
+      {
+        href: "/esurat/dashboard/permohonan",
+        label: "Permohonan",
+        icon: ICONS.inbox,
+      },
       {
         href: "/esurat/dashboard/jenis-surat",
         label: "Jenis Surat",

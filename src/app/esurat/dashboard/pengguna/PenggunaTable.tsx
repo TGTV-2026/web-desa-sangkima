@@ -7,6 +7,7 @@ import DeleteUserButton from "./DeleteUserButton";
 export interface PenggunaTableProps {
   users: UserDTO[];
   currentUserId: string;
+  canDelete: boolean;
 }
 
 const ROLE_CLASSES: Record<UserDTO["role"], string> = {
@@ -21,7 +22,7 @@ const ROLE_LABEL: Record<UserDTO["role"], string> = {
   user: "Warga",
 };
 
-export default function PenggunaTable({ users, currentUserId }: PenggunaTableProps) {
+export default function PenggunaTable({ users, currentUserId, canDelete }: PenggunaTableProps) {
   const columns: DataTableColumn<UserDTO>[] = [
     {
       header: "Nama",
@@ -60,7 +61,7 @@ export default function PenggunaTable({ users, currentUserId }: PenggunaTablePro
           >
             Edit
           </Link>
-          {u.id !== currentUserId && <DeleteUserButton id={u.id} name={u.name} />}
+          {canDelete && u.id !== currentUserId && <DeleteUserButton id={u.id} name={u.name} />}
         </div>
       ),
     },

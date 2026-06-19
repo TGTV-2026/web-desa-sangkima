@@ -13,20 +13,26 @@ type PageProps = { searchParams: Promise<{ q?: string; page?: string; limit?: st
 export default async function PenggunaPage({ searchParams }: PageProps) {
   const session = await getSessionUser();
   if (!session) redirect("/esurat");
-  if (session.role !== "admin") redirect("/esurat/dashboard");
+  if (session.role !== "staff" && session.role !== "admin") redirect("/esurat/dashboard");
+  const isStaff = session.role === "staff";
 
   const { q, page: pageParam, limit: limitParam } = await searchParams;
   const page = Math.max(1, Number(pageParam) || 1);
   const limit = Math.min(100, Math.max(1, Number(limitParam) || 10));
 
-  const { data: users, pagination } = await userService.list(page, limit, q);
+  const { data: users, pagination } = await userService.list(
+    page,
+    limit,
+    q,
+    isStaff ? "user" : undefined,
+  );
 
   return (
     <div>
       <PageHeader
         overline="Manajemen Akun"
         title="Pengguna"
-        description="Kelola akun warga, staff, dan admin."
+        description={isStaff ? "Kelola akun warga." : "Kelola akun warga, staff, dan admin."}
         action={
           <Link
             href="/esurat/dashboard/pengguna/tambah"
@@ -67,7 +73,7 @@ export default async function PenggunaPage({ searchParams }: PageProps) {
             }
           />
         ) : (
-          <PenggunaTable users={users} currentUserId={session.id} />
+          <PenggunaTable users={users} currentUserId={session.id} canDelete={!isStaff} />
         )}
       </div>
       <div className="flex items-center justify-between gap-3 rise-in" style={{ animationDelay: "180ms" }}>

@@ -2,7 +2,7 @@ import { letterTypeRepository } from "../repositories/letterType.repository";
 import {
   createLetterTypeSchema,
   updateLetterTypeSchema,
-  type LetterFieldDef,
+  normalizeRequiredFields,
   type LetterTypeDTO,
 } from "../types/letter";
 
@@ -10,21 +10,6 @@ import {
 type LetterTypeRow = NonNullable<
   Awaited<ReturnType<typeof letterTypeRepository.findById>>
 >;
-
-// Kolom JSON MySQL kadang dikembalikan driver sebagai string (bukan array
-// hasil parse), jadi normalisasi di sini agar requiredFields selalu array.
-function normalizeRequiredFields(value: unknown): LetterFieldDef[] {
-  if (Array.isArray(value)) return value as LetterFieldDef[];
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? (parsed as LetterFieldDef[]) : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
 
 function toDTO(row: LetterTypeRow): LetterTypeDTO {
   return {

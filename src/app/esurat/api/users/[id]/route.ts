@@ -4,8 +4,10 @@
  *   get:
  *     tags:
  *       - Users
- *     summary: "👤 Detail user"
- *     description: Mengambil detail satu user berdasarkan ID. Hanya untuk admin.
+ *     summary: "👤 Detail user (staff/admin)"
+ *     description: |
+ *       Mengambil detail satu user berdasarkan ID. Staff hanya boleh mengakses
+ *       akun ber-role warga; admin boleh mengakses semua role.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -22,18 +24,20 @@
  *       401:
  *         description: Unauthorized — token tidak ada atau tidak valid
  *       403:
- *         description: Forbidden — hanya admin yang boleh mengakses
+ *         description: Forbidden — hanya staff/admin yang boleh mengakses, atau staff mencoba mengakses akun non-warga
  *       404:
  *         description: User tidak ditemukan atau sudah dihapus
  *   put:
  *     tags:
  *       - Users
- *     summary: "✏️ Edit user (admin)"
+ *     summary: "✏️ Edit user (staff/admin)"
  *     description: |
  *       Mengubah data user. **Semua field opsional** — kirim hanya field yang ingin diubah.
  *       Minimal satu field harus diisi. Untuk menghapus nilai field nullable, kirim `null`.
  *       Jika `password` diisi, akan di-hash ulang sebelum disimpan.
  *       Jika `email` atau `nik` diubah, sistem akan mengecek keunikannya.
+ *       Staff hanya boleh mengedit akun ber-role warga, dan field `role` di
+ *       body akan selalu diabaikan untuk staff (role tetap warga).
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -148,7 +152,7 @@
  *       401:
  *         description: Unauthorized — token tidak ada atau tidak valid
  *       403:
- *         description: Forbidden — hanya admin yang boleh mengedit user
+ *         description: Forbidden — hanya staff/admin yang boleh mengedit user, atau staff mencoba mengedit akun non-warga
  *       404:
  *         description: User tidak ditemukan atau sudah dihapus
  *   delete:
@@ -192,10 +196,18 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(req: Request, { params }: RouteContext) {
   try {
-    await requireRole(req, ["admin"]);
+    const auth = await requireRole(req, ["staff", "admin"]);
 
     const { id } = await params;
     const data = await userService.getById(id);
+
+    // staff hanya boleh mengakses akun warga
+    if (auth.role === "staff" && data.role !== "user") {
+      return NextResponse.json(
+        { success: false, message: "Anda tidak berhak mengakses data ini" },
+        { status: 403 },
+      );
+    }
 
     return NextResponse.json(
       { success: true, message: "Detail user berhasil diambil", data },
@@ -212,10 +224,22 @@ export async function GET(req: Request, { params }: RouteContext) {
 
 export async function PUT(req: Request, { params }: RouteContext) {
   try {
-    const auth = await requireRole(req, ["admin"]);
+    const auth = await requireRole(req, ["staff", "admin"]);
 
     const { id } = await params;
     const body = await req.json();
+
+    if (auth.role === "staff") {
+      // staff hanya boleh mengedit akun warga, dan tidak pernah boleh ubah role
+      const target = await userService.getById(id).catch(() => null);
+      if (!target || target.role !== "user") {
+        return NextResponse.json(
+          { success: false, message: "Anda tidak berhak mengedit akun ini" },
+          { status: 403 },
+        );
+      }
+      delete body.role;
+    }
     // admin tidak boleh mengubah role akun sendiri (cegah self-demote/escalate tak sengaja)
     if (auth.id === id) delete body.role;
     const data = await userService.update(id, body);

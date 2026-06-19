@@ -17,12 +17,14 @@ export default async function DetailSuratPage({ params }: PageProps) {
   } catch {
     notFound();
   }
+  const logs = await letterRequestService.getLogs(id);
 
   const bisaUnduh = surat.status === "DISETUJUI" || surat.status === "SELESAI";
 
   return (
     <LetterDetailCard
       request={surat}
+      logs={logs}
       backHref="/esurat/dashboard/surat"
       backLabel="Kembali ke Surat Saya"
     >

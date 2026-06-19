@@ -29,22 +29,26 @@ export default function PreviewModal({ isOpen, onClose, fileUrl, fileName }: Pre
   /* 🔑 KUNCI TOTAL: Menggunakan React Portal untuk melempar komponen ini 
       keluar dari kurungan layout box bapaknya, langsung dipindah ke bawah tag <body> utama */
   return createPortal(
-    <div className="fixed !inset-0 !top-0 !left-0 !right-0 !bottom-0 z-[9999] flex items-center justify-center bg-black/50 overflow-hidden antialiased select-none w-screen h-screen">
-      
-      {/* 📄 BOX PUTIH RAKSASA FULL SATU LAYAR MONITOR UTAMA */}
-      <div className="bg-white w-screen h-screen flex flex-col overflow-hidden">
-        
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 sm:p-8 antialiased select-none"
+      onClick={onClose}
+    >
+      {/* Box modal — dibatasi ukurannya, backdrop tetap terlihat di sekelilingnya */}
+      <div
+        className="bg-white w-full max-w-2xl max-h-[85vh] rounded-lg shadow-xl flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* HEADER MODAL */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white shrink-0">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white shrink-0">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Pratinjau Lampiran Berkas</p>
-            <h3 className="font-sans text-sm font-bold text-gray-800 truncate mt-0.5 max-w-xs sm:max-w-xl">
+            <h3 className="font-sans text-sm font-bold text-gray-800 truncate mt-0.5 max-w-xs sm:max-w-md">
               {fileName}
             </h3>
           </div>
-          
-          {/* Tombol Tutup (✕) Pojok Kanan Atas Monitor */}
-          <button 
+
+          {/* Tombol Tutup (✕) */}
+          <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-xl font-medium cursor-pointer transition-colors p-2 leading-none"
             title="Tutup"
@@ -53,16 +57,15 @@ export default function PreviewModal({ isOpen, onClose, fileUrl, fileName }: Pre
           </button>
         </div>
 
-        {/* 🖼️ AREA GAMBAR BESAR: Memenuhi Seluruh Sisa Ruang Monitor */}
-        <div className="flex-1 w-full bg-white p-6 flex items-center justify-center overflow-auto">
+        {/* AREA GAMBAR */}
+        <div className="flex-1 w-full bg-white p-4 flex items-center justify-center overflow-auto">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img 
-            src={fileUrl} 
-            alt={fileName} 
-            className="max-w-full max-h-[82vh] object-contain select-none bg-white drop-shadow-sm"
+          <img
+            src={fileUrl}
+            alt={fileName}
+            className="max-w-full max-h-[70vh] object-contain select-none bg-white drop-shadow-sm"
           />
         </div>
-
       </div>
     </div>,
     document.body // 🚀 Dilempar langsung menempel di body browser!

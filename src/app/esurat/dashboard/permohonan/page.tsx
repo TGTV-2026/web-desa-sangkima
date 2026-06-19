@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import PageHeader from "@/components/esurat/PageHeader";
 import StatusFilterPills from "@/components/esurat/StatusFilterPills";
@@ -48,6 +49,11 @@ export default async function PermohonanPage({ searchParams }: PageProps) {
         overline="Buku Agenda"
         title="Permohonan Surat"
         description="Kelola pengajuan surat dari warga."
+        action={
+          <Link href="/esurat/dashboard/permohonan/tambah" className="btn-primary">
+            + Tambah Pengajuan
+          </Link>
+        }
       />
 
       <div className="flex items-start justify-between gap-3">

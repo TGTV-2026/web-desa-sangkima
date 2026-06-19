@@ -13,8 +13,10 @@ export const ALLOWED_ATTACHMENT_TYPES: Record<string, string> = {
 };
 
 // Disimpan DI LUAR public/ supaya tidak bisa diakses tanpa login —
-// file dilayani lewat endpoint berotentikasi /api/letter-requests/{id}/lampiran/{i}
-const UPLOAD_DIR = path.join(process.cwd(), "uploads", "lampiran");
+// file dilayani lewat endpoint berotentikasi /api/letter-requests/{id}/lampiran/{i}.
+// Tiap pengajuan punya sub-folder sendiri (by id) agar lampiran antar pengajuan tidak tercampur.
+const UPLOAD_BASE_DIR = path.join(process.cwd(), "uploads", "lampiran");
+const requestDir = (requestId: string) => path.join(UPLOAD_BASE_DIR, requestId);
 
 export type IncomingFile = {
   name: string;
@@ -47,15 +49,17 @@ function sanitizeName(name: string) {
 
 export async function saveAttachments(
   files: IncomingFile[],
+  requestId: string,
 ): Promise<LetterAttachment[]> {
   if (files.length === 0) return [];
-  await fs.mkdir(UPLOAD_DIR, { recursive: true });
+  const dir = requestDir(requestId);
+  await fs.mkdir(dir, { recursive: true });
 
   const saved: LetterAttachment[] = [];
   for (const f of files) {
     const ext = ALLOWED_ATTACHMENT_TYPES[f.mime];
     const storedName = `${createId()}.${ext}`;
-    await fs.writeFile(path.join(UPLOAD_DIR, storedName), f.buffer);
+    await fs.writeFile(path.join(dir, storedName), f.buffer);
     saved.push({
       name: sanitizeName(f.name),
       storedName,
@@ -66,19 +70,18 @@ export async function saveAttachments(
   return saved;
 }
 
-/** Hapus file fisik (dipakai saat rollback bila pembuatan pengajuan gagal). */
-export async function deleteAttachments(attachments: LetterAttachment[]) {
-  await Promise.all(
-    attachments.map((a) =>
-      fs.unlink(path.join(UPLOAD_DIR, a.storedName)).catch(() => {}),
-    ),
-  );
+/** Hapus seluruh folder lampiran pengajuan (dipakai saat rollback bila pembuatan pengajuan gagal). */
+export async function deleteAttachments(requestId: string) {
+  await fs.rm(requestDir(requestId), { recursive: true, force: true });
 }
 
-export async function readAttachment(storedName: string): Promise<Buffer | null> {
+export async function readAttachment(
+  requestId: string,
+  storedName: string,
+): Promise<Buffer | null> {
   try {
     // basename mencegah path traversal
-    return await fs.readFile(path.join(UPLOAD_DIR, path.basename(storedName)));
+    return await fs.readFile(path.join(requestDir(requestId), path.basename(storedName)));
   } catch {
     return null;
   }

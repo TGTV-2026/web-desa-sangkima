@@ -5,31 +5,36 @@ import { religions, maritalStatus, educations } from "../db/schema/users";
 /* Schemas    */
 /* ---------- */
 
-export const createUserByAdminSchema = z.object({
-  name: z.string().min(3, "Nama minimal 3 karakter"),
-  email: z.string().email("Format email tidak valid"),
-  nik: z
-    .string()
-    .length(16, "NIK harus tepat 16 digit angka")
-    .regex(/^\d+$/, "NIK hanya boleh berisi angka"),
-  password: z.string().min(8, "Password minimal 8 karakter"),
-  role: z.enum(["user", "staff", "admin"]).default("user"),
-  positionId: z.string().optional().nullable(),
-  religion: z.enum(religions).optional().nullable(),
-  address: z.string().optional().nullable(),
-  birthday: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD")
-    .optional()
-    .nullable(),
-  placeOfBirth: z.string().optional().nullable(),
-  job: z.string().optional().nullable(),
-  gender: z.enum(["L", "P"]).optional().nullable(),
-  telp: z.string().optional().nullable(),
-  citizenship: z.enum(["wni", "wna"]).optional().nullable(),
-  status: z.enum(maritalStatus).optional().nullable(),
-  education: z.enum(educations).optional().nullable(),
-});
+export const createUserByAdminSchema = z
+  .object({
+    name: z.string().min(3, "Nama minimal 3 karakter"),
+    email: z.string().email("Format email tidak valid"),
+    nik: z
+      .string()
+      .length(16, "NIK harus tepat 16 digit angka")
+      .regex(/^\d+$/, "NIK hanya boleh berisi angka"),
+    password: z.string().min(8, "Password minimal 8 karakter"),
+    role: z.enum(["user", "staff", "admin"]).default("user"),
+    positionId: z.string().optional().nullable(),
+    religion: z.enum(religions).optional().nullable(),
+    address: z.string().optional().nullable(),
+    birthday: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD")
+      .optional()
+      .nullable(),
+    placeOfBirth: z.string().optional().nullable(),
+    job: z.string().optional().nullable(),
+    gender: z.enum(["L", "P"]).optional().nullable(),
+    telp: z.string().optional().nullable(),
+    citizenship: z.enum(["wni", "wna"]).optional().nullable(),
+    status: z.enum(maritalStatus).optional().nullable(),
+    education: z.enum(educations).optional().nullable(),
+  })
+  .refine((data) => data.role !== "staff" || !!data.positionId, {
+    message: "Jabatan wajib diisi untuk role staff",
+    path: ["positionId"],
+  });
 
 export const updateUserSchema = z
   .object({
@@ -129,15 +134,17 @@ export const PROFILE_REQUIRED_FIELDS = [
   "education",
 ] as const;
 
+type ProfileFields = Pick<UserDTO, (typeof PROFILE_REQUIRED_FIELDS)[number]>;
+
 /** Cek apakah semua field kependudukan sudah diisi. */
-export function isProfileComplete(user: UserDTO): boolean {
+export function isProfileComplete(user: ProfileFields): boolean {
   return PROFILE_REQUIRED_FIELDS.every(
     (field) => user[field] !== null && user[field] !== undefined,
   );
 }
 
 /** Daftar nama field yang masih kosong. */
-export function getMissingProfileFields(user: UserDTO): string[] {
+export function getMissingProfileFields(user: ProfileFields): string[] {
   const labels: Record<string, string> = {
     gender: "Jenis Kelamin",
     placeOfBirth: "Tempat Lahir",

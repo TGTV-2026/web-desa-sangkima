@@ -36,6 +36,7 @@ import {
 } from "@/server/middlewares/acl.middleware";
 import { letterRequestRepository } from "@/server/repositories/letterRequest.repository";
 import { readAttachment } from "@/server/utils/upload";
+import { parseJsonColumn, type LetterAttachment } from "@/server/types/letter";
 
 type RouteContext = { params: Promise<{ id: string; index: string }> };
 
@@ -58,7 +59,7 @@ export async function GET(req: Request, { params }: RouteContext) {
       );
     }
 
-    const attachments = row.request.attachments ?? [];
+    const attachments = parseJsonColumn<LetterAttachment[]>(row.request.attachments, []);
     const att = attachments[Number(index)];
     if (!att) {
       return Response.json(
@@ -67,7 +68,7 @@ export async function GET(req: Request, { params }: RouteContext) {
       );
     }
 
-    const file = await readAttachment(att.storedName);
+    const file = await readAttachment(id, att.storedName);
     if (!file) {
       return Response.json(
         { success: false, message: "File lampiran tidak ditemukan di server" },

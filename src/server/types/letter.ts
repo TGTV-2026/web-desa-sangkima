@@ -75,19 +75,21 @@ export const letterFieldDefSchema = z.object({
 export type LetterFieldDef = z.infer<typeof letterFieldDefSchema>;
 
 
-// Kolom JSON MySQL kadang dikembalikan driver sebagai string (bukan array hasil
-// parse). Normalisasi agar konsumen selalu menerima array LetterFieldDef.
-export function normalizeRequiredFields(value: unknown): LetterFieldDef[] {
-  if (Array.isArray(value)) return value as LetterFieldDef[];
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? (parsed as LetterFieldDef[]) : [];
-    } catch {
-      return [];
-    }
+// Kolom JSON MySQL kadang dikembalikan driver mysql2 sebagai string mentah
+// (bukan hasil parse). Normalisasi di satu tempat ini dipakai tiap kali baca
+// kolom json() dari Drizzle (requiredFields, data, attachments).
+export function parseJsonColumn<T>(value: unknown, fallback: T): T {
+  if (typeof value !== "string") return (value as T) ?? fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
   }
-  return [];
+}
+
+export function normalizeRequiredFields(value: unknown): LetterFieldDef[] {
+  const parsed = parseJsonColumn<unknown>(value, []);
+  return Array.isArray(parsed) ? (parsed as LetterFieldDef[]) : [];
 }
 
 // Nilai jawaban field tambahan dari warga
@@ -146,6 +148,8 @@ export const createLetterRequestSchema = z.object({
   data: z
     .record(z.string(), z.union([z.string(), z.number(), z.null()]))
     .optional(),
+  // hanya dipakai staff/admin saat mengajukan atas nama warga; diabaikan untuk role "user"
+  userId: z.string().min(1).optional(),
 });
 
 export type TCreateLetterRequestInput = z.infer<
@@ -211,9 +215,18 @@ export type LetterRequestDTO = {
   rejectionReason: string | null;
   verificationCode: string | null;
   requester: RequesterDTO;
-  letterType: Pick<LetterTypeDTO, "id" | "code" | "name">;
+  letterType: Pick<LetterTypeDTO, "id" | "code" | "name" | "requiredFields">;
   createdAt: string; // ISO string
   approvedAt: string | null;
+};
+
+// Satu entri riwayat perubahan status (timeline) pengajuan
+export type LetterLogDTO = {
+  id: number;
+  status: LetterStatus;
+  note: string | null;
+  changedByName: string | null;
+  createdAt: string; // ISO string
 };
 
 // Hasil verifikasi publik via QR code (tanpa data pribadi sensitif)

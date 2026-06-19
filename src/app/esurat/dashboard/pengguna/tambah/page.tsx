@@ -7,7 +7,7 @@ import UserForm from "../UserForm";
 export default async function TambahPenggunaPage() {
   const session = await getSessionUser();
   if (!session) redirect("/esurat");
-  if (session.role !== "admin") redirect("/esurat/dashboard");
+  if (session.role !== "staff" && session.role !== "admin") redirect("/esurat/dashboard");
 
   const positions = await positionService.list();
 
@@ -19,7 +19,11 @@ export default async function TambahPenggunaPage() {
       />
 
       <div className="card-doc rise-in max-w-2xl" style={{ animationDelay: "100ms" }}>
-        <UserForm mode="create" positions={positions} />
+        <UserForm
+          mode="create"
+          positions={positions}
+          lockRoleToUser={session.role === "staff"}
+        />
       </div>
     </div>
   );

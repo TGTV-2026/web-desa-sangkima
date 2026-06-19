@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 import { useSubmitAction } from "@/hooks/useSubmitAction";
 import FormField from "@/components/esurat/FormField";
 import FileDropzone, { formatSize } from "@/components/esurat/FileDropzone";
-import type { LetterTypeDTO } from "@/server/types/letter";
 import DynamicLetterFields from "@/components/esurat/DynamicLetterFields";
+import type { LetterTypeDTO } from "@/server/types/letter";
+import { isProfileComplete } from "@/server/types/user";
+import UserPicker, { type PickedUser } from "./UserPicker";
 
 const MAX_FILES = 3;
 const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 
-export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
+export default function TambahPengajuanForm({ types }: { types: LetterTypeDTO[] }) {
   const router = useRouter();
   const { busy: submitting, submit } = useSubmitAction();
 
+  const [requester, setRequester] = useState<PickedUser | null>(null);
   const [typeId, setTypeId] = useState("");
   const [purpose, setPurpose] = useState("");
   const [data, setData] = useState<Record<string, string>>({});
@@ -24,13 +27,14 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
     () => types.find((t) => t.id === typeId),
     [types, typeId],
   );
+  const requesterReady = !!requester && isProfileComplete(requester);
 
   const setField = (name: string, value: string) =>
     setData((d) => ({ ...d, [name]: value }));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selected) return;
+    if (!requesterReady || !requester || !selected) return;
 
     const payload: Record<string, string | number> = {};
     for (const f of selected.requiredFields) {
@@ -40,6 +44,7 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
     }
 
     const fd = new FormData();
+    fd.append("userId", requester.id);
     fd.append("letterTypeId", selected.id);
     fd.append("purpose", purpose);
     fd.append("data", JSON.stringify(payload));
@@ -48,14 +53,14 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
     await submit(
       () => fetch("/esurat/api/letter-requests", { method: "POST", body: fd }),
       {
-        successMessage: "Permohonan surat Anda berhasil dikirim ke server administrasi desa.",
-        successTitle: "Pengajuan Terkirim",
-        errorTitle: "Sistem Bermasalah",
-        errorFallback: "Gagal mengajukan surat",
+        successMessage: `Pengajuan atas nama ${requester.name} berhasil dibuat.`,
+        successTitle: "Pengajuan Tersimpan",
+        errorTitle: "Gagal Membuat Pengajuan",
+        errorFallback: "Gagal membuat pengajuan",
         extractErrorMessage: (json) =>
           json.errors && (Object.values(json.errors).flat()[0] as string | undefined),
         onSuccess: () => {
-          router.push("/esurat/dashboard/surat");
+          router.push("/esurat/dashboard/permohonan");
           router.refresh();
         },
       },
@@ -63,13 +68,30 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="card-doc p-5 sm:p-7 md:p-8 bg-paper border border-line/70 rounded-sm shadow-sm flex flex-col gap-6 text-ink">
+    <form onSubmit={handleSubmit} className="card-doc p-5 sm:p-7 md:p-8 flex flex-col gap-6">
+      {/* SECTION 0: PEMOHON */}
+      <div className="flex flex-col gap-2">
+        <label className="label-doc">Pemohon</label>
+        <UserPicker value={requester} onChange={setRequester} />
+        <p className="text-xs text-inkmut">
+          Belum terdaftar?{" "}
+          <a
+            href="/esurat/dashboard/pengguna/tambah"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-brass font-semibold hover:underline underline-offset-2"
+          >
+            Tambah pengguna baru
+          </a>{" "}
+          di tab baru, lalu cari lagi di sini.
+        </p>
+      </div>
 
       {/* SECTION 1: KLASIFIKASI SURAT */}
-      <div className="flex flex-col gap-4">
+      <div className="border-t border-line/50 pt-5 flex flex-col gap-4">
         <FormField
           id="jenis"
-          label="Pilih Jenis Surat Resmi"
+          label="Pilih Jenis Surat"
           type="select"
           value={typeId}
           onChange={(val) => {
@@ -77,20 +99,19 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
             setData({});
           }}
           required
-          placeholder="— Klik untuk memilih dokumen —"
+          disabled={!requester}
+          placeholder="— Pilih jenis surat —"
           options={types.map((t) => ({ value: t.id, label: `${t.name} (${t.code})` }))}
-          labelClassName="text-xs font-bold tracking-wider text-pine-900"
-          inputClassName="mt-1.5 bg-white transition-all focus:border-pine-900 focus:ring-1 focus:ring-pine-900"
         />
 
         {selected?.description && (
-          <div className="bg-paper2/40 border-l-2 border-brass px-4 py-3 text-xs leading-relaxed text-inkmut rounded-sm animate-fade-in">
+          <div className="bg-paper2/40 border-l-2 border-brass px-4 py-3 text-xs leading-relaxed text-inkmut rounded-sm">
             <span className="font-semibold text-ink">Deskripsi Layanan:</span> {selected.description}
           </div>
         )}
       </div>
 
-      {/* SECTION 2: INTENSI / KEPERLUAN */}
+      {/* SECTION 2: KEPERLUAN */}
       <div className="border-t border-line/50 pt-5">
         <FormField
           id="purpose"
@@ -98,15 +119,14 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
           type="textarea"
           value={purpose}
           onChange={setPurpose}
-          placeholder="Tulis alasan pengajuan, misal: Pemenuhan berkas administrasi pendaftaran beasiswa daerah"
+          placeholder="mis. Pemenuhan berkas administrasi pendaftaran beasiswa daerah"
           required
+          disabled={!requester}
           rows={3}
-          labelClassName="text-xs font-bold tracking-wider text-pine-900"
-          inputClassName="mt-1.5 bg-white transition-all focus:border-pine-900"
         />
       </div>
 
-      {/* SECTION 3: FORM DINAMIS (DATA TAMBAHAN) */}
+      {/* SECTION 3: FIELD DINAMIS */}
       {selected && (
         <DynamicLetterFields
           letterTypeCode={selected.code}
@@ -116,9 +136,9 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
         />
       )}
 
-      {/* SECTION 4: UNGGAH BERKAS (PREMIUM DROP ZONE) */}
+      {/* SECTION 4: LAMPIRAN */}
       <div className="border-t border-line pt-5">
-        <p className="label-doc text-xs font-bold tracking-wider text-pine-900">
+        <p className="label-doc">
           Dokumen Lampiran Pendukung
           <span className="normal-case tracking-normal font-normal text-inkmut/60 italic ml-1">(opsional)</span>
         </p>
@@ -127,18 +147,17 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
           onChange={setFiles}
           maxFiles={MAX_FILES}
           maxSizeBytes={MAX_SIZE}
-          helperText={`Unggah berkas pembuktian (Scan KTP/KK/Surat Pengantar RT) jika diminta. Maksimal ${MAX_FILES} file, batas ukuran ${formatSize(MAX_SIZE)} per data, format resmi: PDF, JPG, atau PNG.`}
+          helperText={`Maksimal ${MAX_FILES} file, batas ukuran ${formatSize(MAX_SIZE)} per data, format: PDF, JPG, atau PNG.`}
         />
       </div>
 
-      {/* SUBMIT BUTTON */}
       <div className="pt-2">
         <button
           type="submit"
-          disabled={submitting || !typeId}
-          className="btn-primary w-full shadow-sm py-3 px-4 font-bold tracking-wide uppercase text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={submitting || !requesterReady || !typeId}
+          className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {submitting ? "Mentransmisikan Dokumen..." : "Kirim Dokumen Pengajuan"}
+          {submitting ? "Menyimpan..." : "Simpan Pengajuan"}
         </button>
       </div>
     </form>
