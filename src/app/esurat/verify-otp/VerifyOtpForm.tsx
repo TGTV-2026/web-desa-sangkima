@@ -138,11 +138,15 @@ export default function VerifyOtpForm({ userId, email }: VerifyOtpFormProps) {
             kode tersebut di bawah ini.
           </>
         }
+        animated
+        compact
       />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-8">
-        {/* Box Input OTP */}
-        <div className="flex justify-between gap-2">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-4 md:gap-6 lg:gap-8 w-full"
+      >
+        <div className="flex justify-between gap-1.5 sm:gap-2 w-full">
           {otp.map((data, index) => (
             <input
               key={index}
@@ -154,7 +158,7 @@ export default function VerifyOtpForm({ userId, email }: VerifyOtpFormProps) {
               onChange={(e) => handleChange(e.target, index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               onFocus={(e) => e.target.select()}
-              className="w-full h-14 sm:h-16 text-center text-2xl font-serif font-bold bg-white border border-line rounded-sm focus:border-pine-900 focus:ring-1 focus:ring-pine-900 outline-none transition-all"
+              className="w-full h-12 sm:h-14 lg:h-16 text-center text-xl sm:text-2xl font-serif font-bold bg-white border border-line rounded-sm focus:border-pine-900 focus:ring-1 focus:ring-pine-900 outline-none transition-all"
             />
           ))}
         </div>
@@ -162,13 +166,15 @@ export default function VerifyOtpForm({ userId, email }: VerifyOtpFormProps) {
         <button
           type="submit"
           disabled={isLoading || otp.includes("")}
-          className="btn-primary"
+          className="btn-primary mt-1 md:mt-2 py-2.5 md:py-3.5 text-[15px] md:text-[16px] font-semibold w-full"
         >
           {isLoading ? "Memverifikasi..." : "Verifikasi Sekarang"}
         </button>
 
         <div className="text-center">
-          <p className="text-xs text-inkmut mb-2">Tidak menerima kode?</p>
+          <p className="text-xs text-inkmut mb-1.5 md:mb-2">
+            Tidak menerima kode?
+          </p>
           <button
             type="button"
             onClick={handleResend}
@@ -187,10 +193,10 @@ export default function VerifyOtpForm({ userId, email }: VerifyOtpFormProps) {
           </button>
         </div>
 
-        <div className="border-t border-line pt-6 text-center">
+        <div className="border-t border-line pt-3 md:pt-6 text-center w-full">
           <a
             href="/esurat/register"
-            className="text-xs font-semibold text-inkmut hover:text-pine-900"
+            className="font-semibold text-brass hover:underline underline-offset-2 text-[15px] md:text-[16px]"
           >
             ← Kembali ke pendaftaran
           </a>

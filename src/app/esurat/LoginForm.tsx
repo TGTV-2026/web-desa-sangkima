@@ -77,17 +77,20 @@ export default function LoginForm() {
         </>
       }
       brandDescription="Layanan administrasi surat-menyurat resmi bagi warga — ajukan dari rumah, pantau prosesnya, dan terima surat bertanda tangan dengan kode verifikasi."
+      scrollableForm
     >
       <AuthFormHeader
         overline="Layanan Warga"
         title="Masuk ke akun Anda"
         description="Gunakan email dan kata sandi yang terdaftar di kantor desa."
         animated
+        compact
       />
 
+      {/* Form utama menggunakan gap-5 (jarak 20px) agar konsisten ke bawah */}
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-5 rise-in"
+        className="flex flex-col gap-1.5 md:gap-2 lg:gap-2.5 rise-in w-full"
         style={{ animationDelay: "180ms" }}
       >
         <FormField
@@ -101,30 +104,39 @@ export default function LoginForm() {
           autoComplete="email"
         />
 
-        <FormField
-          id="password"
-          label="Kata Sandi"
-          type="password"
-          value={password}
-          onChange={setPassword}
-          placeholder="••••••••"
-          required
-          autoComplete="current-password"
-          labelAction={
+        {/* --- Kelompok Kata Sandi & Lupa Sandi --- */}
+        {/* Menggunakan gap-2 agar link merapat ke input sandinya */}
+        <div className="flex flex-col gap-1.5 md:gap-2 w-full">
+          <FormField
+            id="password"
+            label="Kata Sandi"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            placeholder="••••••••"
+            required
+            autoComplete="current-password"
+          />
+          <div className="flex justify-end">
             <a
               href="/forgot-password"
-              className="text-xs font-semibold text-brass hover:underline underline-offset-2"
+              className="text-[14px] md:text-[15px] font-semibold text-brass hover:underline underline-offset-2"
             >
               Lupa sandi?
             </a>
-          }
-        />
+          </div>
+        </div>
+        {/* --------------------------------------- */}
 
-        <button type="submit" disabled={isLoading} className="btn-primary mt-2">
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="btn-primary mt-1 md:mt-2 py-2.5 md:py-3.5 text-[15px] md:text-[16px] font-semibold w-full"
+        >
           {isLoading ? "Memproses..." : "Masuk"}
         </button>
 
-        <div className="border-t border-line pt-5 text-center text-xs text-inkmut">
+        <div className="border-t border-line pt-2 md:pt-3 mt-1 text-center text-[15px] md:text-[16px] text-inkmut w-full">
           Belum punya akun?{" "}
           <a
             href="/esurat/register"

@@ -157,7 +157,7 @@ export default function RegisterForm() {
 
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 rise-in"
+        className="flex flex-col gap-1.5 md:gap-2 lg:gap-2.5 rise-in w-full"
         style={{ animationDelay: "180ms" }}
       >
         <FormField
@@ -183,7 +183,8 @@ export default function RegisterForm() {
             // Hanya terima angka
             const filtered = val.replace(/\D/g, "");
             setNik(filtered);
-            if (fieldErrors.nik) setError("nik", validateField("nik", filtered));
+            if (fieldErrors.nik)
+              setError("nik", validateField("nik", filtered));
           }}
           onBlur={() => handleBlur("nik", nik)}
           error={fieldErrors.nik}
@@ -200,7 +201,8 @@ export default function RegisterForm() {
           value={email}
           onChange={(val) => {
             setEmail(val);
-            if (fieldErrors.email) setError("email", validateField("email", val));
+            if (fieldErrors.email)
+              setError("email", validateField("email", val));
           }}
           onBlur={() => handleBlur("email", email)}
           error={fieldErrors.email}
@@ -209,53 +211,66 @@ export default function RegisterForm() {
           autoComplete="email"
         />
 
-        <FormField
-          id="password"
-          label="Kata Sandi"
-          type="password"
-          value={password}
-          onChange={(val) => {
-            setPassword(val);
-            // Hapus error password sendiri saat mengetik
-            if (fieldErrors.password) setError("password", validateField("password", val));
-            // Validasi ulang confirmPassword jika sudah diisi
-            if (confirmPassword && touched.confirmPassword) {
-              setError("confirmPassword", validateField("confirmPassword", confirmPassword, { password: val }));
-            }
-          }}
-          onBlur={() => handleBlur("password", password)}
-          error={fieldErrors.password}
-          placeholder="••••••••"
-          required
-          autoComplete="new-password"
-        />
+        <div className="grid grid-cols-2 gap-2 md:gap-3 w-full">
+          <FormField
+            id="password"
+            label="Kata Sandi"
+            type="password"
+            value={password}
+            onChange={(val) => {
+              setPassword(val);
+              if (fieldErrors.password)
+                setError("password", validateField("password", val));
+              if (confirmPassword && touched.confirmPassword) {
+                setError(
+                  "confirmPassword",
+                  validateField("confirmPassword", confirmPassword, {
+                    password: val,
+                  }),
+                );
+              }
+            }}
+            onBlur={() => handleBlur("password", password)}
+            error={fieldErrors.password}
+            placeholder="••••••••"
+            required
+            autoComplete="new-password"
+          />
 
-        <FormField
-          id="confirmPassword"
-          label="Konfirmasi Kata Sandi"
-          type="password"
-          value={confirmPassword}
-          onChange={(val) => {
-            setConfirmPassword(val);
-            if (fieldErrors.confirmPassword) {
-              setError("confirmPassword", validateField("confirmPassword", val, { password }));
-            }
-          }}
-          onBlur={() => handleBlur("confirmPassword", confirmPassword)}
-          error={fieldErrors.confirmPassword}
-          placeholder="••••••••"
-          required
-          autoComplete="new-password"
-        />
+          <FormField
+            id="confirmPassword"
+            label="Konfirmasi Kata Sandi"
+            type="password"
+            value={confirmPassword}
+            onChange={(val) => {
+              setConfirmPassword(val);
+              if (fieldErrors.confirmPassword) {
+                setError(
+                  "confirmPassword",
+                  validateField("confirmPassword", val, { password }),
+                );
+              }
+            }}
+            onBlur={() => handleBlur("confirmPassword", confirmPassword)}
+            error={fieldErrors.confirmPassword}
+            placeholder="••••••••"
+            required
+            autoComplete="new-password"
+          />
+        </div>
 
-        <button type="submit" disabled={isLoading} className="btn-primary mt-2">
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="btn-primary mt-1 md:mt-2 py-2 md:py-3.5 text-[15px] md:text-[16px] font-semibold w-full"
+        >
           {isLoading ? "Memproses..." : "Daftar Sekarang"}
         </button>
 
-        <div className="border-t border-line pt-5 text-center text-xs text-inkmut">
+        <div className="border-t border-line pt-2 md:pt-3 mt-0.5 text-center text-[15px] md:text-[16px] text-inkmut w-full">
           Sudah memiliki akun?{" "}
           <Link
-            href="/"
+            href="/esurat"
             className="font-semibold text-brass hover:underline underline-offset-2"
           >
             Masuk ke akun Anda
