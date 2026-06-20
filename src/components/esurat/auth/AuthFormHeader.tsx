@@ -16,17 +16,20 @@ export default function AuthFormHeader({
 }: AuthFormHeaderProps) {
   const riseIn = animated ? "rise-in" : "";
 
-  return (
+return (
     <>
-      <p className={`overline-doc ${riseIn}`}>{overline}</p>
+      <p className={`overline-doc text-[14px] lg:text-[16px] ${riseIn}`}>{overline}</p>
+      
       <h2
-        className={`font-serif text-4xl font-medium tracking-tight mt-2 ${riseIn}`}
+        className={`font-serif text-[32px] lg:text-[40px] font-medium tracking-tight mt-1 lg:mt-2 leading-tight ${riseIn}`}
         style={animated ? { animationDelay: "60ms" } : undefined}
       >
         {title}
       </h2>
       <p
-        className={`text-sm text-inkmut ${compact ? "mt-1 mb-4" : "mt-3 mb-10"} ${riseIn}`}
+        className={`text-[15px] lg:text-[18px] text-inkmut ${
+          compact ? "mt-1 mb-3 lg:mb-4" : "mt-2 lg:mt-3 mb-5 lg:mb-10"
+        } ${riseIn}`}
         style={animated ? { animationDelay: "120ms" } : undefined}
       >
         {description}
