@@ -35,7 +35,7 @@ export default function LetterMetaList({ request, showRequester, fieldsSlot }: L
           </>
         )}
 
-        <MetaRow label="Keperluan" value={request.purpose} />
+        {!fieldsSlot && <MetaRow label="Keperluan" value={request.purpose} />}
 
         {!fieldsSlot &&
           request.data &&
