@@ -64,36 +64,21 @@ export const authService = {
 
     await userRepository.createOTPToken(newUser.id, otp, expiresAt);
 
-    // Kirim email OTP
-    let emailSent = false;
-    let emailError: string | null = null;
-
-    try {
-      await sendOTPEmail(newUser.email, otp);
-      emailSent = true;
-      console.log(`✅ OTP email sent successfully to ${newUser.email}`);
-    } catch (error: any) {
-      emailError = error.message;
-      console.error(
-        `❌ Failed to send OTP email to ${newUser.email}:`,
-        error.message,
+    // Fire-and-forget: kirim email OTP di background agar response tidak
+    // tertahan oleh SMTP yang lambat. Kalau gagal, user bisa pakai "Kirim Ulang OTP".
+    sendOTPEmail(newUser.email, otp)
+      .then(() => console.log(`✅ OTP email sent successfully to ${newUser.email}`))
+      .catch((err: Error) =>
+        console.error(`❌ Failed to send OTP email to ${newUser.email}:`, err.message),
       );
-    }
 
     return {
       success: true,
-      message: emailSent
-        ? "Registrasi berhasil. Kode OTP telah dikirim ke email Anda."
-        : "Registrasi berhasil, tapi email gagal terkirim. Gunakan 'Resend OTP' untuk coba ulang.",
+      message: "Registrasi berhasil. Kode OTP sedang dikirim ke email Anda.",
       data: {
         userId: newUser.id,
         email: newUser.email,
         name: newUser.name,
-        emailSent,
-        emailError:
-          emailError && process.env.NODE_ENV === "development"
-            ? emailError
-            : undefined,
       },
     };
   },
