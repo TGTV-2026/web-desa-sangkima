@@ -101,9 +101,29 @@ export const authService = {
     // Mark user as verified
     await userRepository.verifyUserEmail(validatedData.userId);
 
+    // Ambil data user untuk menerbitkan JWT — user langsung login setelah
+    // verifikasi, tanpa harus ke halaman login lagi.
+    const user = await userRepository.findById(validatedData.userId);
+    if (!user) {
+      throw new Error("User tidak ditemukan");
+    }
+
+    const jwt = await signToken({
+      id: user.id,
+      email: user.email,
+      nik: user.nik,
+    });
+
     return {
       success: true,
       message: "Email berhasil diaktifkan",
+      token: jwt,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        nik: user.nik,
+      },
     };
   },
 

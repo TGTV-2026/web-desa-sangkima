@@ -76,18 +76,16 @@ export default function VerifyOtpForm({ userId, email }: VerifyOtpFormProps) {
       }
 
       toast(
-        "Identitas Anda telah diverifikasi. Silakan masuk untuk melanjutkan.",
+        "Identitas Anda telah diverifikasi. Selamat datang!",
         "Verifikasi Berhasil",
         "success",
-        4000,
+        3000,
       );
 
-      // Email sudah aktif tapi user belum login → arahkan ke halaman masuk.
-      setTimeout(() => {
-        router.push("/esurat");
-      }, 1500);
-    } catch (err: any) {
-      const msg = err?.message || "Gagal terhubung ke server";
+      // Cookie login sudah di-set oleh server — langsung masuk ke dashboard.
+      router.push("/esurat/dashboard");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Gagal terhubung ke server";
       toast(msg, "Gagal Verifikasi", "error", 5000);
       setIsLoading(false);
     }
