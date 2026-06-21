@@ -107,3 +107,31 @@ export function Share(props: SVGProps<SVGSVGElement>) {
     </Svg>
   );
 }
+
+// Kirim pesan — pesawat kertas
+export function Send(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M22 2 11 13" />
+      <path d="M22 2 15 22l-4-9-9-4 20-7Z" />
+    </Svg>
+  );
+}
+
+// Buka peta / arah — penunjuk navigasi
+export function Navigation(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M3 11 22 2l-9 19-2-8-8-2Z" />
+    </Svg>
+  );
+}
+
+// Petunjuk geser peta
+export function Move(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M12 2v20M2 12h20M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3" />
+    </Svg>
+  );
+}
