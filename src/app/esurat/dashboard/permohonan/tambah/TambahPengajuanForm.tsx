@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSubmitAction } from "@/hooks/useSubmitAction";
 import FormField from "@/components/esurat/FormField";
@@ -13,31 +13,45 @@ import UserPicker, { type PickedUser } from "./UserPicker";
 const MAX_FILES = 3;
 const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 
-export default function TambahPengajuanForm({ types }: { types: LetterTypeDTO[] }) {
+export default function TambahPengajuanForm({ type }: { type: LetterTypeDTO }) {
   const router = useRouter();
   const { busy: submitting, submit } = useSubmitAction();
 
   const [requester, setRequester] = useState<PickedUser | null>(null);
-  const [typeId, setTypeId] = useState("");
   const [purpose, setPurpose] = useState("");
   const [data, setData] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]);
+  const [hasPendingSameType, setHasPendingSameType] = useState(false);
 
-  const selected = useMemo(
-    () => types.find((t) => t.id === typeId),
-    [types, typeId],
-  );
   const requesterReady = !!requester && isProfileComplete(requester);
+
+  // cek lebih dulu apakah pemohon yang dipilih masih punya pengajuan jenis surat ini yang berjalan
+  useEffect(() => {
+    if (!requester) {
+      setHasPendingSameType(false);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/esurat/api/letter-requests/pending-types?userId=${requester.id}`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled) setHasPendingSameType((json.data ?? []).includes(type.id));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [requester, type.id]);
 
   const setField = (name: string, value: string) =>
     setData((d) => ({ ...d, [name]: value }));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!requesterReady || !requester || !selected) return;
+    if (!requesterReady || !requester || hasPendingSameType) return;
 
     const payload: Record<string, string | number> = {};
-    for (const f of selected.requiredFields) {
+    for (const f of type.requiredFields) {
       const v = data[f.name] ?? "";
       if (v === "") continue;
       payload[f.name] = f.type === "number" ? Number(v) : v;
@@ -45,7 +59,7 @@ export default function TambahPengajuanForm({ types }: { types: LetterTypeDTO[] 
 
     const fd = new FormData();
     fd.append("userId", requester.id);
-    fd.append("letterTypeId", selected.id);
+    fd.append("letterTypeId", type.id);
     fd.append("purpose", purpose);
     fd.append("data", JSON.stringify(payload));
     for (const file of files) fd.append("lampiran", file);
@@ -69,8 +83,22 @@ export default function TambahPengajuanForm({ types }: { types: LetterTypeDTO[] 
 
   return (
     <form onSubmit={handleSubmit} className="card-doc p-5 sm:p-7 md:p-8 flex flex-col gap-6">
-      {/* SECTION 0: PEMOHON */}
-      <div className="flex flex-col gap-2">
+      {/* SECTION 1: JENIS SURAT (sudah ditentukan dari modal pilih jenis surat) */}
+      <div className="flex flex-col gap-4">
+        <div>
+          <p className="overline-doc !text-brass">{type.code}</p>
+          <h2 className="font-serif text-xl font-medium text-pine-900 mt-0.5">{type.name}</h2>
+        </div>
+
+        {type.description && (
+          <div className="bg-paper2/40 border-l-2 border-brass px-4 py-3 text-xs leading-relaxed text-inkmut rounded-sm">
+            <span className="font-semibold text-ink">Deskripsi Layanan:</span> {type.description}
+          </div>
+        )}
+      </div>
+
+      {/* SECTION 2: PEMOHON */}
+      <div className="border-t border-line/50 pt-5 flex flex-col gap-2">
         <label className="label-doc">Pemohon</label>
         <UserPicker value={requester} onChange={setRequester} />
         <p className="text-xs text-inkmut">
@@ -85,33 +113,18 @@ export default function TambahPengajuanForm({ types }: { types: LetterTypeDTO[] 
           </a>{" "}
           di tab baru, lalu cari lagi di sini.
         </p>
-      </div>
 
-      {/* SECTION 1: KLASIFIKASI SURAT */}
-      <div className="border-t border-line/50 pt-5 flex flex-col gap-4">
-        <FormField
-          id="jenis"
-          label="Pilih Jenis Surat"
-          type="select"
-          value={typeId}
-          onChange={(val) => {
-            setTypeId(val);
-            setData({});
-          }}
-          required
-          disabled={!requester}
-          placeholder="— Pilih jenis surat —"
-          options={types.map((t) => ({ value: t.id, label: `${t.name} (${t.code})` }))}
-        />
-
-        {selected?.description && (
-          <div className="bg-paper2/40 border-l-2 border-brass px-4 py-3 text-xs leading-relaxed text-inkmut rounded-sm">
-            <span className="font-semibold text-ink">Deskripsi Layanan:</span> {selected.description}
+        {requester && hasPendingSameType && (
+          <div className="bg-oxide/[0.05] border border-oxide/30 rounded-[4px] px-4 py-3">
+            <p className="text-xs text-oxide">
+              {requester.name} masih memiliki pengajuan {type.name} yang belum disetujui.
+              Tunggu sampai disetujui sebelum membuat pengajuan baru.
+            </p>
           </div>
         )}
       </div>
 
-      {/* SECTION 2: KEPERLUAN */}
+      {/* SECTION 3: KEPERLUAN */}
       <div className="border-t border-line/50 pt-5">
         <FormField
           id="purpose"
@@ -126,17 +139,15 @@ export default function TambahPengajuanForm({ types }: { types: LetterTypeDTO[] 
         />
       </div>
 
-      {/* SECTION 3: FIELD DINAMIS */}
-      {selected && (
-        <DynamicLetterFields
-          letterTypeCode={selected.code}
-          fields={selected.requiredFields}
-          values={data}
-          onChange={setField}
-        />
-      )}
+      {/* SECTION 4: FIELD DINAMIS */}
+      <DynamicLetterFields
+        letterTypeCode={type.code}
+        fields={type.requiredFields}
+        values={data}
+        onChange={setField}
+      />
 
-      {/* SECTION 4: LAMPIRAN */}
+      {/* SECTION 5: LAMPIRAN */}
       <div className="border-t border-line pt-5">
         <p className="label-doc">
           Dokumen Lampiran Pendukung
@@ -154,7 +165,7 @@ export default function TambahPengajuanForm({ types }: { types: LetterTypeDTO[] 
       <div className="pt-2">
         <button
           type="submit"
-          disabled={submitting || !requesterReady || !typeId}
+          disabled={submitting || !requesterReady || hasPendingSameType}
           className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Menyimpan..." : "Simpan Pengajuan"}

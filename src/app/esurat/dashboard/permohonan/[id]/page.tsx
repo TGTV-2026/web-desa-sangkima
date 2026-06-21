@@ -3,6 +3,7 @@ import LetterDetailCard from "@/components/esurat/LetterDetailCard";
 import { getSessionUser } from "@/server/utils/session";
 import { letterRequestService } from "@/server/services/letterRequest.service";
 import PermohonanActions from "./PermohonanActions";
+import EditableFields from "./EditableFields";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -27,6 +28,16 @@ export default async function DetailPermohonanPage({ params }: PageProps) {
       backHref="/esurat/dashboard/permohonan"
       backLabel="Kembali ke Permohonan"
       showRequester
+      fieldsSlot={
+        surat.status === "DIAJUKAN" ? (
+          <EditableFields
+            requestId={surat.id}
+            letterTypeCode={surat.letterType.code}
+            fields={surat.letterType.requiredFields}
+            initialData={surat.data}
+          />
+        ) : undefined
+      }
     >
       <PermohonanActions id={surat.id} status={surat.status} role={session.role} />
     </LetterDetailCard>

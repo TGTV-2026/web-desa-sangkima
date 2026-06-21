@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import PageHeader from "@/components/esurat/PageHeader";
+import PilihJenisSuratModal from "@/components/esurat/PilihJenisSuratModal";
 import { getSessionUser } from "@/server/utils/session";
 import { letterTypeService } from "@/server/services/letterType.service";
-import TambahPengajuanForm from "./TambahPengajuanForm";
 
 export default async function TambahPermohonanPage() {
   const session = await getSessionUser();
@@ -16,10 +16,14 @@ export default async function TambahPermohonanPage() {
       <PageHeader
         breadcrumb={{ parent: "Permohonan", current: "Tambah Pengajuan" }}
         title="Tambah Pengajuan Surat"
-        description="Pilih warga terdaftar sebagai pemohon, atau daftarkan dulu jika belum ada di sistem."
+        description="Pilih jenis surat yang akan diajukan pada jendela berikut."
       />
 
-      <TambahPengajuanForm types={types} />
+      <PilihJenisSuratModal
+        types={types}
+        closeHref="/esurat/dashboard/permohonan"
+        typeBasePath="/esurat/dashboard/permohonan/tambah"
+      />
     </div>
   );
 }

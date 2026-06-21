@@ -24,12 +24,13 @@
  *   patch:
  *     tags:
  *       - E-Surat - Pengajuan
- *     summary: "⚙️ Aksi petugas (proses/setujui/tolak/selesai)"
+ *     summary: "⚙️ Aksi petugas (proses/setujui/tolak/selesai/edit data)"
  *     description: >
  *       process = operator menerima (DIAJUKAN→DIPROSES);
  *       approve = kepala desa menyetujui (DIPROSES→DISETUJUI, hanya admin);
  *       reject = tolak (wajib reason);
- *       complete = tandai selesai (DISETUJUI→SELESAI).
+ *       complete = tandai selesai (DISETUJUI→SELESAI);
+ *       updateData = petugas merapikan field dinamis pemohon (wajib data, hanya saat status DIAJUKAN).
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -48,12 +49,15 @@
  *             properties:
  *               action:
  *                 type: string
- *                 enum: [process, approve, reject, complete]
+ *                 enum: [process, approve, reject, complete, updateData]
  *               note:
  *                 type: string
  *               reason:
  *                 type: string
  *                 description: Wajib untuk action=reject
+ *               data:
+ *                 type: object
+ *                 description: Wajib untuk action=updateData; field dinamis sesuai requiredFields jenis surat
  *     responses:
  *       200:
  *         description: Status pengajuan diperbarui
