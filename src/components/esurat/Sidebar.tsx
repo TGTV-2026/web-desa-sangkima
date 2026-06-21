@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Role = "user" | "staff" | "admin";
 
@@ -119,7 +119,23 @@ export default function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const items = navForRole(role);
+
+  // Tutup menu mobile saat navigasi berpindah halaman
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Kunci scroll body saat menu mobile terbuka
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
 
   const isActive = (href: string) =>
     href === "/esurat/dashboard" ? pathname === href : pathname.startsWith(href);
@@ -135,65 +151,174 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="bg-pine-900 text-paper md:w-64 md:h-screen flex flex-col md:sticky md:top-0 shrink-0 z-30">
-      
-      {/* Identitas */}
-      <div className="hidden md:flex items-center gap-3 px-6 pt-7 pb-6 shrink-0">
-        <div className="relative w-10 h-10 rounded-full border border-paper/40 grid place-items-center shrink-0">
-          <div className="absolute inset-[4px] rounded-full border border-paper/20" />
-          <span className="font-serif font-semibold text-sm">DS</span>
+    <>
+      {/* ===== Mobile top bar ===== */}
+      <header className="md:hidden bg-pine-900 text-paper sticky top-0 z-40 flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <div className="relative w-8 h-8 rounded-full border border-paper/40 grid place-items-center shrink-0">
+            <div className="absolute inset-[3px] rounded-full border border-paper/20" />
+            <span className="font-serif font-semibold text-[11px]">DS</span>
+          </div>
+          <div className="min-w-0">
+            <p className="font-serif text-base font-medium leading-tight">E-Surat</p>
+            <p className="text-[9px] uppercase tracking-[0.16em] text-paper/45 leading-tight">
+              Desa Sangkima
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="font-serif text-lg font-medium leading-tight">E-Surat</p>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-paper/45 leading-tight">
-            Desa Sangkima
-          </p>
-        </div>
-      </div>
 
-      <div className="hidden md:block mx-6 border-t border-paper/10 shrink-0" />
-
-      {/* Navigasi */}
-      <nav className="flex md:flex-col flex-1 items-center md:items-stretch gap-0.5 px-3 md:px-4 py-2 md:py-4 overflow-x-auto md:overflow-y-auto custom-scrollbar">
-        {items.map((item) => {
-          const active = isActive(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`relative flex items-center gap-3 rounded-[4px] px-3.5 py-2.5 text-[13px] font-semibold whitespace-nowrap transition-colors ${
-                active
-                  ? "bg-paper/10 text-paper"
-                  : "text-paper/55 hover:text-paper hover:bg-paper/5"
-              }`}
-            >
-              {active && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] bg-brass rounded-r hidden md:block" />
-              )}
-              {item.icon}
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Pengguna */}
-      <div className="flex md:flex-col items-center md:items-stretch gap-2 px-3 md:px-6 py-3 md:py-6 border-t border-paper/10 mt-auto shrink-0 bg-pine-900">
-        <div className="hidden md:block pb-1">
-          <p className="text-sm font-semibold truncate">{name}</p>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-brass mt-0.5">
-            {ROLE_LABEL[role]}
-          </p>
-        </div>
+        {/* Hamburger / close button */}
         <button
-          onClick={handleLogout}
-          disabled={loggingOut}
-          className="flex items-center gap-2.5 rounded-[4px] md:-mx-2 px-3.5 md:px-2 py-2 text-[13px] font-semibold text-paper/50 hover:text-paper transition-colors disabled:opacity-60 whitespace-nowrap"
+          onClick={() => setMobileOpen((v) => !v)}
+          className="relative w-9 h-9 grid place-items-center rounded-[4px] hover:bg-paper/10 transition-colors"
+          aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
+          aria-expanded={mobileOpen}
         >
-          {ICONS.logout}
-          {loggingOut ? "Keluar..." : "Keluar"}
+          <span className="sr-only">{mobileOpen ? "Tutup" : "Menu"}</span>
+          {/* 3 garis yang ber-animasi menjadi X */}
+          <span className="block w-5 h-5 relative">
+            <span
+              className={`absolute left-0 h-[2px] w-full bg-paper rounded-full transition-all duration-300 ${
+                mobileOpen ? "top-[9px] rotate-45" : "top-[3px] rotate-0"
+              }`}
+            />
+            <span
+              className={`absolute left-0 top-[9px] h-[2px] w-full bg-paper rounded-full transition-all duration-300 ${
+                mobileOpen ? "opacity-0 scale-x-0" : "opacity-100 scale-x-100"
+              }`}
+            />
+            <span
+              className={`absolute left-0 h-[2px] w-full bg-paper rounded-full transition-all duration-300 ${
+                mobileOpen ? "top-[9px] -rotate-45" : "top-[15px] rotate-0"
+              }`}
+            />
+          </span>
         </button>
+      </header>
+
+      {/* ===== Mobile overlay menu ===== */}
+      {/* Backdrop */}
+      <div
+        className={`md:hidden fixed inset-0 bg-ink/40 z-30 transition-opacity duration-300 ${
+          mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setMobileOpen(false)}
+        aria-hidden="true"
+      />
+      {/* Panel navigasi */}
+      <div
+        className={`md:hidden fixed top-[52px] left-0 right-0 bg-pine-900 text-paper z-35 shadow-lg transition-all duration-300 origin-top ${
+          mobileOpen
+            ? "opacity-100 translate-y-0 scale-y-100"
+            : "opacity-0 -translate-y-2 scale-y-95 pointer-events-none"
+        }`}
+        style={{ maxHeight: "calc(100dvh - 52px)", overflowY: "auto" }}
+      >
+        <nav className="flex flex-col gap-0.5 px-4 pt-3 pb-2">
+          {items.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`relative flex items-center gap-3 rounded-[4px] px-3.5 py-3 text-[14px] font-semibold transition-colors ${
+                  active
+                    ? "bg-paper/10 text-paper"
+                    : "text-paper/55 hover:text-paper hover:bg-paper/5"
+                }`}
+              >
+                {active && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] bg-brass rounded-r" />
+                )}
+                {item.icon}
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mx-4 border-t border-paper/10" />
+
+        {/* Info pengguna + logout */}
+        <div className="px-4 py-4 flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate">{name}</p>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-brass mt-0.5">
+              {ROLE_LABEL[role]}
+            </p>
+          </div>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="flex items-center gap-2 rounded-[4px] px-3 py-2 text-[13px] font-semibold text-paper/50 hover:text-paper transition-colors disabled:opacity-60 whitespace-nowrap"
+          >
+            {ICONS.logout}
+            {loggingOut ? "Keluar..." : "Keluar"}
+          </button>
+        </div>
       </div>
-    </aside>
+
+      {/* ===== Desktop sidebar (tidak berubah) ===== */}
+      <aside className="hidden md:flex bg-pine-900 text-paper w-64 h-screen flex-col sticky top-0 shrink-0 z-30">
+
+        {/* Identitas */}
+        <div className="flex items-center gap-3 px-6 pt-7 pb-6 shrink-0">
+          <div className="relative w-10 h-10 rounded-full border border-paper/40 grid place-items-center shrink-0">
+            <div className="absolute inset-[4px] rounded-full border border-paper/20" />
+            <span className="font-serif font-semibold text-sm">DS</span>
+          </div>
+          <div className="min-w-0">
+            <p className="font-serif text-lg font-medium leading-tight">E-Surat</p>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-paper/45 leading-tight">
+              Desa Sangkima
+            </p>
+          </div>
+        </div>
+
+        <div className="mx-6 border-t border-paper/10 shrink-0" />
+
+        {/* Navigasi */}
+        <nav className="flex flex-col flex-1 items-stretch gap-0.5 px-4 py-4 overflow-y-auto custom-scrollbar">
+          {items.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`relative flex items-center gap-3 rounded-[4px] px-3.5 py-2.5 text-[13px] font-semibold whitespace-nowrap transition-colors ${
+                  active
+                    ? "bg-paper/10 text-paper"
+                    : "text-paper/55 hover:text-paper hover:bg-paper/5"
+                }`}
+              >
+                {active && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] bg-brass rounded-r" />
+                )}
+                {item.icon}
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Pengguna */}
+        <div className="flex flex-col items-stretch gap-2 px-6 py-6 border-t border-paper/10 mt-auto shrink-0 bg-pine-900">
+          <div className="pb-1">
+            <p className="text-sm font-semibold truncate">{name}</p>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-brass mt-0.5">
+              {ROLE_LABEL[role]}
+            </p>
+          </div>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="flex items-center gap-2.5 rounded-[4px] -mx-2 px-2 py-2 text-[13px] font-semibold text-paper/50 hover:text-paper transition-colors disabled:opacity-60 whitespace-nowrap"
+          >
+            {ICONS.logout}
+            {loggingOut ? "Keluar..." : "Keluar"}
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }

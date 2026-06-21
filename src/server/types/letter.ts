@@ -185,8 +185,9 @@ export type TRejectLetterRequestInput = z.infer<
   typeof rejectLetterRequestSchema
 >;
 
-// Staff/admin merapikan field dinamis warga sebelum surat diproses (DIAJUKAN saja)
+// Staff/admin merapikan keperluan & field dinamis warga sebelum surat diproses (DIAJUKAN saja)
 export const updateLetterRequestDataSchema = z.object({
+  purpose: z.string().min(3, "Keperluan wajib diisi"),
   data: z.record(z.string(), z.union([z.string(), z.number(), z.null()])),
 });
 

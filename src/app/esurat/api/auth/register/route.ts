@@ -62,8 +62,6 @@
  *                       type: string
  *                     name:
  *                       type: string
- *                     emailSent:
- *                       type: boolean
  *       400:
  *         description: Validation failed or email/NIK already registered
  */

@@ -64,36 +64,21 @@ export const authService = {
 
     await userRepository.createOTPToken(newUser.id, otp, expiresAt);
 
-    // Kirim email OTP
-    let emailSent = false;
-    let emailError: string | null = null;
-
-    try {
-      await sendOTPEmail(newUser.email, otp);
-      emailSent = true;
-      console.log(`✅ OTP email sent successfully to ${newUser.email}`);
-    } catch (error: any) {
-      emailError = error.message;
-      console.error(
-        `❌ Failed to send OTP email to ${newUser.email}:`,
-        error.message,
+    // Fire-and-forget: kirim email OTP di background agar response tidak
+    // tertahan oleh SMTP yang lambat. Kalau gagal, user bisa pakai "Kirim Ulang OTP".
+    sendOTPEmail(newUser.email, otp)
+      .then(() => console.log(`✅ OTP email sent successfully to ${newUser.email}`))
+      .catch((err: Error) =>
+        console.error(`❌ Failed to send OTP email to ${newUser.email}:`, err.message),
       );
-    }
 
     return {
       success: true,
-      message: emailSent
-        ? "Registrasi berhasil. Kode OTP telah dikirim ke email Anda."
-        : "Registrasi berhasil, tapi email gagal terkirim. Gunakan 'Resend OTP' untuk coba ulang.",
+      message: "Registrasi berhasil. Kode OTP sedang dikirim ke email Anda.",
       data: {
         userId: newUser.id,
         email: newUser.email,
         name: newUser.name,
-        emailSent,
-        emailError:
-          emailError && process.env.NODE_ENV === "development"
-            ? emailError
-            : undefined,
       },
     };
   },
@@ -116,9 +101,29 @@ export const authService = {
     // Mark user as verified
     await userRepository.verifyUserEmail(validatedData.userId);
 
+    // Ambil data user untuk menerbitkan JWT — user langsung login setelah
+    // verifikasi, tanpa harus ke halaman login lagi.
+    const user = await userRepository.findById(validatedData.userId);
+    if (!user) {
+      throw new Error("User tidak ditemukan");
+    }
+
+    const jwt = await signToken({
+      id: user.id,
+      email: user.email,
+      nik: user.nik,
+    });
+
     return {
       success: true,
       message: "Email berhasil diaktifkan",
+      token: jwt,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        nik: user.nik,
+      },
     };
   },
 

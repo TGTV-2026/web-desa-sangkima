@@ -35,6 +35,7 @@ export default async function DetailPermohonanPage({ params }: PageProps) {
             letterTypeCode={surat.letterType.code}
             fields={surat.letterType.requiredFields}
             initialData={surat.data}
+            initialPurpose={surat.purpose}
           />
         ) : undefined
       }

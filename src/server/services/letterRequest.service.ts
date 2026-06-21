@@ -428,7 +428,7 @@ export const letterRequestService = {
   // Petugas merapikan field dinamis warga (mis. salah ketik) sebelum surat diproses
   async updateData(actor: AuthUser, id: string, input: unknown): Promise<LetterRequestDTO> {
     requireStaffOrAdmin(actor);
-    const { data } = updateLetterRequestDataSchema.parse(input);
+    const { purpose, data } = updateLetterRequestDataSchema.parse(input);
     const row = await getRowOrThrow(id);
     if (row.request.status !== "DIAJUKAN") {
       throw new Error("Data hanya bisa diedit sebelum surat diproses");
@@ -436,7 +436,7 @@ export const letterRequestService = {
     const type = await letterTypeRepository.findById(row.request.letterTypeId);
     validateRequiredFields(normalizeRequiredFields(type?.requiredFields), data);
 
-    await letterRequestRepository.update(id, { data });
+    await letterRequestRepository.update(id, { purpose, data });
     await letterRequestRepository.addLog({
       requestId: id,
       status: "DIAJUKAN",

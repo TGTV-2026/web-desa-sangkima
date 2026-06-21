@@ -113,11 +113,8 @@ export default function RegisterForm() {
             return json.errors[firstField]?.[0] ?? json.message;
           },
           onSuccess: () => {
-            // Status "menunggu verifikasi" sudah ditandai server lewat cookie httpOnly
-            // (tahan tab tertutup), jadi tidak perlu menyimpan userId di sessionStorage.
-            setTimeout(() => {
-              router.push("/esurat/verify-otp");
-            }, 1500);
+            // Email OTP dikirim di background — langsung arahkan ke halaman OTP.
+            router.push("/esurat/verify-otp");
           },
         },
       );
