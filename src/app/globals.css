@@ -129,3 +129,100 @@ body::after {
 .rise-in {
   animation: riseIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* ============================================================
+   Animasi scroll-driven (native `animation-timeline`)
+   Halus, ringan (jalan di compositor), dan GRACEFUL: hanya aktif
+   bila browser mendukung DAN reduce-motion mati. Tanpa dukungan,
+   konten tampil normal — tidak ada yang tersembunyi/patah.
+   ============================================================ */
+
+/* Bilah progres scroll — default tersembunyi (fallback aman) */
+.sd-progress {
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* Gambar "bernapas": zoom-out lembut selagi melintasi layar.
+       WAJIB di dalam container overflow-hidden. */
+    .sd-zoom {
+      animation: sd-zoom linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+      will-change: transform;
+    }
+    /* Naik + fade saat masuk viewport (di-scrub) */
+    .sd-rise {
+      animation: sd-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 18%;
+    }
+    /* Konten hero memudar & terangkat saat ditinggalkan */
+    .sd-hero-out {
+      animation: sd-hero-out linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 95%;
+    }
+  }
+  @supports (animation-timeline: scroll()) {
+    .sd-progress {
+      animation: sd-progress linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+
+@keyframes sd-zoom {
+  from {
+    transform: scale(1.14);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes sd-rise {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes sd-hero-out {
+  to {
+    opacity: 0.12;
+    transform: translateY(-44px) scale(0.96);
+  }
+}
+@keyframes sd-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ============================================================
+   Scroll-snap lembut (proximity) — KHUSUS halaman profil.
+   Kelas ini dipasang ke <html> oleh komponen ScrollSnap agar tidak
+   bocor ke /esurat. Hanya seksi pendek (Hero/Visi-Misi/Layanan) yang
+   diberi util `snap-start`; Galeri & Kontak sengaja TIDAK, jadi tetap
+   scroll bebas. `proximity` = hanya merapikan saat dekat batas seksi,
+   tidak pernah "mengunci"/melawan scroll pengguna.
+   ============================================================ */
+.snap-sections {
+  scroll-snap-type: y proximity;
+  scroll-padding-top: 5rem; /* offset navbar fixed (h-20) */
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  .snap-sections {
+    scroll-snap-type: none;
+    scroll-behavior: auto;
+  }
+}

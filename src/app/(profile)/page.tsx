@@ -48,7 +48,10 @@ export default function BerandaPage() {
       <Hero />
 
       {/* Visi & Misi */}
-      <section id="profil" className="relative bg-paper py-24 md:py-32">
+      <section
+        id="profil"
+        className="snap-start relative bg-paper py-24 md:py-32"
+      >
         <div className="mx-auto max-w-[1280px] px-5 md:px-12">
           <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-12">
             {/* Judul */}
@@ -98,7 +101,7 @@ export default function BerandaPage() {
       {/* Layanan & Potensi */}
       <section
         id="layanan"
-        className="relative overflow-hidden border-y border-line bg-card py-24 md:py-32"
+        className="snap-start relative overflow-hidden border-y border-line bg-card py-24 md:py-32"
       >
         {/* aksen latar abstrak */}
         <div className="pointer-events-none absolute right-0 top-0 h-[600px] w-[600px] -translate-y-1/2 translate-x-1/3 rounded-full bg-pine-800/5 blur-3xl" />

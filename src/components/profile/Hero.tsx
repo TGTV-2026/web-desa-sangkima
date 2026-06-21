@@ -31,7 +31,7 @@ export default function Hero() {
   return (
     <section
       id="beranda"
-      className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20"
+      className="snap-start relative flex min-h-screen items-center justify-center overflow-hidden pt-20"
     >
       {/* Latar + parallax */}
       <div className="absolute inset-0 z-0">
@@ -46,7 +46,7 @@ export default function Hero() {
       </div>
 
       {/* Konten */}
-      <div className="relative z-10 mx-auto max-w-[1280px] px-5 text-center md:px-12">
+      <div className="sd-hero-out relative z-10 mx-auto max-w-[1280px] px-5 text-center md:px-12">
         <span className="mb-4 block text-[11px] font-bold uppercase tracking-[0.2em] text-[#e6c07a]">
           Arsip Digital &amp; Administrasi
         </span>

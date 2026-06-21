@@ -125,12 +125,14 @@ export default function GallerySection() {
               className="mb-6 break-inside-avoid"
             >
               <Seal className="group block bg-card transition-shadow duration-500 hover:shadow-md">
-                <img
-                  src={g.src}
-                  alt={g.alt}
-                  loading="lazy"
-                  className="mb-4 w-full"
-                />
+                <div className="mb-4 overflow-hidden">
+                  <img
+                    src={g.src}
+                    alt={g.alt}
+                    loading="lazy"
+                    className="w-full sd-zoom"
+                  />
+                </div>
                 <div className="px-4 pb-4">
                   <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.18em] text-brass">
                     {g.kategori}
@@ -160,12 +162,12 @@ export default function GallerySection() {
             {/* Fitur utama */}
             <Reveal className="md:col-span-2">
               <Seal className="group flex h-full flex-col bg-card transition-shadow duration-500 hover:shadow-md">
-                <div className="relative">
+                <div className="relative overflow-hidden">
                   <img
                     src={POTENSI_UTAMA.src}
                     alt={POTENSI_UTAMA.alt}
                     loading="lazy"
-                    className="h-64 w-full object-cover md:h-96"
+                    className="h-64 w-full object-cover sd-zoom md:h-96"
                   />
                   <span className="absolute right-4 top-4 border border-pine-900/20 bg-paper/90 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-pine-900 backdrop-blur">
                     {POTENSI_UTAMA.badge}
@@ -193,12 +195,14 @@ export default function GallerySection() {
             {POTENSI.map((p, i) => (
               <Reveal key={p.judul} delay={i * 100}>
                 <Seal className="group flex h-full flex-col bg-card transition-shadow duration-500 hover:shadow-md">
-                  <img
-                    src={p.src}
-                    alt={p.alt}
-                    loading="lazy"
-                    className="h-40 w-full object-cover"
-                  />
+                  <div className="overflow-hidden">
+                    <img
+                      src={p.src}
+                      alt={p.alt}
+                      loading="lazy"
+                      className="h-40 w-full object-cover sd-zoom"
+                    />
+                  </div>
                   <div className="flex flex-1 flex-col p-6">
                     <h5 className="mb-2 font-bold text-pine-900">{p.judul}</h5>
                     <p className="mb-4 flex-1 text-sm leading-6 text-inkmut">
