@@ -22,7 +22,7 @@ export default function PageHeader({
 }: PageHeaderProps) {
   return (
     <div
-      className={`rise-in mb-8 sm:mb-10 ${action ? "flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5" : ""} ${bordered ? "border-b border-line pb-6 sm:pb-8" : ""}`}
+      className={`rise-in ${action ? "flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5" : ""} ${bordered ? "border-b border-line py-4 md:py-5" : ""}`}
     >
       <div className="min-w-0 flex-1">
         {breadcrumb ? (
@@ -46,7 +46,7 @@ export default function PageHeader({
         </h1>
 
         {description && (
-          <p className={`text-sm text-inkmut mt-2 ${descriptionClassName ?? ""}`}>
+          <p className={`text-sm text-inkmut mt-1.5 ${descriptionClassName ?? ""}`}>
             {description}
           </p>
         )}

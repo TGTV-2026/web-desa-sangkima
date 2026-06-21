@@ -32,8 +32,7 @@ export default async function DashboardPage() {
   ];
 
   return (
-    /* CONTAINER UTAMA: Mengunci proporsi di laptop/PC agar tidak melar dan pas di mobile */
-    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 lg:py-12 min-h-screen text-ink select-none antialiased">
+    <div className="w-full text-ink select-none antialiased flex flex-col gap-4 md:gap-5">
       <PageHeader
         breadcrumb={{ parent: "Layanan Administrasi", current: "Beranda Warga" }}
         title={`Selamat datang, ${session.name.split(" ")[0]}`}
@@ -42,13 +41,15 @@ export default async function DashboardPage() {
             ? "Sistem kendali permohonan surat-menyurat resmi kependudukan warga Desa Sangkima."
             : "Ajukan surat resmi, pantau proses verifikasi, dan unduh dokumen bertanda tangan elektronik Anda."
         }
-        descriptionClassName="max-w-xl"
+        /* 1. Diperbesar dari text-xs md:text-sm menjadi text-sm md:text-base */
+        descriptionClassName="max-w-full text-sm md:text-base"
         bordered
         action={
           session.role === "user" ? (
             <Link
               href="/esurat/dashboard/ajukan"
-              className="btn-primary block w-full sm:inline-block sm:w-auto text-center shadow-sm hover:shadow transition-all text-xs sm:text-sm py-3 px-5"
+              /* 2. Diperbesar dari text-xs md:text-sm menjadi text-sm md:text-base */
+              className="btn-primary block w-full sm:inline-block sm:w-auto text-center shadow-sm hover:shadow transition-all text-sm md:text-base py-2 md:py-2.5 px-4 md:px-5"
             >
               Ajukan Surat Baru
             </Link>
@@ -56,15 +57,16 @@ export default async function DashboardPage() {
         }
       />
 
-      {/* Banner peringatan jika profil belum lengkap */}
       {session.role === "user" && !session.isProfileComplete && (
-        <div className="rise-in mb-6 sm:mb-8 bg-brass/5 border border-brass/30 rounded-sm px-4 sm:px-5 py-3.5 flex items-start gap-3">
-          <span className="text-brass text-lg leading-none mt-0.5 shrink-0">⚠</span>
+        <div className="rise-in bg-brass/5 border border-brass/30 rounded-sm px-4 py-2.5 flex items-start gap-3">
+          <span className="text-brass text-base md:text-lg leading-none mt-0.5 shrink-0">⚠</span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-pine-900">
+            {/* 3. Diperbesar dari text-xs md:text-sm menjadi text-sm md:text-base */}
+            <p className="text-sm md:text-base font-semibold text-pine-900">
               Data Profil Belum Lengkap
             </p>
-            <p className="text-xs text-inkmut mt-0.5 leading-relaxed">
+            {/* 4. Diperbesar dari text-[11px] md:text-xs menjadi text-xs md:text-sm */}
+            <p className="text-xs md:text-sm text-inkmut mt-0.5 leading-relaxed">
               Lengkapi data kependudukan Anda agar dapat mengajukan surat resmi.{" "}
               <Link
                 href="/esurat/dashboard/profil"
@@ -79,23 +81,22 @@ export default async function DashboardPage() {
 
       <StatCardsGrid cards={statCards} />
 
-      {/* ---------- TWO-COLUMN LAYOUT (SUDAH DISAMA RATAKAN TINGGINYA) ---------- */}
-      {/* 🔑 KUNCI 1: Menambahkan `items-stretch` agar tinggi kolom kiri & kanan otomatis sama rata di layar besar */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-6 lg:gap-8 items-stretch rise-in" style={{ animationDelay: "160ms" }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-4 md:gap-5 items-stretch rise-in" style={{ animationDelay: "160ms" }}>
 
-        {/* --- KOLOM KIRI: DAFTAR PENGAJUAN --- */}
-        {/* 🔑 KUNCI 2: Ditambahkan `flex flex-col h-full` agar box ini mau memanjang mengikuti tinggi tetangganya */}
+        {/* --- KOLOM KIRI --- */}
         <div className="card-doc bg-paper border border-line/70 rounded-sm shadow-sm overflow-hidden flex flex-col h-full">
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4 bg-paper2/20 border-b border-line gap-4 shrink-0">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-paper2/20 border-b border-line gap-4 shrink-0">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="w-1 sm:w-1.5 h-3 bg-pine-800 rounded-full shrink-0" />
-              <h2 className="font-serif text-base sm:text-lg font-medium text-pine-900 truncate">
+              <span className="w-1 md:w-1.5 h-3 bg-pine-800 rounded-full shrink-0" />
+              {/* 5. Diperbesar dari text-sm md:text-base menjadi text-base md:text-lg */}
+              <h2 className="font-serif text-base md:text-lg font-medium text-pine-900 truncate">
                 {isPetugas ? "Daftar Permohonan Terbaru" : "Riwayat Pengajuan Terbaru"}
               </h2>
             </div>
             <Link
               href={isPetugas ? "/esurat/dashboard/permohonan" : "/esurat/dashboard/surat"}
-              className="text-[10px] sm:text-xs font-bold tracking-wide uppercase text-brass hover:text-pine-900 hover:underline underline-offset-4 transition-colors shrink-0"
+              /* 6. Diperbesar dari text-[10px] md:text-xs menjadi text-xs md:text-sm */
+              className="text-xs md:text-sm font-bold tracking-wide uppercase text-brass hover:text-pine-900 hover:underline underline-offset-4 transition-colors shrink-0"
             >
               Lihat semua →
             </Link>
@@ -121,7 +122,8 @@ export default async function DashboardPage() {
                   title={r.letterType.name}
                   status={r.status}
                   subtitle={
-                    <div className="text-[11px] sm:text-xs text-inkmut mt-1 flex items-center gap-2">
+                    /* 7. Diperbesar dari text-[11px] md:text-xs menjadi text-xs md:text-sm */
+                    <div className="text-xs md:text-sm text-inkmut mt-0.5 flex items-center gap-2">
                       {isPetugas && <span className="font-medium text-ink truncate">{r.requester.name}</span>}
                       {isPetugas && <span className="text-line">·</span>}
                       <span>{formatTanggal(r.createdAt)}</span>
@@ -133,41 +135,41 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {/* --- KOLOM KANAN: PANEL PANDUAN ALUR --- */}
-        {/* 🔑 KUNCI 4: Ditambahkan `flex flex-col h-full` juga agar seimbang */}
-        <div className="card-doc bg-paper border border-line/70 rounded-sm shadow-sm p-5 sm:p-6 relative overflow-hidden flex flex-col h-full justify-between">
+        {/* --- KOLOM KANAN --- */}
+        <div className="card-doc bg-paper border border-line/70 rounded-sm shadow-sm p-4 relative overflow-hidden flex flex-col h-full justify-between">
           <div>
-            {/* Watermark dokumen */}
-            <span className="absolute -bottom-10 -right-4 font-serif italic text-9xl text-ink/[0.025] pointer-events-none select-none">
+            <span className="absolute -bottom-10 -right-4 font-serif italic text-6xl md:text-7xl lg:text-8xl text-ink/[0.025] pointer-events-none select-none">
               Sangkima
             </span>
 
-            <div className="flex items-center gap-2 border-b border-line pb-3 mb-4">
-              <span className="text-brass text-lg">✦</span>
-              <h3 className="font-serif text-base sm:text-lg font-medium text-pine-900">Alur Layanan E-Surat</h3>
+            <div className="flex items-center gap-2 border-b border-line pb-2 mb-3">
+              <span className="text-brass text-md md:text-lg">✦</span>
+              {/* 8. Diperbesar dari text-sm md:text-base menjadi text-base md:text-lg */}
+              <h3 className="font-serif text-base md:text-lg font-medium text-pine-900">Alur Layanan E-Surat</h3>
             </div>
 
-            <ol className="relative border-l border-line/70 ml-2.5 space-y-5 text-xs text-inkmut">
-              <li className="relative pl-5">
-                <span className="absolute -left-[5px] top-1 flex h-2.5 w-2.5 rounded-full bg-brass" />
+            {/* 9. Diperbesar dari text-[11px] md:text-xs menjadi text-xs md:text-sm */}
+            <ol className="relative border-l border-line/70 ml-2 space-y-3.5 text-xs md:text-sm text-inkmut">
+              <li className="relative pl-4">
+                <span className="absolute -left-[4.5px] top-1 flex h-2 w-2 rounded-full bg-brass" />
                 <p className="font-semibold text-ink">1. Ajukan Secara Mandiri</p>
                 <p className="mt-0.5 leading-relaxed">Pilih jenis surat yang Anda butuhkan, lalu isi formulir data tambahan sesuai instruksi dokumen.</p>
               </li>
-              <li className="relative pl-5">
-                <span className="absolute -left-[5px] top-1 flex h-2.5 w-2.5 rounded-full bg-inkmut/40" />
+              <li className="relative pl-4">
+                <span className="absolute -left-[4.5px] top-1 flex h-2 w-2 rounded-full bg-inkmut/40" />
                 <p className="font-semibold text-ink">2. Verifikasi Berkas</p>
                 <p className="mt-0.5 leading-relaxed">Petugas administrasi kantor Desa Sangkima akan memeriksa kesesuaian identitas dan maksud tujuan Anda.</p>
               </li>
-              <li className="relative pl-5">
-                <span className="absolute -left-[5px] top-1 flex h-2.5 w-2.5 rounded-full bg-inkmut/40" />
+              <li className="relative pl-4">
+                <span className="absolute -left-[4.5px] top-1 flex h-2 w-2 rounded-full bg-inkmut/40" />
                 <p className="font-semibold text-ink">3. Unduh Dokumen Resmi</p>
                 <p className="mt-0.5 leading-relaxed">Setelah disetujui Kepala Desa, surat digital berformat PDF lengkap dengan kode verifikasi resmi siap diunduh.</p>
               </li>
             </ol>
           </div>
 
-          {/* Kotak lampu bantuan otomatis nempel presisi di paling bawah card */}
-          <div className="mt-6 bg-paper2/40 border border-line/50 rounded-sm p-3.5 text-[11px] leading-relaxed text-inkmut shrink-0">
+          {/* 10. Diperbesar dari text-[10px] md:text-[11px] menjadi text-xs md:text-sm */}
+          <div className="mt-4 bg-paper2/40 border border-line/50 rounded-sm p-3 text-xs md:text-sm leading-relaxed text-inkmut shrink-0 relative z-10">
             💡 <span className="font-medium text-ink">Butuh Bantuan?</span> Jika proses verifikasi memakan waktu lebih dari 1x24 jam, Anda dapat mendatangi Kantor Desa Sangkima dengan membawa KTP asli.
           </div>
         </div>

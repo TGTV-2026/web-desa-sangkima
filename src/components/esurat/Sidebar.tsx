@@ -10,43 +10,119 @@ type NavItem = { href: string; label: string; icon: React.ReactNode };
 
 const ICONS = {
   home: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-[18px] h-[18px]" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="w-[18px] h-[18px]"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5 9.5V21h14V9.5" />
     </svg>
   ),
   plus: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-[18px] h-[18px]" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M12 8v8M8 12h8" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="w-[18px] h-[18px]"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="3" width="18" height="13" rx="2" />
+      <path d="M12 8v8M8 12h8" />
     </svg>
   ),
   doc: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-[18px] h-[18px]" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z" /><path d="M14 3v5h5M9 13h6M9 17h6" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="w-[18px] h-[18px]"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z" />
+      <path d="M14 3v5h5M9 13h6M9 17h6" />
     </svg>
   ),
   inbox: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-[18px] h-[18px]" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5 5h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="w-[18px] h-[18px]"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+      <path d="M5 5h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z" />
     </svg>
   ),
   tag: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-[18px] h-[18px]" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.6 13.4 12 22l-8.6-8.6a2 2 0 0 1-.6-1.4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 1.4.6L22 10.4a2 2 0 0 1 0 2.8z" transform="rotate(90 12 12)" /><circle cx="9" cy="9" r="1.5" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="w-[18px] h-[18px]"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path
+        d="M20.6 13.4 12 22l-8.6-8.6a2 2 0 0 1-.6-1.4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 1.4.6L22 10.4a2 2 0 0 1 0 2.8z"
+        transform="rotate(90 12 12)"
+      />
+      <circle cx="9" cy="9" r="1.5" />
     </svg>
   ),
   user: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-[18px] h-[18px]" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="w-[18px] h-[18px]"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
   ),
   logout: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-[18px] h-[18px]" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5M21 12H9" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="w-[18px] h-[18px]"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d="m16 17 5-5-5-5M21 12H9" />
     </svg>
   ),
   badge: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="w-[18px] h-[18px]" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M3 13h18" />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      className="w-[18px] h-[18px]"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="7" width="18" height="13" rx="2" />
+      <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M3 13h18" />
     </svg>
   ),
 };
@@ -63,12 +139,20 @@ function navForRole(role: Role): NavItem[] {
   ];
   if (role === "user") {
     items.push(
-      { href: "/esurat/dashboard/ajukan", label: "Ajukan Surat", icon: ICONS.plus },
+      {
+        href: "/esurat/dashboard/ajukan",
+        label: "Ajukan Surat",
+        icon: ICONS.plus,
+      },
       { href: "/esurat/dashboard/surat", label: "Surat Saya", icon: ICONS.doc },
-      { href: "/esurat/dashboard/profil", label: "Profil Saya", icon: ICONS.user },
+      {
+        href: "/esurat/dashboard/profil",
+        label: "Profil Saya",
+        icon: ICONS.user,
+      },
     );
   }
-  if( role === "staff") {
+  if (role === "staff") {
     items.push(
       {
         href: "/esurat/dashboard/permohonan",
@@ -109,13 +193,7 @@ function navForRole(role: Role): NavItem[] {
   return items;
 }
 
-export default function Sidebar({
-  role,
-  name,
-}: {
-  role: Role;
-  name: string;
-}) {
+export default function Sidebar({ role, name }: { role: Role; name: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -134,11 +212,15 @@ export default function Sidebar({
     } else {
       document.body.style.overflow = "";
     }
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [mobileOpen]);
 
   const isActive = (href: string) =>
-    href === "/esurat/dashboard" ? pathname === href : pathname.startsWith(href);
+    href === "/esurat/dashboard"
+      ? pathname === href
+      : pathname.startsWith(href);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -160,7 +242,7 @@ export default function Sidebar({
             <span className="font-serif font-semibold text-[11px]">DS</span>
           </div>
           <div className="min-w-0">
-            <p className="font-serif text-base font-medium leading-tight">E-Surat</p>
+            <p className="font-serif text-[20px] leading-tight">E-Surat</p>
             <p className="text-[9px] uppercase tracking-[0.16em] text-paper/45 leading-tight">
               Desa Sangkima
             </p>
@@ -170,7 +252,8 @@ export default function Sidebar({
         {/* Hamburger / close button */}
         <button
           onClick={() => setMobileOpen((v) => !v)}
-          className="relative w-9 h-9 grid place-items-center rounded-[4px] hover:bg-paper/10 transition-colors"
+          /* PERUBAHAN: Menambahkan class '-mr-2' agar bergeser sedikit ke kanan pas dengan grid */
+          className="relative w-9 h-9 grid place-items-center rounded-[4px] hover:bg-paper/10 transition-colors -mr-2"
           aria-label={mobileOpen ? "Tutup menu" : "Buka menu"}
           aria-expanded={mobileOpen}
         >
@@ -250,7 +333,7 @@ export default function Sidebar({
           <button
             onClick={handleLogout}
             disabled={loggingOut}
-            className="flex items-center gap-2 rounded-[4px] px-3 py-2 text-[13px] font-semibold text-paper/50 hover:text-paper transition-colors disabled:opacity-60 whitespace-nowrap"
+            className="flex items-center gap-2 rounded-[4px] px-3 py-2 text-[14px] font-semibold text-paper/50 hover:text-paper transition-colors disabled:opacity-60 whitespace-nowrap"
           >
             {ICONS.logout}
             {loggingOut ? "Keluar..." : "Keluar"}
@@ -268,7 +351,9 @@ export default function Sidebar({
             <span className="font-serif font-semibold text-sm">DS</span>
           </div>
           <div className="min-w-0">
-            <p className="font-serif text-lg font-medium leading-tight">E-Surat</p>
+            <p className="font-serif text-lg font-medium leading-tight">
+              E-Surat
+            </p>
             <p className="text-[10px] uppercase tracking-[0.16em] text-paper/45 leading-tight">
               Desa Sangkima
             </p>
@@ -285,7 +370,7 @@ export default function Sidebar({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex items-center gap-3 rounded-[4px] px-3.5 py-2.5 text-[13px] font-semibold whitespace-nowrap transition-colors ${
+                className={`relative flex items-center gap-3 rounded-[4px] px-3.5 py-2.5 text-[14px] font-semibold whitespace-nowrap transition-colors ${
                   active
                     ? "bg-paper/10 text-paper"
                     : "text-paper/55 hover:text-paper hover:bg-paper/5"
@@ -312,7 +397,7 @@ export default function Sidebar({
           <button
             onClick={handleLogout}
             disabled={loggingOut}
-            className="flex items-center gap-2.5 rounded-[4px] -mx-2 px-2 py-2 text-[13px] font-semibold text-paper/50 hover:text-paper transition-colors disabled:opacity-60 whitespace-nowrap"
+            className="flex items-center gap-2.5 rounded-[4px] -mx-2 px-2 py-2 text-[14px] font-semibold text-paper/50 hover:text-paper transition-colors disabled:opacity-60 whitespace-nowrap"
           >
             {ICONS.logout}
             {loggingOut ? "Keluar..." : "Keluar"}
