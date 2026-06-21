@@ -1,8 +1,6 @@
 import Hero from "@/components/profile/Hero";
 import Reveal from "@/components/profile/Reveal";
 import Seal from "@/components/profile/Seal";
-import GallerySection from "@/components/profile/GallerySection";
-import ContactSection from "@/components/profile/ContactSection";
 import { ArrowRight, FileText, Store, Trees } from "@/components/profile/icons";
 
 const MISI = [
@@ -144,10 +142,6 @@ export default function BerandaPage() {
           </div>
         </div>
       </section>
-
-      <GallerySection />
-
-      <ContactSection />
     </>
   );
 }
