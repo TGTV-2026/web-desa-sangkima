@@ -21,7 +21,7 @@ const ACCENT_CLASSES: Record<StatCardAccent, string> = {
 export default function StatCardsGrid({ cards }: StatCardsGridProps) {
   return (
     <div
-      className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-8 sm:mb-10 rise-in"
+      className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 rise-in"
       style={{ animationDelay: "80ms" }}
     >
       {cards.map((c) => (
