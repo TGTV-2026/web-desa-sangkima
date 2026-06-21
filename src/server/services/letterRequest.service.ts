@@ -13,9 +13,11 @@ import {
   rejectLetterRequestSchema,
   processLetterRequestSchema,
   approveLetterRequestSchema,
+  updateLetterRequestDataSchema,
   normalizeRequiredFields,
   parseJsonColumn,
   type LetterAttachment,
+  type LetterFieldDef,
   type LetterLogDTO,
   type LetterRequestDTO,
   type LetterRequestData,
@@ -59,6 +61,18 @@ function requireStaffOrAdmin(actor: AuthUser) {
   }
 }
 
+// Pastikan field wajib (sesuai requiredFields jenis surat) terisi; dipakai saat warga
+// mengajukan maupun saat petugas merapikan data sebelum surat diproses.
+function validateRequiredFields(fields: LetterFieldDef[], data: LetterRequestData | undefined) {
+  for (const f of fields) {
+    if (!f.required) continue;
+    const v = data?.[f.name];
+    if (v === undefined || v === null || v === "") {
+      throw new Error(`Field "${f.label}" wajib diisi`);
+    }
+  }
+}
+
 // Ambil baris mentah + pastikan ada
 async function getRowOrThrow(id: string) {
   const row = await letterRequestRepository.findById(id);
@@ -69,7 +83,11 @@ async function getRowOrThrow(id: string) {
 // Render PDF dari data SAAT INI (dipanggil sekali saat approve, lalu hasilnya
 // disimpan ke disk lewat pdfPath supaya tidak ikut berubah kalau profil
 // warga diedit belakangan).
-async function renderPdf(row: LetterRequestJoinedRow, appUrl: string): Promise<Uint8Array> {
+async function renderPdf(
+  row: LetterRequestJoinedRow,
+  appUrl: string,
+  draft = false,
+): Promise<Uint8Array> {
   const user = await userRepository.findById(row.request.userId);
   const type = await letterTypeRepository.findById(row.request.letterTypeId);
 
@@ -90,6 +108,7 @@ async function renderPdf(row: LetterRequestJoinedRow, appUrl: string): Promise<U
     purpose: row.request.purpose,
     data: parseJsonColumn<LetterRequestData | null>(row.request.data, null),
     appUrl,
+    draft,
   });
 }
 
@@ -122,15 +141,14 @@ export const letterRequestService = {
     if (!type) throw new Error("Jenis surat tidak ditemukan");
     if (!type.active) throw new Error("Jenis surat sedang tidak aktif");
 
-    // pastikan field wajib (sesuai jenis surat) terisi
-    const fields = normalizeRequiredFields(type.requiredFields);
-    for (const f of fields) {
-      if (!f.required) continue;
-      const v = data.data?.[f.name];
-      if (v === undefined || v === null || v === "") {
-        throw new Error(`Field "${f.label}" wajib diisi`);
-      }
+    // tidak boleh ada 2 pengajuan jenis surat sama yang masih berjalan (DIAJUKAN/DIPROSES) sekaligus
+    if (await letterRequestRepository.hasPending(requesterId, data.letterTypeId)) {
+      throw new Error(
+        `Masih ada pengajuan ${type.name} yang belum disetujui. Tunggu sampai disetujui sebelum mengajukan lagi.`,
+      );
     }
+
+    validateRequiredFields(normalizeRequiredFields(type.requiredFields), data.data);
 
     const id = await letterRequestRepository.create({
       id: requestId,
@@ -156,6 +174,11 @@ export const letterRequestService = {
   ): Promise<LetterRequestDTO[]> {
     const rows = await letterRequestRepository.findByUser(userId, status);
     return rows.map(toDTO);
+  },
+
+  // Jenis surat yang masih punya pengajuan berjalan milik warga ini — dipakai modal pilih jenis surat
+  async getPendingTypeIds(userId: string): Promise<string[]> {
+    return letterRequestRepository.findPendingTypeIds(userId);
   },
 
   async listAll(status?: LetterStatus): Promise<LetterRequestDTO[]> {
@@ -388,6 +411,41 @@ export const letterRequestService = {
     return pdf;
   },
 
+  // Pratinjau hasil surat (semua status); kalau sudah resmi terbit, pakai snapshot
+  // PDF yang sama dengan unduhan biasa, kalau belum maka dirender langsung sebagai draft
+  // (tanpa nomor/QR resmi, ditandai watermark) tanpa disimpan ke disk.
+  async previewPdf(id: string, actor: AuthUser, appUrl: string): Promise<Uint8Array> {
+    const row = await getRowOrThrow(id);
+    if (actor.role === "user" && row.request.userId !== actor.id) {
+      throw new Error("Anda tidak berhak melihat pratinjau surat ini");
+    }
+    if (row.request.status === "DISETUJUI" || row.request.status === "SELESAI") {
+      return this.generatePdf(id, actor, appUrl);
+    }
+    return renderPdf(row, appUrl, true);
+  },
+
+  // Petugas merapikan field dinamis warga (mis. salah ketik) sebelum surat diproses
+  async updateData(actor: AuthUser, id: string, input: unknown): Promise<LetterRequestDTO> {
+    requireStaffOrAdmin(actor);
+    const { data } = updateLetterRequestDataSchema.parse(input);
+    const row = await getRowOrThrow(id);
+    if (row.request.status !== "DIAJUKAN") {
+      throw new Error("Data hanya bisa diedit sebelum surat diproses");
+    }
+    const type = await letterTypeRepository.findById(row.request.letterTypeId);
+    validateRequiredFields(normalizeRequiredFields(type?.requiredFields), data);
+
+    await letterRequestRepository.update(id, { data });
+    await letterRequestRepository.addLog({
+      requestId: id,
+      status: "DIAJUKAN",
+      note: "Data pemohon diperbarui oleh petugas",
+      changedBy: actor.id,
+    });
+    return toDTO(await getRowOrThrow(id));
+  },
+
   // Dispatcher aksi petugas dari satu endpoint PATCH
   async changeStatus(
     actor: AuthUser,
@@ -397,7 +455,7 @@ export const letterRequestService = {
   ): Promise<LetterRequestDTO> {
     const { action } = z
       .object({
-        action: z.enum(["process", "approve", "reject", "complete"]),
+        action: z.enum(["process", "approve", "reject", "complete", "updateData"]),
       })
       .parse(input);
 
@@ -410,6 +468,8 @@ export const letterRequestService = {
         return this.reject(actor, id, input);
       case "complete":
         return this.complete(actor, id);
+      case "updateData":
+        return this.updateData(actor, id, input);
     }
   },
 };

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import PageHeader from "@/components/esurat/PageHeader";
 import StatusFilterPills from "@/components/esurat/StatusFilterPills";
@@ -6,8 +5,10 @@ import EmptyState from "@/components/esurat/EmptyState";
 import PermohonanTable from "@/components/esurat/PermohonanTable";
 import Pagination from "@/components/esurat/Pagination";
 import LimitSelect from "@/components/esurat/LimitSelect";
+import TambahPengajuanButton from "./TambahPengajuanButton";
 import { getSessionUser } from "@/server/utils/session";
 import { letterRequestService } from "@/server/services/letterRequest.service";
+import { letterTypeService } from "@/server/services/letterType.service";
 import {
   LETTER_STATUSES,
   LETTER_STATUS_META,
@@ -33,6 +34,7 @@ export default async function PermohonanPage({ searchParams }: PageProps) {
     page,
     limit,
   );
+  const types = await letterTypeService.list(true);
 
   const filters: { label: string; href: string; active: boolean }[] = [
     { label: "Semua", href: `/esurat/dashboard/permohonan?limit=${limit}`, active: !status },
@@ -49,11 +51,7 @@ export default async function PermohonanPage({ searchParams }: PageProps) {
         overline="Buku Agenda"
         title="Permohonan Surat"
         description="Kelola pengajuan surat dari warga."
-        action={
-          <Link href="/esurat/dashboard/permohonan/tambah" className="btn-primary">
-            + Tambah Pengajuan
-          </Link>
-        }
+        action={<TambahPengajuanButton types={types} />}
       />
 
       <div className="flex items-start justify-between gap-3">

@@ -36,15 +36,7 @@ export default function PermohonanActions({ id, status, role }: Props) {
     ).catch(() => {});
 
   if (status === "DITOLAK" || status === "SELESAI") {
-    return status === "SELESAI" ? (
-      <a
-        href={`/esurat/api/letter-requests/${id}/pdf`}
-        target="_blank"
-        className="btn-outline w-full mt-8"
-      >
-        Lihat Surat (PDF)
-      </a>
-    ) : null;
+    return null;
   }
 
   return (
@@ -88,24 +80,15 @@ export default function PermohonanActions({ id, status, role }: Props) {
             ))}
 
           {status === "DISETUJUI" && (
-            <>
-              <button
-                onClick={() =>
-                  doAction({ action: "complete" }, "Surat ditandai selesai.")
-                }
-                disabled={busy}
-                className="btn-primary flex-1"
-              >
-                {busy ? "Memproses..." : "Tandai Selesai"}
-              </button>
-              <a
-                href={`/esurat/api/letter-requests/${id}/pdf`}
-                target="_blank"
-                className="btn-outline flex-1"
-              >
-                Lihat PDF
-              </a>
-            </>
+            <button
+              onClick={() =>
+                doAction({ action: "complete" }, "Surat ditandai selesai.")
+              }
+              disabled={busy}
+              className="btn-primary flex-1"
+            >
+              {busy ? "Memproses..." : "Tandai Selesai"}
+            </button>
           )}
 
           {(status === "DIAJUKAN" || status === "DIPROSES") && (

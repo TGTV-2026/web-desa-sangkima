@@ -1,28 +1,17 @@
 export interface DownloadActionsProps {
-  requestId: string;
   verificationCode?: string | null;
 }
 
-/** Tombol unduh PDF + cek keaslian untuk surat yang sudah disetujui/selesai. */
-export default function DownloadActions({ requestId, verificationCode }: DownloadActionsProps) {
+/** Tautan cek keaslian publik untuk surat yang sudah disetujui/selesai (unduh PDF sudah ada di pratinjau kartu detail). */
+export default function DownloadActions({ verificationCode }: DownloadActionsProps) {
+  if (!verificationCode) return null;
   return (
-    <div className="mt-8 flex flex-col sm:flex-row gap-3">
-      <a
-        href={`/esurat/api/letter-requests/${requestId}/pdf`}
-        target="_blank"
-        className="btn-primary flex-1"
-      >
-        Unduh Surat (PDF)
-      </a>
-      {verificationCode && (
-        <a
-          href={`/esurat/verifikasi/${verificationCode}`}
-          target="_blank"
-          className="btn-outline flex-1"
-        >
-          Cek Keaslian
-        </a>
-      )}
-    </div>
+    <a
+      href={`/esurat/verifikasi/${verificationCode}`}
+      target="_blank"
+      className="btn-outline w-full mt-8 text-center"
+    >
+      Cek Keaslian
+    </a>
   );
 }

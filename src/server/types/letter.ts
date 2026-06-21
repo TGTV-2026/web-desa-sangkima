@@ -185,6 +185,15 @@ export type TRejectLetterRequestInput = z.infer<
   typeof rejectLetterRequestSchema
 >;
 
+// Staff/admin merapikan field dinamis warga sebelum surat diproses (DIAJUKAN saja)
+export const updateLetterRequestDataSchema = z.object({
+  data: z.record(z.string(), z.union([z.string(), z.number(), z.null()])),
+});
+
+export type TUpdateLetterRequestDataInput = z.infer<
+  typeof updateLetterRequestDataSchema
+>;
+
 /* -------------------------------------------------------------------------- */
 /*  Bentuk response (DTO) yang dikembalikan API ke Frontend                   */
 /* -------------------------------------------------------------------------- */

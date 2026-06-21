@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, degrees, type PDFFont, type PDFPage } from "pdf-lib";
 import QRCode from "qrcode";
 
 // PDF surat disimpan sekali saat DISETUJUI agar isinya tidak ikut berubah
@@ -90,6 +90,8 @@ export type LetterPdfInput = {
   data: Record<string, string | number | null> | null;
   // URL dasar aplikasi untuk QR (mis. http://localhost:3000)
   appUrl: string;
+  // pratinjau sebelum surat disetujui: nomor/QR belum ada, tampilkan watermark
+  draft?: boolean;
 };
 
 export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Array> {
@@ -103,6 +105,22 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
     const w = font.widthOfTextAtSize(text, size);
     page.drawText(text, { x: (width - w) / 2, y, size, font, color: rgb(0, 0, 0) });
   };
+
+  // watermark digambar paling awal supaya berada di belakang konten lain
+  if (input.draft) {
+    const wm = "PRATINJAU";
+    const wmSize = 80;
+    const wmWidth = bold.widthOfTextAtSize(wm, wmSize);
+    page.drawText(wm, {
+      x: (width - wmWidth) / 2,
+      y: height / 2,
+      size: wmSize,
+      font: bold,
+      color: rgb(0.85, 0.85, 0.85),
+      rotate: degrees(45),
+      opacity: 0.5,
+    });
+  }
 
   // === KOP SURAT ===
   let y = height - margin;
@@ -125,7 +143,7 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
     thickness: 1, color: rgb(0, 0, 0),
   });
   y -= 16;
-  center(`Nomor: ${input.letterNumber}`, y, 10, normal);
+  center(`Nomor: ${input.draft ? "(belum diterbitkan)" : input.letterNumber}`, y, 10, normal);
   y -= 30;
 
   // === ISI ===
@@ -188,14 +206,19 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
   }
   page.drawText("( ............................ )", { x: signX, y: sy, size: 11, font: bold });
 
-  // === QR VERIFIKASI (kiri bawah) ===
-  const verifyUrl = `${input.appUrl.replace(/\/$/, "")}/esurat/verifikasi/${input.verificationCode}`;
-  const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 200 });
-  const qrPng = await doc.embedPng(qrDataUrl);
-  const qrSize = 90;
-  page.drawImage(qrPng, { x: margin, y: 70, width: qrSize, height: qrSize });
-  page.drawText("Pindai untuk verifikasi", { x: margin, y: 60, size: 8, font: normal, color: rgb(0.3, 0.3, 0.3) });
-  page.drawText("keaslian surat ini.", { x: margin, y: 50, size: 8, font: normal, color: rgb(0.3, 0.3, 0.3) });
+  // === QR VERIFIKASI (kiri bawah) — hanya untuk surat yang sudah resmi disetujui ===
+  if (input.draft) {
+    page.drawText("QR verifikasi akan muncul setelah surat", { x: margin, y: 60, size: 8, font: normal, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText("disetujui & diterbitkan resmi.", { x: margin, y: 50, size: 8, font: normal, color: rgb(0.3, 0.3, 0.3) });
+  } else {
+    const verifyUrl = `${input.appUrl.replace(/\/$/, "")}/esurat/verifikasi/${input.verificationCode}`;
+    const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 200 });
+    const qrPng = await doc.embedPng(qrDataUrl);
+    const qrSize = 90;
+    page.drawImage(qrPng, { x: margin, y: 70, width: qrSize, height: qrSize });
+    page.drawText("Pindai untuk verifikasi", { x: margin, y: 60, size: 8, font: normal, color: rgb(0.3, 0.3, 0.3) });
+    page.drawText("keaslian surat ini.", { x: margin, y: 50, size: 8, font: normal, color: rgb(0.3, 0.3, 0.3) });
+  }
 
   return doc.save();
 }

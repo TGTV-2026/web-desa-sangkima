@@ -12,6 +12,7 @@ export interface LetterDetailCardProps {
   backHref: string;
   backLabel: string;
   showRequester?: boolean;
+  fieldsSlot?: React.ReactNode;
   children?: React.ReactNode;
 }
 
@@ -22,6 +23,7 @@ export default function LetterDetailCard({
   backHref,
   backLabel,
   showRequester,
+  fieldsSlot,
   children,
 }: LetterDetailCardProps) {
   return (
@@ -53,11 +55,34 @@ export default function LetterDetailCard({
           <RejectionReasonAlert reason={request.rejectionReason} />
         )}
 
-        <LetterMetaList request={request} showRequester={showRequester} />
+        <LetterMetaList request={request} showRequester={showRequester} fieldsSlot={fieldsSlot} />
 
         <LampiranList requestId={request.id} attachments={request.attachments} />
 
         <LetterTimeline logs={logs} />
+
+        <div className="mt-6 border-t border-line pt-5">
+          <p className="label-doc">
+            {request.status === "DISETUJUI" || request.status === "SELESAI"
+              ? "Surat Terbit"
+              : "Pratinjau Surat"}
+          </p>
+          <iframe
+            key={request.status}
+            src={`/esurat/api/letter-requests/${request.id}/preview`}
+            title="Pratinjau surat"
+            className="w-full aspect-[210/297] border border-line rounded-sm mt-3 bg-paper2/20"
+          />
+          {(request.status === "DISETUJUI" || request.status === "SELESAI") && (
+            <a
+              href={`/esurat/api/letter-requests/${request.id}/pdf`}
+              target="_blank"
+              className="btn-primary w-full mt-4 text-center"
+            >
+              Unduh Surat (PDF)
+            </a>
+          )}
+        </div>
 
         {children}
       </div>

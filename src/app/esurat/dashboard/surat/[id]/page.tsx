@@ -19,8 +19,6 @@ export default async function DetailSuratPage({ params }: PageProps) {
   }
   const logs = await letterRequestService.getLogs(id);
 
-  const bisaUnduh = surat.status === "DISETUJUI" || surat.status === "SELESAI";
-
   return (
     <LetterDetailCard
       request={surat}
@@ -28,9 +26,7 @@ export default async function DetailSuratPage({ params }: PageProps) {
       backHref="/esurat/dashboard/surat"
       backLabel="Kembali ke Surat Saya"
     >
-      {bisaUnduh && (
-        <DownloadActions requestId={surat.id} verificationCode={surat.verificationCode} />
-      )}
+      <DownloadActions verificationCode={surat.verificationCode} />
     </LetterDetailCard>
   );
 }

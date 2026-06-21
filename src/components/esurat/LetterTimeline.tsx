@@ -14,8 +14,11 @@ export default function LetterTimeline({ logs }: { logs: LetterLogDTO[] }) {
   if (logs.length === 0) return null;
 
   return (
-    <div className="mt-6 border-t border-line pt-5">
-      <p className="label-doc">Riwayat Status</p>
+    <details className="mt-6 border-t border-line pt-5 group">
+      <summary className="label-doc cursor-pointer select-none list-none flex items-center justify-between [&::-webkit-details-marker]:hidden">
+        Riwayat Status
+        <span className="text-inkmut text-xs transition-transform group-open:rotate-180">▾</span>
+      </summary>
       <ul className="flex flex-col mt-3">
         {logs.map((log, i) => (
           <li key={log.id} className="flex gap-3">
@@ -40,6 +43,6 @@ export default function LetterTimeline({ logs }: { logs: LetterLogDTO[] }) {
           </li>
         ))}
       </ul>
-    </div>
+    </details>
   );
 }

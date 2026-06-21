@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, isNotNull, lt } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, isNotNull, lt } from "drizzle-orm";
 import { db } from "../db";
 import {
   letterRequestLogs,
@@ -127,6 +127,36 @@ export const letterRequestRepository = {
       .leftJoin(users, eq(letterRequestLogs.changedBy, users.id))
       .where(eq(letterRequestLogs.requestId, requestId))
       .orderBy(asc(letterRequestLogs.createdAt));
+  },
+
+  // Cek apakah warga masih punya pengajuan jenis surat ini yang belum kelar (belum disetujui/ditolak)
+  async hasPending(userId: string, letterTypeId: string) {
+    const rows = await db
+      .select({ id: letterRequests.id })
+      .from(letterRequests)
+      .where(
+        and(
+          eq(letterRequests.userId, userId),
+          eq(letterRequests.letterTypeId, letterTypeId),
+          inArray(letterRequests.status, ["DIAJUKAN", "DIPROSES"]),
+        ),
+      )
+      .limit(1);
+    return rows.length > 0;
+  },
+
+  // Daftar letterTypeId yang masih punya pengajuan berjalan milik warga ini (untuk blokir di modal pilih jenis surat)
+  async findPendingTypeIds(userId: string) {
+    const rows = await db
+      .selectDistinct({ letterTypeId: letterRequests.letterTypeId })
+      .from(letterRequests)
+      .where(
+        and(
+          eq(letterRequests.userId, userId),
+          inArray(letterRequests.status, ["DIAJUKAN", "DIPROSES"]),
+        ),
+      );
+    return rows.map((r) => r.letterTypeId);
   },
 
   // Hitung surat yang sudah disetujui dalam satu tahun (untuk nomor urut)

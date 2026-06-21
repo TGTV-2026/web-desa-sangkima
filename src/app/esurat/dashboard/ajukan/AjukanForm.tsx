@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSubmitAction } from "@/hooks/useSubmitAction";
 import FormField from "@/components/esurat/FormField";
@@ -11,36 +11,29 @@ import DynamicLetterFields from "@/components/esurat/DynamicLetterFields";
 const MAX_FILES = 3;
 const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 
-export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
+export default function AjukanForm({ type }: { type: LetterTypeDTO }) {
   const router = useRouter();
   const { busy: submitting, submit } = useSubmitAction();
 
-  const [typeId, setTypeId] = useState("");
   const [purpose, setPurpose] = useState("");
   const [data, setData] = useState<Record<string, string>>({});
   const [files, setFiles] = useState<File[]>([]);
-
-  const selected = useMemo(
-    () => types.find((t) => t.id === typeId),
-    [types, typeId],
-  );
 
   const setField = (name: string, value: string) =>
     setData((d) => ({ ...d, [name]: value }));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selected) return;
 
     const payload: Record<string, string | number> = {};
-    for (const f of selected.requiredFields) {
+    for (const f of type.requiredFields) {
       const v = data[f.name] ?? "";
       if (v === "") continue;
       payload[f.name] = f.type === "number" ? Number(v) : v;
     }
 
     const fd = new FormData();
-    fd.append("letterTypeId", selected.id);
+    fd.append("letterTypeId", type.id);
     fd.append("purpose", purpose);
     fd.append("data", JSON.stringify(payload));
     for (const file of files) fd.append("lampiran", file);
@@ -65,27 +58,16 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
   return (
     <form onSubmit={handleSubmit} className="card-doc p-5 sm:p-7 md:p-8 bg-paper border border-line/70 rounded-sm shadow-sm flex flex-col gap-6 text-ink">
 
-      {/* SECTION 1: KLASIFIKASI SURAT */}
+      {/* SECTION 1: KLASIFIKASI SURAT (sudah ditentukan dari modal pilih jenis surat) */}
       <div className="flex flex-col gap-4">
-        <FormField
-          id="jenis"
-          label="Pilih Jenis Surat Resmi"
-          type="select"
-          value={typeId}
-          onChange={(val) => {
-            setTypeId(val);
-            setData({});
-          }}
-          required
-          placeholder="— Klik untuk memilih dokumen —"
-          options={types.map((t) => ({ value: t.id, label: `${t.name} (${t.code})` }))}
-          labelClassName="text-xs font-bold tracking-wider text-pine-900"
-          inputClassName="mt-1.5 bg-white transition-all focus:border-pine-900 focus:ring-1 focus:ring-pine-900"
-        />
+        <div>
+          <p className="overline-doc !text-brass">{type.code}</p>
+          <h2 className="font-serif text-xl font-medium text-pine-900 mt-0.5">{type.name}</h2>
+        </div>
 
-        {selected?.description && (
-          <div className="bg-paper2/40 border-l-2 border-brass px-4 py-3 text-xs leading-relaxed text-inkmut rounded-sm animate-fade-in">
-            <span className="font-semibold text-ink">Deskripsi Layanan:</span> {selected.description}
+        {type.description && (
+          <div className="bg-paper2/40 border-l-2 border-brass px-4 py-3 text-xs leading-relaxed text-inkmut rounded-sm">
+            <span className="font-semibold text-ink">Deskripsi Layanan:</span> {type.description}
           </div>
         )}
       </div>
@@ -107,14 +89,12 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
       </div>
 
       {/* SECTION 3: FORM DINAMIS (DATA TAMBAHAN) */}
-      {selected && (
-        <DynamicLetterFields
-          letterTypeCode={selected.code}
-          fields={selected.requiredFields}
-          values={data}
-          onChange={setField}
-        />
-      )}
+      <DynamicLetterFields
+        letterTypeCode={type.code}
+        fields={type.requiredFields}
+        values={data}
+        onChange={setField}
+      />
 
       {/* SECTION 4: UNGGAH BERKAS (PREMIUM DROP ZONE) */}
       <div className="border-t border-line pt-5">
@@ -135,7 +115,7 @@ export default function AjukanForm({ types }: { types: LetterTypeDTO[] }) {
       <div className="pt-2">
         <button
           type="submit"
-          disabled={submitting || !typeId}
+          disabled={submitting}
           className="btn-primary w-full shadow-sm py-3 px-4 font-bold tracking-wide uppercase text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Mentransmisikan Dokumen..." : "Kirim Dokumen Pengajuan"}
