@@ -226,3 +226,32 @@ body::after {
     scroll-behavior: auto;
   }
 }
+
+/* ============================================================
+   Animasi "assemble" — kartu mulai BERSERAK (offset + rotate) lalu
+   MERAPAT ke posisi grid saat seksi di-scroll (meniru efek Huawei
+   "berantakan → rapi"). Offset awal per kartu diatur via --tx/--ty/--rot
+   (inline style). Wadah seksi sebaiknya overflow-hidden agar tak ada
+   scrollbar horizontal saat kartu berserak.
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .sd-assemble {
+      animation: sd-assemble linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 42%;
+      will-change: transform, opacity;
+    }
+  }
+}
+@keyframes sd-assemble {
+  from {
+    opacity: 0;
+    transform: translate(var(--tx, 0px), var(--ty, 48px))
+      rotate(var(--rot, 0deg)) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
