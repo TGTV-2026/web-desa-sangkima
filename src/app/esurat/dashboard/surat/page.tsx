@@ -14,9 +14,9 @@ export default async function SuratSayaPage() {
   const requests = await letterRequestService.listForUser(session.id);
 
   return (
-    <div>
+    <div className="w-full text-ink select-none antialiased">
       <PageHeader
-        overline="Arsip Pribadi"
+        breadcrumb={{ parent: "Arsip", current: "Surat Saya" }}
         title="Surat Saya"
         description="Riwayat seluruh pengajuan surat Anda."
         action={
@@ -24,9 +24,10 @@ export default async function SuratSayaPage() {
             Ajukan Surat Baru
           </Link>
         }
+        bordered
       />
 
-      <div className="card-doc overflow-hidden rise-in" style={{ animationDelay: "100ms" }}>
+      <div className="card-doc overflow-hidden rise-in mt-[20px]" style={{ animationDelay: "100ms" }}>
         {requests.length === 0 ? (
           <EmptyState
             title="Belum ada surat"
