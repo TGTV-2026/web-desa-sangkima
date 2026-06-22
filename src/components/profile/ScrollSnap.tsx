@@ -1,17 +1,20 @@
 "use client";
 
-// Memasang scroll-snap lembut HANYA selama halaman profil aktif, dengan menambah
-// kelas `.snap-sections` ke <html> (lihat globals.css). Dilepas saat unmount supaya
-// tidak bocor ke halaman /esurat. Scroller tetap root <html> → progress bar &
-// animasi scroll-driven tetap bekerja normal.
+// Memasang scroll-snap lembut HANYA di Beranda ("/"). Di halaman lain (mis. /profil)
+// snap + scroll-behavior:smooth TIDAK dipasang karena mematahkan pin GSAP ScrollTrigger.
+// Kelas `.snap-sections` ditambah ke <html> (lihat globals.css), dilepas saat pindah/keluar.
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export default function ScrollSnap() {
+  const pathname = usePathname();
+
   useEffect(() => {
+    if (pathname !== "/") return;
     const html = document.documentElement;
     html.classList.add("snap-sections");
     return () => html.classList.remove("snap-sections");
-  }, []);
+  }, [pathname]);
 
   return null;
 }

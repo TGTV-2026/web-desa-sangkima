@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import Reveal from "@/components/profile/Reveal";
 import Seal from "@/components/profile/Seal";
-import MisiAssemble from "@/components/profile/MisiAssemble";
 import { Eye, Person } from "@/components/profile/icons";
 
 export const metadata: Metadata = {
