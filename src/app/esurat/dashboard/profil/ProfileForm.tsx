@@ -194,7 +194,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
   };
 
   const labelCls = "text-xs font-bold tracking-wider text-pine-900";
-  const inputCls = "mt-1.5 bg-white transition-all focus:border-pine-900 focus:ring-1 focus:ring-pine-900";
+  const inputCls = "mt-1.5 bg-paper3 text-ink placeholder:text-inkmut/50 transition-all duration-200 focus:bg-paper focus:text-pine-900 focus:border-pine-900 focus:ring-1 focus:ring-pine-900";
 
   return (
     <form
@@ -205,7 +205,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
       <div>
         <div className="flex items-center gap-2 mb-4">
           <span className="w-1 h-3 bg-pine-800 rounded-full shrink-0" />
-          <h2 className="font-serif text-base font-medium text-pine-900">
+          <h2 className="font-serif text-[18px] font-medium text-pine-900">
             Data Identitas
           </h2>
         </div>
@@ -238,7 +238,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
             />
           </div>
         </div>
-        <p className="text-[11px] text-inkmut mt-2.5 leading-relaxed">
+        <p className="text-[14px] text-inkmut mt-2.5 leading-relaxed">
           Data identitas primer tidak dapat diubah lewat halaman ini. Hubungi
           petugas administrasi desa jika perlu koreksi.
         </p>
@@ -248,7 +248,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
       <div className="border-t border-line/50 pt-5">
         <div className="flex items-center gap-2 mb-4">
           <span className="w-1 h-3 bg-brass rounded-full shrink-0" />
-          <h2 className="font-serif text-base font-medium text-pine-900">
+          <h2 className="font-serif text-[18px] font-medium text-pine-900">
             Data Kependudukan
           </h2>
         </div>
@@ -375,7 +375,7 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
       <div className="border-t border-line/50 pt-5">
         <div className="flex items-center gap-2 mb-4">
           <span className="w-1 h-3 bg-pine-600 rounded-full shrink-0" />
-          <h2 className="font-serif text-base font-medium text-pine-900">
+          <h2 className="font-serif text-[18px] font-medium text-pine-900">
             Kontak & Profesi
           </h2>
         </div>

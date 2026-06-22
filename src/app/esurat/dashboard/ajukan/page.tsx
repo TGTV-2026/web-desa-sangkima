@@ -25,8 +25,7 @@ export default async function AjukanPage() {
     : [];
 
   return (
-    /* CONTAINER LAYOUT: Dikunci max-w-2xl, rata tengah otomatis di komputer lebar agar simetris */
-    <div className="w-full max-w-2xl mx-auto px-4 sm:px-2 py-6 sm:py-10 min-h-screen text-ink select-none antialiased">
+    <div className="w-full text-ink select-none antialiased">
       <PageHeader
         breadcrumb={{ parent: "Layanan Surat", current: "Formulir Permohonan" }}
         title="Ajukan Surat Resmi"
@@ -38,8 +37,8 @@ export default async function AjukanPage() {
         bordered
       />
 
-      {/* AREA UTAMA — modal pilih jenis surat, atau blocker jika profil belum lengkap */}
-      <div className="rise-in" style={{ animationDelay: "100ms" }}>
+      {/* AREA UTAMA */}
+      <div className="rise-in mt-5" style={{ animationDelay: "100ms" }}>
         {profileComplete ? (
           <PilihJenisSuratModal
             types={types}

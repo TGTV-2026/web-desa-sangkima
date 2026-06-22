@@ -26,7 +26,7 @@ export default function PageHeader({
     >
       <div className="min-w-0 flex-1">
         {breadcrumb ? (
-          <div className="flex items-center gap-2 text-[10px] sm:text-xs font-bold uppercase tracking-[0.16em] text-inkmut">
+          <div className="flex items-center gap-2 text-[12px] lg:text-[14px] font-bold uppercase tracking-[0.16em] text-inkmut">
             <span>{breadcrumb.parent}</span>
             <span className="text-line">/</span>
             <span className="text-brass">{breadcrumb.current}</span>
@@ -38,7 +38,7 @@ export default function PageHeader({
         <h1
           className={
             breadcrumb
-              ? "font-serif text-2xl sm:text-3xl lg:text-4xl font-medium tracking-tight mt-1.5 text-pine-900 truncate"
+              ? "font-serif text-3xl sm:text-3xl lg:text-4xl font-medium tracking-tight mt-1.5 text-pine-900 truncate"
               : "font-serif text-4xl font-medium tracking-tight mt-1.5"
           }
         >
@@ -46,7 +46,7 @@ export default function PageHeader({
         </h1>
 
         {description && (
-          <p className={`text-sm text-inkmut mt-1.5 ${descriptionClassName ?? ""}`}>
+          <p className={`mt-1.5 ${descriptionClassName ?? ""}`}>
             {description}
           </p>
         )}

@@ -35,7 +35,7 @@ export default function StatCardsGrid({ cards }: StatCardsGridProps) {
               {c.value}
             </p>
           </div>
-          <p className="text-[9px] sm:text-[10px] lg:text-[11px] font-bold uppercase tracking-[0.12em] sm:tracking-[0.15em] text-inkmut mt-3 sm:mt-4 pl-1 truncate">
+          <p className="text-[11px] sm:text-[12px] font-bold uppercase tracking-[0.12em] sm:tracking-[0.15em] text-inkmut mt-3 sm:mt-4 pl-1 truncate">
             {c.label}
           </p>
         </div>
