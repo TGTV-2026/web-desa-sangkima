@@ -30,7 +30,7 @@ export default async function AjukanFormPage({ params }: PageProps) {
   if (!type.active) notFound();
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 sm:px-2 py-6 sm:py-10 min-h-screen text-ink select-none antialiased">
+    <div className="w-full max-w-4xl mx-auto px-4 sm:px-2 py-6 sm:py-10 min-h-screen text-ink select-none antialiased">
       <PageHeader
         breadcrumb={{ parent: "Layanan Surat", current: type.name }}
         title="Ajukan Surat Resmi"

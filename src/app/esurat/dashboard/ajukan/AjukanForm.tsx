@@ -3,27 +3,39 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSubmitAction } from "@/hooks/useSubmitAction";
+import { useToast } from "@/hooks/useToast";
 import FormField from "@/components/esurat/FormField";
-import FileDropzone, { formatSize } from "@/components/esurat/FileDropzone";
-import type { LetterTypeDTO } from "@/server/types/letter";
+import DocumentUploadField from "@/components/esurat/DocumentUploadField";
+import { SUPPORTING_DOCS, type LetterTypeDTO } from "@/server/types/letter";
 import DynamicLetterFields from "@/components/esurat/DynamicLetterFields";
-
-const MAX_FILES = 3;
-const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
 
 export default function AjukanForm({ type }: { type: LetterTypeDTO }) {
   const router = useRouter();
+  const { toast } = useToast();
   const { busy: submitting, submit } = useSubmitAction();
+
+  const docs = SUPPORTING_DOCS[type.code] ?? [];
 
   const [purpose, setPurpose] = useState("");
   const [data, setData] = useState<Record<string, string>>({});
-  const [files, setFiles] = useState<File[]>([]);
+  // file per dokumen pendukung; index = docIndex
+  const [files, setFiles] = useState<(File | null)[]>(() => docs.map(() => null));
 
   const setField = (name: string, value: string) =>
     setData((d) => ({ ...d, [name]: value }));
 
+  const setFileAt = (i: number, file: File | null) =>
+    setFiles((prev) => prev.map((f, idx) => (idx === i ? file : f)));
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // dokumen wajib harus terisi (server juga menegakkan ini)
+    const missing = docs.find((doc, i) => doc.required && !files[i]);
+    if (missing) {
+      toast(`Dokumen wajib "${missing.label}" belum diunggah.`, "Lampiran Belum Lengkap", "error", 4000);
+      return;
+    }
 
     const payload: Record<string, string | number> = {};
     for (const f of type.requiredFields) {
@@ -36,7 +48,9 @@ export default function AjukanForm({ type }: { type: LetterTypeDTO }) {
     fd.append("letterTypeId", type.id);
     fd.append("purpose", purpose);
     fd.append("data", JSON.stringify(payload));
-    for (const file of files) fd.append("lampiran", file);
+    files.forEach((file, i) => {
+      if (file) fd.append(`lampiran_${i}`, file);
+    });
 
     await submit(
       () => fetch("/esurat/api/letter-requests", { method: "POST", body: fd }),
@@ -96,20 +110,32 @@ export default function AjukanForm({ type }: { type: LetterTypeDTO }) {
         onChange={setField}
       />
 
-      {/* SECTION 4: UNGGAH BERKAS (PREMIUM DROP ZONE) */}
-      <div className="border-t border-line pt-5">
-        <p className="label-doc text-xs font-bold tracking-wider text-pine-900">
-          Dokumen Lampiran Pendukung
-          <span className="normal-case tracking-normal font-normal text-inkmut/60 italic ml-1">(opsional)</span>
-        </p>
-        <FileDropzone
-          value={files}
-          onChange={setFiles}
-          maxFiles={MAX_FILES}
-          maxSizeBytes={MAX_SIZE}
-          helperText={`Unggah berkas pembuktian (Scan KTP/KK/Surat Pengantar RT) jika diminta. Maksimal ${MAX_FILES} file, batas ukuran ${formatSize(MAX_SIZE)} per data, format resmi: PDF, JPG, atau PNG.`}
-        />
-      </div>
+      {/* SECTION 4: UNGGAH BERKAS — satu slot per dokumen pendukung */}
+      {docs.length > 0 && (
+        <div className="border-t border-line pt-5 flex flex-col gap-4">
+          <div>
+            <p className="label-doc text-xs font-bold tracking-wider text-pine-900 !mb-1">
+              Dokumen Lampiran Pendukung
+            </p>
+            <p className="text-[11px] text-inkmut leading-relaxed">
+              Unggah tiap dokumen pada slotnya masing-masing. Bertanda{" "}
+              <span className="text-oxide font-bold">*</span> wajib diunggah. Format PDF, JPG, atau PNG.
+            </p>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {docs.map((doc, i) => (
+              <DocumentUploadField
+                key={doc.label}
+                label={doc.label}
+                required={doc.required}
+                value={files[i] ?? null}
+                onChange={(file) => setFileAt(i, file)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* SUBMIT BUTTON */}
       <div className="pt-2">
