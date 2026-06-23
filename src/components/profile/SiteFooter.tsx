@@ -2,10 +2,10 @@ import Link from "next/link";
 import { MapPin, Mail, Share } from "./icons";
 
 const NAVIGASI = [
-  { label: "Beranda", href: "#beranda" },
-  { label: "Layanan Digital", href: "#layanan" },
-  { label: "Profil Desa", href: "#profil" },
-  { label: "Galeri & Potensi", href: "#galeri" },
+  { label: "Beranda", href: "/#beranda" },
+  { label: "Layanan Digital", href: "/#layanan" },
+  { label: "Profil Desa", href: "/profil" },
+  { label: "Galeri & Potensi", href: "/#galeri" },
 ];
 
 const LEGAL = [
