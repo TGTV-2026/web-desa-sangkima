@@ -248,7 +248,7 @@ body::after {
   from {
     opacity: 0;
     transform: translate(var(--tx, 0px), var(--ty, 48px))
-      rotate(var(--rot, 0deg)) scale(0.92);
+      rotate(var(--rot, 0deg)) scale(0.4);
   }
   to {
     opacity: 1;

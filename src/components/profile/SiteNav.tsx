@@ -17,6 +17,7 @@ const LINKS = [
 
 export default function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -25,15 +26,28 @@ export default function SiteNav() {
   const solid = scrolled || pathname !== "/";
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
+    let lastY = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 50);
+      // Sembunyikan saat scroll turun (beri ruang seksi), tampilkan saat scroll naik.
+      if (y > lastY && y > 120) setHidden(true);
+      else if (y < lastY) setHidden(false);
+      lastY = y;
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Menu mobile terbuka memaksa nav tetap terlihat.
+  const visuallyHidden = hidden && !open;
+
   return (
     <nav
       className={`fixed top-0 z-50 w-full border-b transition-all duration-500 ease-in-out ${
+        visuallyHidden ? "-translate-y-full" : "translate-y-0"
+      } ${
         solid
           ? "border-line bg-paper/95 py-2 shadow-[0_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-md"
           : "border-transparent bg-transparent py-4"

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import type { CSSProperties } from "react";
 import Reveal from "@/components/profile/Reveal";
 import Seal from "@/components/profile/Seal";
 import { Eye, Person } from "@/components/profile/icons";
+import MisiAssemble from "@/components/profile/MisiAssemble";
 
 export const metadata: Metadata = {
   title: "Profil Desa Sangkima — Sejarah, Visi & Misi, Struktur",
@@ -106,66 +106,7 @@ export default function ProfilPage() {
           <div className="h-px w-24 bg-brass" />
         </Reveal>
 
-        {/* Pernyataan Visi + chip misi berserak yang merapat saat scroll (pinned) */}
-        <MisiAssemble visi={VISI} count={MISI.length} />
-
-        {/* Misi Utama — timeline (kartu "assemble": berkumpul ke tengah → merapat saat scroll) */}
-        <div className="relative mx-auto mt-16 w-full max-w-5xl overflow-x-clip">
-          <div className="absolute left-1/2 top-0 bottom-0 hidden w-px -translate-x-1/2 border-l-2 border-dashed border-line lg:block" />
-
-          <Reveal className="relative z-10 mx-auto mb-14 w-fit rounded-full border border-line bg-paper px-8 py-3">
-            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-pine-900">
-              Misi Utama
-            </span>
-          </Reveal>
-
-          <div className="flex flex-col gap-10">
-            {MISI.map((m, i) => {
-              const left = i % 2 === 0;
-              // Mulai bergeser ke tengah (tampak "sederet") lalu merapat ke sisinya saat scroll.
-              const offset = {
-                "--tx": left ? "160px" : "-160px",
-                "--ty": `${((i % 3) - 1) * 16}px`,
-                "--rot": left ? "-4deg" : "4deg",
-              } as CSSProperties;
-              const card = (
-                <div className="sd-assemble w-full" style={offset}>
-                  <div className="group relative w-full overflow-hidden rounded-xl border border-line bg-card/80 p-8 backdrop-blur transition-all duration-500 hover:-translate-y-2 hover:border-pine-700 hover:shadow-[0_12px_32px_-12px_rgba(28,58,43,0.25)]">
-                    <span className="pointer-events-none absolute -right-3 -top-8 select-none font-serif text-[120px] font-bold leading-none text-pine-900/5 transition-transform duration-500 group-hover:scale-110 group-hover:text-pine-900/10">
-                      {String(i + 1).padStart(2, "0")}
-                    </span>
-                    <p className="relative z-10 text-[15px] leading-relaxed text-ink">
-                      {m}
-                    </p>
-                  </div>
-                </div>
-              );
-              return (
-                <div
-                  key={i}
-                  className="relative flex flex-col lg:flex-row lg:items-center"
-                >
-                  {left ? (
-                    <>
-                      <div className="flex lg:w-1/2 lg:justify-end lg:pr-12">
-                        {card}
-                      </div>
-                      <div className="hidden lg:block lg:w-1/2" />
-                    </>
-                  ) : (
-                    <>
-                      <div className="hidden lg:block lg:w-1/2" />
-                      <div className="flex lg:w-1/2 lg:justify-start lg:pl-12">
-                        {card}
-                      </div>
-                    </>
-                  )}
-                  <span className="absolute left-1/2 top-1/2 z-20 hidden h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-line bg-paper lg:block" />
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <MisiAssemble visi={VISI} misi={MISI} />
       </section>
 
       <div className="h-px w-full bg-line" />
