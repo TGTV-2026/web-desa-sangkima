@@ -322,7 +322,7 @@ export type LetterAttachmentDTO = {
 /*  Kontrak: kelola jenis surat (admin / kepala desa)                         */
 /* -------------------------------------------------------------------------- */
 
-export const createLetterTypeSchema = z.object({
+const baseLetterTypeSchema = z.object({
   code: z
     .string()
     .min(2, "Kode minimal 2 karakter")
@@ -331,11 +331,16 @@ export const createLetterTypeSchema = z.object({
   name: z.string().min(3, "Nama jenis surat minimal 3 karakter"),
   description: z.string().max(500).optional(),
   template: z.string().optional(), // isi surat dengan placeholder, mis. {{name}}
+  requiredFields: z.array(letterFieldDefSchema),
+  active: z.boolean(),
+});
+
+export const createLetterTypeSchema = baseLetterTypeSchema.extend({
   requiredFields: z.array(letterFieldDefSchema).default([]),
   active: z.boolean().default(true),
 });
 
-export const updateLetterTypeSchema = createLetterTypeSchema.partial();
+export const updateLetterTypeSchema = baseLetterTypeSchema.partial();
 
 export type TCreateLetterTypeInput = z.infer<typeof createLetterTypeSchema>;
 export type TUpdateLetterTypeInput = z.infer<typeof updateLetterTypeSchema>;

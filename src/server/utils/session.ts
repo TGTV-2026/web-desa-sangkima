@@ -10,6 +10,7 @@ export type SessionUser = {
   nik: string;
   role: UserRole;
   isProfileComplete: boolean;
+  positionName: string | null;
 };
 
 /** Field yang harus non-null agar profil dianggap lengkap (sinkron dengan PROFILE_REQUIRED_FIELDS di types/user). */
@@ -39,9 +40,10 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const payload = await verifyToken(token);
   if (!payload?.id) return null;
 
-  const user = await userRepository.findById(payload.id as string);
-  if (!user || user.deletedAt) return null;
+  const data = await userRepository.findByIdWithPosition(payload.id as string);
+  if (!data || !data.user || data.user.deletedAt) return null;
 
+  const user = data.user;
   const isProfileComplete = PROFILE_FIELDS.every(
     (f) => user[f] !== null && user[f] !== undefined,
   );
@@ -53,6 +55,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     nik: user.nik,
     role: user.role as UserRole,
     isProfileComplete,
+    positionName: data.positionName,
   };
 }
 

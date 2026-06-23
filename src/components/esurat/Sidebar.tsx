@@ -130,7 +130,7 @@ const ICONS = {
 const ROLE_LABEL: Record<Role, string> = {
   user: "Warga",
   staff: "Operator Desa",
-  admin: "Kepala Desa",
+  admin: "Admin",
 };
 
 function navForRole(role: Role): NavItem[] {
@@ -193,7 +193,7 @@ function navForRole(role: Role): NavItem[] {
   return items;
 }
 
-export default function Sidebar({ role, name }: { role: Role; name: string }) {
+export default function Sidebar({ role, name, positionName }: { role: Role; name: string; positionName?: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -390,9 +390,11 @@ export default function Sidebar({ role, name }: { role: Role; name: string }) {
         <div className="flex flex-col items-stretch gap-2 px-6 py-6 border-t border-paper/10 mt-auto shrink-0 bg-pine-900">
           <div className="pb-1">
             <p className="text-sm font-semibold truncate">{name}</p>
-            <p className="text-[10px] uppercase tracking-[0.16em] text-brass mt-0.5">
-              {ROLE_LABEL[role]}
-            </p>
+            {role !== "user" && (
+              <p className="text-[10px] uppercase tracking-[0.16em] text-brass mt-0.5">
+                {role === "admin" ? ROLE_LABEL["admin"] : (positionName || ROLE_LABEL["staff"])}
+              </p>
+            )}
           </div>
           <button
             onClick={handleLogout}
