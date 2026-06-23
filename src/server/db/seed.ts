@@ -438,10 +438,10 @@ async function seedUsers(positionByName: Map<string, string>) {
   };
 
   const seedList: SeedUser[] = [
-    { name: "Admin Kepala Desa", email: "admin@example.com", role: "admin", positionName: "Kepala Desa" },
+    { name: "Admin Desa", email: "admin@example.com", role: "admin", positionName: null },
     { name: "Warga Contoh", email: "user@example.com", role: "user", positionName: null },
     // 1 staff per jabatan selain Kepala Desa (dipakai akun admin)
-    ...SEED_POSITIONS.filter((p) => p.name !== "Kepala Desa").map<SeedUser>((p) => ({
+    ...SEED_POSITIONS.filter((p) => p.name ).map<SeedUser>((p) => ({
       name: p.name,
       email: slugEmail(p.name),
       role: "staff",

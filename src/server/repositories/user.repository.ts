@@ -6,6 +6,36 @@ import type { TCreateUserByAdminInput } from "../types/user";
 import { createId } from "@paralleldrive/cuid2";
 
 export const userRepository = {
+  /**
+   * Mengatasi konflik pada akun yang sudah dihapus (soft delete).
+   * Jika ada akun yang soft-deleted tapi masih menahan email/nik ini,
+   * kita tambahkan timestamp ke email/nik tersebut agar bisa dipakai mendaftar ulang.
+   */
+  async resolveSoftDeletedConflicts(email: string, nik?: string) {
+    const conditions = [];
+    if (email) conditions.push(eq(users.email, email));
+    if (nik) conditions.push(eq(users.nik, nik));
+    if (conditions.length === 0) return;
+
+    const conflicts = await db
+      .select({ id: users.id, email: users.email, nik: users.nik, deletedAt: users.deletedAt })
+      .from(users)
+      .where(or(...conditions));
+
+    for (const user of conflicts) {
+      if (user.deletedAt) {
+        const timestamp = Date.now();
+        const updates: { email?: string; nik?: string } = {};
+        if (user.email === email) updates.email = `${user.email}_deleted_${timestamp}`;
+        if (nik && user.nik === nik) updates.nik = `${user.nik}_deleted_${timestamp}`;
+
+        if (Object.keys(updates).length > 0) {
+          await db.update(users).set(updates).where(eq(users.id, user.id));
+        }
+      }
+    }
+  },
+
   async findByEmailOrNik(email: string, nik: string) {
     const result = await db
       .select()
@@ -253,7 +283,7 @@ export const userRepository = {
 
   async findByIdWithPosition(id: string) {
     const result = await db
-      .select({ user: users, positionName: positions.name })
+      .select({ user: users, positionName: positions.name, positionCategory: positions.category })
       .from(users)
       .leftJoin(positions, eq(users.positionId, positions.id))
       .where(and(eq(users.id, id), isNull(users.deletedAt)))
@@ -291,9 +321,17 @@ export const userRepository = {
   },
 
   async softDeleteUser(id: string): Promise<void> {
+    const user = await this.findById(id);
+    if (!user) return;
+
+    const timestamp = Date.now();
     await db
       .update(users)
-      .set({ deletedAt: new Date() })
+      .set({
+        deletedAt: new Date(),
+        email: `${user.email}_deleted_${timestamp}`,
+        nik: `${user.nik}_deleted_${timestamp}`,
+      })
       .where(eq(users.id, id));
   },
 

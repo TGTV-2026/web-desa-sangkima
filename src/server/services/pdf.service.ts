@@ -92,6 +92,10 @@ export type LetterPdfInput = {
   appUrl: string;
   // pratinjau sebelum surat disetujui: nomor/QR belum ada, tampilkan watermark
   draft?: boolean;
+  signatory?: {
+    name: string;
+    positionCategory: string;
+  } | null;
 };
 
 export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Array> {
@@ -190,10 +194,21 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
   let sy = y - 30;
   page.drawText(`Sangkima, ${formatTanggalID(input.approvedAt)}`, { x: signX, y: sy, size: 11, font: normal });
   sy -= 16;
-  page.drawText("Kepala Desa Sangkima", { x: signX, y: sy, size: 11, font: normal });
+  
+  const isSekdes = input.signatory?.positionCategory === "Sekretaris Desa";
+  
+  if (isSekdes) {
+    page.drawText("a.n Kepala Desa", { x: signX, y: sy, size: 11, font: normal });
+    sy -= 16;
+    page.drawText("Sekretaris Desa", { x: signX, y: sy, size: 11, font: normal });
+  } else {
+    page.drawText("Kepala Desa Sangkima", { x: signX, y: sy, size: 11, font: normal });
+  }
+  
   sy -= 70; // ruang tanda tangan
 
   // tempel gambar TTD bila tersedia di public/ttd-kepala-desa.png
+  // TODO: Sesuaikan gambar TTD jika Sekretaris Desa yang menandatangani
   try {
     const ttdPath = path.join(process.cwd(), "public", "ttd-kepala-desa.png");
     if (fs.existsSync(ttdPath)) {
@@ -204,7 +219,10 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
   } catch {
     // abaikan bila gagal embed ttd
   }
-  page.drawText("( ............................ )", { x: signX, y: sy, size: 11, font: bold });
+  
+  const signName = input.signatory?.name || "............................";
+  const signText = input.signatory?.name ? `( ${signName} )` : "( ............................ )";
+  page.drawText(signText, { x: signX, y: sy, size: 11, font: bold });
 
   // === QR VERIFIKASI (kiri bawah) — hanya untuk surat yang sudah resmi disetujui ===
   if (input.draft) {

@@ -8,6 +8,7 @@ export type AuthUser = {
   email: string;
   nik: string;
   role: UserRole;
+  positionCategory: string | null;
 };
 
 /**
@@ -32,8 +33,8 @@ function getTokenFromRequest(req: Request): string | null {
 }
 
 /**
- * Verifikasi JWT lalu ambil data user (termasuk role) dari database.
- * JWT hanya menyimpan id/email/nik, jadi role harus diambil dari DB.
+ * Verifikasi JWT lalu ambil data user (termasuk role & jabatan) dari database.
+ * JWT hanya menyimpan id/email/nik, jadi role dan positionCategory harus diambil dari DB.
  * Mengembalikan null jika token tidak valid, user tidak ada,
  * atau akun sudah dinonaktifkan (soft delete).
  */
@@ -44,14 +45,15 @@ export async function getAuthUser(req: Request): Promise<AuthUser | null> {
   const payload = await verifyToken(token);
   if (!payload?.id) return null;
 
-  const user = await userRepository.findById(payload.id as string);
-  // akun yang dinonaktifkan tidak boleh memakai token lama yang masih hidup
-  if (!user || user.deletedAt) return null;
+  const data = await userRepository.findByIdWithPosition(payload.id as string);
+  // akun yang dinonaktifkan (atau tidak ditemukan) tidak boleh memakai token lama
+  if (!data || !data.user || data.user.deletedAt) return null;
 
   return {
-    id: user.id,
-    email: user.email,
-    nik: user.nik,
-    role: user.role as UserRole,
+    id: data.user.id,
+    email: data.user.email,
+    nik: data.user.nik,
+    role: data.user.role as UserRole,
+    positionCategory: data.positionCategory,
   };
 }
