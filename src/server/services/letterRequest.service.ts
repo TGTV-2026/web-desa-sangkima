@@ -14,10 +14,11 @@ import {
   processLetterRequestSchema,
   approveLetterRequestSchema,
   updateLetterRequestDataSchema,
+  buildLetterDataSchema,
   normalizeRequiredFields,
   parseJsonColumn,
+  SUPPORTING_DOCS,
   type LetterAttachment,
-  type LetterFieldDef,
   type LetterLogDTO,
   type LetterRequestDTO,
   type LetterRequestData,
@@ -39,6 +40,7 @@ function toDTO(row: LetterRequestJoinedRow): LetterRequestDTO {
       name: a.name,
       mime: a.mime,
       size: a.size,
+      docIndex: a.docIndex,
     })),
     letterNumber: r.letterNumber ?? null,
     rejectionReason: r.rejectionReason ?? null,
@@ -61,16 +63,18 @@ function requireStaffOrAdmin(actor: AuthUser) {
   }
 }
 
-// Pastikan field wajib (sesuai requiredFields jenis surat) terisi; dipakai saat warga
-// mengajukan maupun saat petugas merapikan data sebelum surat diproses.
-function validateRequiredFields(fields: LetterFieldDef[], data: LetterRequestData | undefined) {
-  for (const f of fields) {
-    if (!f.required) continue;
-    const v = data?.[f.name];
-    if (v === undefined || v === null || v === "") {
-      throw new Error(`Field "${f.label}" wajib diisi`);
-    }
-  }
+// Validasi + bersihkan `data` sesuai requiredFields jenis surat (required, enum
+// pilihan, & coerce angka). Lempar ZodError → route mengubahnya jadi 400 fieldErrors.
+function parseLetterData(
+  requiredFields: unknown,
+  data: LetterRequestData | undefined,
+): LetterRequestData {
+  const fields = normalizeRequiredFields(requiredFields);
+  const parsed = buildLetterDataSchema(fields).parse(data ?? {});
+  // buang field opsional yang kosong (Zod menyisakannya sebagai undefined)
+  return Object.fromEntries(
+    Object.entries(parsed).filter(([, v]) => v !== undefined),
+  ) as LetterRequestData;
 }
 
 // Ambil baris mentah + pastikan ada
@@ -148,14 +152,23 @@ export const letterRequestService = {
       );
     }
 
-    validateRequiredFields(normalizeRequiredFields(type.requiredFields), data.data);
+    const cleanData = parseLetterData(type.requiredFields, data.data);
+
+    // pastikan tiap dokumen pendukung wajib sudah terunggah (pengaman; client juga memblok)
+    const docs = SUPPORTING_DOCS[type.code] ?? [];
+    const uploadedDocIndexes = new Set(attachments.map((a) => a.docIndex));
+    docs.forEach((doc, i) => {
+      if (doc.required && !uploadedDocIndexes.has(i)) {
+        throw new Error(`Dokumen wajib "${doc.label}" belum diunggah`);
+      }
+    });
 
     const id = await letterRequestRepository.create({
       id: requestId,
       userId: requesterId,
       letterTypeId: data.letterTypeId,
       purpose: data.purpose,
-      data: data.data ?? null,
+      data: Object.keys(cleanData).length > 0 ? cleanData : null,
       attachments: attachments.length > 0 ? attachments : null,
     });
     await letterRequestRepository.addLog({
@@ -434,9 +447,9 @@ export const letterRequestService = {
       throw new Error("Data hanya bisa diedit sebelum surat diproses");
     }
     const type = await letterTypeRepository.findById(row.request.letterTypeId);
-    validateRequiredFields(normalizeRequiredFields(type?.requiredFields), data);
+    const cleanData = parseLetterData(type?.requiredFields, data);
 
-    await letterRequestRepository.update(id, { purpose, data });
+    await letterRequestRepository.update(id, { purpose, data: cleanData });
     await letterRequestRepository.addLog({
       requestId: id,
       status: "DIAJUKAN",

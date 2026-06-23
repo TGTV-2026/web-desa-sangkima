@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import PreviewModal from "@/components/esurat/PreviewModal";
-import type { LetterAttachmentDTO } from "@/server/types/letter";
+import { SUPPORTING_DOCS, type LetterAttachmentDTO } from "@/server/types/letter";
 
 function formatSize(bytes: number) {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -13,10 +13,16 @@ function formatSize(bytes: number) {
 export default function LampiranList({
   requestId,
   attachments,
+  letterTypeCode,
 }: {
   requestId: string;
   attachments: LetterAttachmentDTO[];
+  letterTypeCode: string;
 }) {
+  const docs = SUPPORTING_DOCS[letterTypeCode] ?? [];
+  // nama dokumen sesuai slotnya; fallback untuk lampiran lama tanpa docIndex
+  const docLabel = (a: LetterAttachmentDTO, i: number) =>
+    (a.docIndex != null && docs[a.docIndex]?.label) || `Lampiran ${i + 1}`;
   const [modalOpen, setModalOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const [previewName, setPreviewName] = useState("");
@@ -47,7 +53,10 @@ export default function LampiranList({
                     <span className="font-mono text-xs text-brass shrink-0">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="text-sm font-medium truncate text-ink">{a.name}</span>
+                    <span className="min-w-0 flex flex-col">
+                      <span className="text-sm font-medium truncate text-ink">{docLabel(a, i)}</span>
+                      <span className="text-[11px] text-inkmut truncate">{a.name}</span>
+                    </span>
                     <span className="text-xs text-inkmut shrink-0">
                       {formatSize(a.size)} (PDF)
                     </span>
@@ -72,7 +81,10 @@ export default function LampiranList({
                     <span className="font-mono text-xs text-brass shrink-0">
                       {String(i + 1).padStart(2, "0")}
                     </span>
-                    <span className="text-sm font-medium truncate text-ink">{a.name}</span>
+                    <span className="min-w-0 flex flex-col">
+                      <span className="text-sm font-medium truncate text-ink">{docLabel(a, i)}</span>
+                      <span className="text-[11px] text-inkmut truncate">{a.name}</span>
+                    </span>
                     <span className="text-xs text-inkmut shrink-0">
                       {formatSize(a.size)}
                     </span>

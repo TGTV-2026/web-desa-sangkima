@@ -8,6 +8,7 @@ export type FormFieldType =
   | "password"
   | "number"
   | "date"
+  | "time"
   | "textarea"
   | "select";
 

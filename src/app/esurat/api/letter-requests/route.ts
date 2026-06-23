@@ -70,8 +70,8 @@ import {
 } from "@/server/utils/upload";
 
 // Baca body JSON biasa ATAU multipart/form-data (saat ada lampiran).
-// Multipart: field teks letterTypeId, purpose, data (JSON string),
-// dan file pada key "lampiran" (boleh lebih dari satu).
+// Multipart: field teks letterTypeId, purpose, data (JSON string), dan file dokumen
+// pendukung pada key "lampiran_<docIndex>" (satu file per dokumen, mis. lampiran_0).
 async function parseCreateBody(req: Request): Promise<{
   body: unknown;
   files: IncomingFile[];
@@ -92,13 +92,15 @@ async function parseCreateBody(req: Request): Promise<{
   };
 
   const files: IncomingFile[] = [];
-  for (const entry of fd.getAll("lampiran")) {
-    if (entry instanceof File && entry.size > 0) {
+  for (const [key, entry] of fd.entries()) {
+    const m = /^lampiran_(\d+)$/.exec(key);
+    if (m && entry instanceof File && entry.size > 0) {
       files.push({
         name: entry.name,
         mime: entry.type,
         size: entry.size,
         buffer: Buffer.from(await entry.arrayBuffer()),
+        docIndex: Number(m[1]),
       });
     }
   }

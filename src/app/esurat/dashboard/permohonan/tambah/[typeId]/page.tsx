@@ -22,7 +22,7 @@ export default async function TambahPermohonanFormPage({ params }: PageProps) {
   if (!type.active) notFound();
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto">
       <PageHeader
         breadcrumb={{ parent: "Permohonan", current: type.name }}
         title="Tambah Pengajuan Surat"

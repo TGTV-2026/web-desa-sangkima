@@ -24,7 +24,7 @@ function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
 export default function LetterMetaList({ request, showRequester, fieldsSlot }: LetterMetaListProps) {
   return (
     <>
-      <dl className="text-sm mt-6">
+      <dl className="text-sm mt-6 lg:mt-0">
         {showRequester && (
           <>
             <MetaRow label="Pemohon" value={request.requester.name} />

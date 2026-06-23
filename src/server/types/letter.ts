@@ -41,22 +41,185 @@ export const LETTER_STATUS_META: Record<
 /*  Kode jenis surat MVP                                                      */
 /* -------------------------------------------------------------------------- */
 
-// SKD   = Surat Keterangan Domisili
-// SKTM  = Surat Keterangan Tidak Mampu
 // SKU   = Surat Keterangan Usaha
+// SKD   = Surat Keterangan Domisili
 // SKBM  = Surat Keterangan Belum Menikah
-// SP    = Surat Pengantar (umum)
-// SKP   = Surat Keterangan Penghasilan
+// SKTM  = Surat Keterangan Tidak Mampu
+// SPN   = Surat Pengantar Nikah (Model N1-N4)
+// SKH   = Surat Kehilangan
+// SKM   = Surat Kematian
+// SKL   = Surat Kelahiran
 export const LETTER_TYPE_CODES = [
-  "SKD",
-  "SKTM",
   "SKU",
+  "SKD",
   "SKBM",
-  "SP",
-  "SKP",
+  "SKTM",
+  "SPN",
+  "SKH",
+  "SKM",
+  "SKL",
 ] as const;
 
 export type LetterTypeCode = (typeof LETTER_TYPE_CODES)[number];
+
+/* -------------------------------------------------------------------------- */
+/*  Tipe payload `data` per jenis surat (dokumentasi tipe).                    */
+/*  Runtime divalidasi oleh buildLetterDataSchema dari requiredFields,         */
+/*  interface ini hanya untuk type-safety saat membaca data di kode.          */
+/* -------------------------------------------------------------------------- */
+
+export interface SKUData {
+  nama_usaha: string;
+  jenis_usaha:
+    | "Perdagangan" | "Jasa" | "Pertanian" | "Peternakan" | "Kerajinan" | "Lainnya";
+  alamat_usaha: string;
+  tujuan_surat:
+    | "Pengajuan kredit/KUR" | "Perizinan usaha" | "BPJS Ketenagakerjaan" | "Lainnya";
+}
+
+export interface SKDData {
+  alamat_domisili: string;
+  tanggal_domisili: string; // YYYY-MM-DD
+  tujuan_surat:
+    | "Pindah sekolah" | "Keperluan bank" | "Daftar kuliah" | "Instansi pemerintah" | "Lainnya";
+}
+
+export interface SKBMData {
+  tujuan_surat:
+    | "Melamar pekerjaan" | "Mengurus pernikahan" | "Melanjutkan studi" | "Lainnya";
+  catatan_tambahan?: string;
+}
+
+export interface SKTMData {
+  penghasilan: number;
+  jumlah_tanggungan: number;
+  kondisi_rumah: "Permanen" | "Semi permanen" | "Tidak permanen";
+  tujuan_surat:
+    | "Beasiswa" | "BPJS gratis" | "Bantuan sosial" | "Keringanan biaya RS" | "Lainnya";
+}
+
+export interface SPNData {
+  nama_pasangan: string;
+  nik_pasangan: string;
+  tempat_lahir_psg: string;
+  tgl_lahir_psg: string; // YYYY-MM-DD
+  pekerjaan_psg: string;
+  alamat_pasangan: string;
+  status_perkawinan:
+    | "Belum pernah menikah" | "Duda/Janda cerai hidup" | "Duda/Janda cerai mati";
+  rencana_tgl_nikah: string; // YYYY-MM-DD
+  tempat_nikah: string;
+  kua_tujuan: string;
+  urutan_pernikahan: number;
+}
+
+export interface SKHData {
+  jenis_barang:
+    | "KTP" | "SIM" | "STNK" | "Buku tabungan" | "Ijazah" | "BPJS" | "HP" | "Lainnya";
+  nomor_dokumen?: string;
+  tanggal_hilang: string; // YYYY-MM-DD
+  lokasi_kejadian: string;
+  kronologi: string;
+  tujuan_surat: "Laporan polisi" | "Penggantian dokumen" | "Lainnya";
+}
+
+export interface SKMData {
+  nama_almarhum: string;
+  nik_almarhum: string;
+  hubungan_pelapor: "Suami/Istri" | "Anak" | "Orang tua" | "Saudara" | "Lainnya";
+  tanggal_meninggal: string; // YYYY-MM-DD
+  waktu_meninggal?: string; // HH:MM
+  tempat_meninggal: "Di rumah" | "Di rumah sakit / klinik" | "Di tempat lain";
+  nama_rs?: string;
+  penyebab_kematian?: string;
+  tujuan_surat:
+    | "Pengurusan warisan" | "Klaim asuransi" | "Administrasi bank" | "Pensiun" | "Lainnya";
+}
+
+export interface SKLData {
+  nama_bayi: string;
+  jenis_kelamin: "Laki-laki" | "Perempuan";
+  tanggal_lahir: string; // YYYY-MM-DD
+  waktu_lahir: string; // HH:MM
+  tempat_lahir: "Rumah" | "RS / Klinik / Puskesmas" | "Lainnya";
+  nama_faskes?: string;
+  anak_ke: number;
+  berat_badan?: number; // gram
+  penolong_lahir?: string;
+  nama_ibu: string;
+  nik_ibu: string;
+}
+
+// Satu dokumen pendukung: label tampilan + apakah wajib diunggah.
+export type SupportingDoc = { label: string; required: boolean };
+
+// Daftar dokumen pendukung per jenis surat. Index dalam array = docIndex yang
+// disimpan di tiap LetterAttachment; urutan TIDAK boleh diubah-acak agar lampiran
+// lama tetap merujuk dokumen yang benar (tambah dokumen baru di akhir array).
+// ponytail: konstanta keyed by code, bukan kolom DB — requiredFields jenis surat pun
+// dikelola lewat seed (admin UI read-only), jadi kolom DB tak memberi kemampuan edit
+// tanpa form admin baru. Bentuk { label, required }[] sengaja identik dengan calon
+// kolom letter_types.supportingDocs → migrasi ke DB nanti tinggal pindah.
+export const SUPPORTING_DOCS: Record<string, SupportingDoc[]> = {
+  SKU: [
+    { label: "Fotokopi KTP pemohon", required: true },
+    { label: "Fotokopi Kartu Keluarga (KK)", required: true },
+    { label: "Surat Pengantar RT/RW", required: true },
+    { label: "Surat Permohonan", required: true },
+    { label: "Foto / bukti lokasi usaha", required: true },
+  ],
+  SKD: [
+    { label: "Fotokopi KTP pemohon", required: true },
+    { label: "Fotokopi Kartu Keluarga (KK)", required: true },
+    { label: "Surat Pengantar RT/RW", required: true },
+    { label: "Surat Permohonan", required: true },
+  ],
+  SKBM: [
+    { label: "Fotokopi KTP pemohon", required: true },
+    { label: "Fotokopi Kartu Keluarga (KK)", required: true },
+    { label: "Surat Pengantar RT/RW", required: true },
+    { label: "Surat Permohonan", required: true },
+    { label: "Akta Kelahiran (jika ada)", required: false },
+  ],
+  SKTM: [
+    { label: "Fotokopi KTP pemohon", required: true },
+    { label: "Fotokopi Kartu Keluarga (KK)", required: true },
+    { label: "Surat Pengantar RT/RW", required: true },
+    { label: "Surat Permohonan", required: true },
+    { label: "Foto kondisi rumah", required: false },
+  ],
+  SPN: [
+    { label: "Fotokopi KTP pemohon & calon pasangan", required: true },
+    { label: "Fotokopi Kartu Keluarga (KK)", required: true },
+    { label: "Akta Kelahiran pemohon", required: true },
+    { label: "Surat Pengantar RT/RW", required: true },
+    { label: "Surat Permohonan", required: true },
+    { label: "Pas Foto 2x3 dan 3x4", required: true },
+    { label: "Akta Cerai / Surat Kematian (jika berstatus Duda/Janda)", required: false },
+  ],
+  SKH: [
+    { label: "Fotokopi KTP pemohon", required: true },
+    { label: "Fotokopi Kartu Keluarga (KK)", required: true },
+    { label: "Surat Pengantar RT/RW", required: true },
+    { label: "Surat Permohonan", required: true },
+    { label: "Deskripsi / bukti pendukung terkait barang yang hilang", required: false },
+  ],
+  SKM: [
+    { label: "Fotokopi KTP almarhum/almarhumah", required: true },
+    { label: "Fotokopi Kartu Keluarga (KK)", required: true },
+    { label: "Surat Pengantar RT/RW", required: true },
+    { label: "Surat Permohonan dari keluarga", required: true },
+    { label: "Surat Keterangan Kematian dari instansi medis (Dokter/Bidan/Puskesmas)", required: true },
+  ],
+  SKL: [
+    { label: "Fotokopi KTP orang tua", required: true },
+    { label: "Fotokopi Kartu Keluarga (KK)", required: true },
+    { label: "Surat Pengantar RT/RW", required: true },
+    { label: "Surat Keterangan Lahir dari penolong (Bidan/RS/Puskesmas)", required: true },
+    { label: "Surat Permohonan", required: true },
+    { label: "Buku Nikah / Surat Nikah orang tua", required: true },
+  ],
+};
 
 /* -------------------------------------------------------------------------- */
 /*  Definisi field tambahan per jenis surat                                   */
@@ -65,14 +228,50 @@ export type LetterTypeCode = (typeof LETTER_TYPE_CODES)[number];
 /* -------------------------------------------------------------------------- */
 
 export const letterFieldDefSchema = z.object({
-  name: z.string().min(1), // key di object `data`, mis. "namaUsaha"
+  name: z.string().min(1), // key di object `data`, mis. "nama_usaha"
   label: z.string().min(1), // teks yang ditampilkan ke warga
-  type: z.enum(["text", "number", "date", "textarea"]).default("text"),
+  type: z
+    .enum(["text", "number", "date", "time", "textarea", "select"])
+    .default("text"),
   required: z.boolean().default(true),
-  placeholder: z.string().optional(),
+  placeholder: z.string().optional(), // dipakai juga sebagai teks "Catatan" di UI
+  options: z.array(z.string()).optional(), // wajib untuk type "select"
 });
 
 export type LetterFieldDef = z.infer<typeof letterFieldDefSchema>;
+
+// Bangun skema Zod validasi `data` dari requiredFields jenis surat. Satu builder
+// ini menggantikan 8 skema manual: required, enum (select), & angka ditegakkan
+// sesuai definisi tiap jenis surat; hasil parse meng-coerce field angka.
+export function buildLetterDataSchema(fields: LetterFieldDef[]) {
+  const shape: Record<string, z.ZodTypeAny> = {};
+  for (const f of fields) {
+    const req = `${f.label} wajib diisi`;
+    let base: z.ZodTypeAny;
+    if (f.type === "number") {
+      base = z.coerce.number({ error: `${f.label} harus berupa angka` });
+    } else if (f.type === "select" && f.options?.length) {
+      // opsi "Lainnya" → user boleh mengetik nilai manual, jadi terima teks bebas
+      // (nilai literal "Lainnya" ditolak supaya tidak tersimpan tanpa keterangan)
+      base = f.options.includes("Lainnya")
+        ? z
+            .string({ error: req })
+            .min(1, req)
+            .refine((v) => v !== "Lainnya", `Harap sebutkan ${f.label} secara manual`)
+        : z.enum(f.options as [string, ...string[]], {
+            error: `Pilihan ${f.label} tidak valid`,
+          });
+    } else {
+      base = z.string({ error: req }).min(1, req);
+    }
+    // "" / null dari form diperlakukan sebagai "tidak diisi"
+    shape[f.name] = z.preprocess(
+      (v) => (v === "" || v === null ? undefined : v),
+      f.required ? base : base.optional(),
+    );
+  }
+  return z.object(shape);
+}
 
 
 // Kolom JSON MySQL kadang dikembalikan driver mysql2 sebagai string mentah
@@ -106,6 +305,9 @@ export type LetterAttachment = {
   storedName: string; // nama file di disk (cuid + ekstensi)
   mime: string;
   size: number; // bytes
+  // index dokumen yang dipenuhi file ini (sesuai SUPPORTING_DOCS[code]);
+  // opsional demi kompat baris lama yang diunggah sebagai dropzone gabungan
+  docIndex?: number;
 };
 
 // Versi yang dikirim ke frontend (tanpa storedName — lokasi disk tak perlu bocor)
@@ -113,6 +315,7 @@ export type LetterAttachmentDTO = {
   name: string;
   mime: string;
   size: number;
+  docIndex?: number;
 };
 
 /* -------------------------------------------------------------------------- */

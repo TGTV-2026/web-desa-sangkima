@@ -3,8 +3,9 @@ import path from "node:path";
 import { createId } from "@paralleldrive/cuid2";
 import type { LetterAttachment } from "../types/letter";
 
-// Aturan lampiran pendukung pengajuan surat
-export const MAX_ATTACHMENTS = 3;
+// Aturan lampiran pendukung pengajuan surat.
+// 1 file per dokumen; jenis surat dengan dokumen terbanyak (SPN) = 7 slot.
+export const MAX_ATTACHMENTS = 8;
 export const MAX_ATTACHMENT_SIZE = 2 * 1024 * 1024; // 2 MB
 export const ALLOWED_ATTACHMENT_TYPES: Record<string, string> = {
   "application/pdf": "pdf",
@@ -23,6 +24,8 @@ export type IncomingFile = {
   mime: string;
   size: number;
   buffer: Buffer;
+  // dokumen pendukung ke-berapa (sesuai SUPPORTING_DOCS[code])
+  docIndex: number;
 };
 
 /** Validasi jumlah/ukuran/tipe. Throw Error berisi pesan untuk warga. */
@@ -65,6 +68,7 @@ export async function saveAttachments(
       storedName,
       mime: f.mime,
       size: f.size,
+      docIndex: f.docIndex,
     });
   }
   return saved;
