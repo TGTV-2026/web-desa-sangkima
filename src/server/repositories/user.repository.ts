@@ -253,7 +253,7 @@ export const userRepository = {
 
   async findByIdWithPosition(id: string) {
     const result = await db
-      .select({ user: users, positionName: positions.name })
+      .select({ user: users, positionName: positions.name, positionCategory: positions.category })
       .from(users)
       .leftJoin(positions, eq(users.positionId, positions.id))
       .where(and(eq(users.id, id), isNull(users.deletedAt)))

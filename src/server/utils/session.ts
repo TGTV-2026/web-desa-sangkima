@@ -11,6 +11,7 @@ export type SessionUser = {
   role: UserRole;
   isProfileComplete: boolean;
   positionName: string | null;
+  positionCategory: string | null;
 };
 
 /** Field yang harus non-null agar profil dianggap lengkap (sinkron dengan PROFILE_REQUIRED_FIELDS di types/user). */
@@ -56,6 +57,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     role: user.role as UserRole,
     isProfileComplete,
     positionName: data.positionName,
+    positionCategory: data.positionCategory,
   };
 }
 

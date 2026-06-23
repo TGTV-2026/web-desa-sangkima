@@ -57,9 +57,27 @@ function toDTO(row: LetterRequestJoinedRow): LetterRequestDTO {
   };
 }
 
-function requireStaffOrAdmin(actor: AuthUser) {
+// Kategori jabatan yang boleh memverifikasi/memproses surat (DIAJUKAN → DIPROSES)
+const VERIFIER_CATEGORIES = ["Kepala Urusan"];
+// Kategori jabatan yang boleh menyetujui dan menandatangani (DIPROSES → DISETUJUI)
+const APPROVER_CATEGORIES = ["Kepala Desa", "Sekretaris Desa"];
+
+function requireStaff(actor: AuthUser) {
   if (actor.role !== "staff" && actor.role !== "admin") {
     throw new Error("Hanya petugas desa yang boleh melakukan aksi ini");
+  }
+}
+
+/**
+ * Pastikan aktor punya jabatan yang termasuk dalam kategori yang diizinkan.
+ * Admin TIDAK otomatis lolos — otorisasi approval murni berdasarkan jabatan.
+ */
+function requirePosition(actor: AuthUser, categories: string[], actionLabel: string) {
+  if (actor.role !== "staff") {
+    throw new Error(`Hanya petugas dengan jabatan ${categories.join(" / ")} yang boleh ${actionLabel}`);
+  }
+  if (!actor.positionCategory || !categories.includes(actor.positionCategory)) {
+    throw new Error(`Hanya jabatan ${categories.join(" / ")} yang boleh ${actionLabel}`);
   }
 }
 
@@ -95,6 +113,17 @@ async function renderPdf(
   const user = await userRepository.findById(row.request.userId);
   const type = await letterTypeRepository.findById(row.request.letterTypeId);
 
+  let signatory = null;
+  if (row.request.approvedBy) {
+    const approver = await userRepository.findByIdWithPosition(row.request.approvedBy);
+    if (approver && approver.user) {
+      signatory = {
+        name: approver.user.name,
+        positionCategory: approver.positionCategory ?? "Kepala Desa",
+      };
+    }
+  }
+
   return generateLetterPdf({
     letterNumber: row.request.letterNumber ?? "-",
     verificationCode: row.request.verificationCode ?? "",
@@ -113,6 +142,7 @@ async function renderPdf(
     data: parseJsonColumn<LetterRequestData | null>(row.request.data, null),
     appUrl,
     draft,
+    signatory,
   });
 }
 
@@ -244,13 +274,13 @@ export const letterRequestService = {
     }));
   },
 
-  // Operator menerima & memproses: DIAJUKAN -> DIPROSES
+  // Kepala Urusan memverifikasi: DIAJUKAN -> DIPROSES
   async process(
     actor: AuthUser,
     id: string,
     input: unknown,
   ): Promise<LetterRequestDTO> {
-    requireStaffOrAdmin(actor);
+    requirePosition(actor, VERIFIER_CATEGORIES, "memproses surat");
     const { note } = processLetterRequestSchema.parse(input ?? {});
     const row = await getRowOrThrow(id);
     if (row.request.status !== "DIAJUKAN") {
@@ -270,16 +300,14 @@ export const letterRequestService = {
     return toDTO(await getRowOrThrow(id));
   },
 
-  // Kepala desa menyetujui: DIPROSES -> DISETUJUI (nomor surat & kode verifikasi dibuat)
+  // Kepala Desa / Sekretaris Desa menyetujui & menandatangani: DIPROSES -> DISETUJUI
   async approve(
     actor: AuthUser,
     id: string,
     input: unknown,
     appUrl: string,
   ): Promise<LetterRequestDTO> {
-    if (actor.role !== "admin") {
-      throw new Error("Hanya kepala desa (admin) yang boleh menyetujui surat");
-    }
+    requirePosition(actor, APPROVER_CATEGORIES, "menyetujui surat");
     const { note } = approveLetterRequestSchema.parse(input ?? {});
     const row = await getRowOrThrow(id);
     if (row.request.status !== "DIPROSES") {
@@ -303,8 +331,8 @@ export const letterRequestService = {
           verificationCode: createId(),
         });
         break;
-      } catch (e: any) {
-        const msg = String(e?.cause?.message ?? e?.message ?? "");
+      } catch (e: unknown) {
+        const msg = String((e as Record<string, Record<string, string>>)?.cause?.message ?? (e as Error)?.message ?? "");
         if (msg.includes("Duplicate entry") && attempt < 5) continue;
         throw e;
       }
@@ -325,19 +353,19 @@ export const letterRequestService = {
     return toDTO(await getRowOrThrow(id));
   },
 
-  // Tolak: DIAJUKAN/DIPROSES -> DITOLAK (wajib alasan)
+  // Tolak: Kepala Urusan dari DIAJUKAN, Kepala Desa/Sekdes dari DIPROSES
   async reject(
     actor: AuthUser,
     id: string,
     input: unknown,
   ): Promise<LetterRequestDTO> {
-    requireStaffOrAdmin(actor);
     const { reason } = rejectLetterRequestSchema.parse(input);
     const row = await getRowOrThrow(id);
-    if (
-      row.request.status !== "DIAJUKAN" &&
-      row.request.status !== "DIPROSES"
-    ) {
+    if (row.request.status === "DIAJUKAN") {
+      requirePosition(actor, VERIFIER_CATEGORIES, "menolak surat pada tahap ini");
+    } else if (row.request.status === "DIPROSES") {
+      requirePosition(actor, APPROVER_CATEGORIES, "menolak surat pada tahap ini");
+    } else {
       throw new Error("Hanya surat Diajukan/Diproses yang bisa ditolak");
     }
     await letterRequestRepository.update(id, {
@@ -355,7 +383,7 @@ export const letterRequestService = {
 
   // Tandai selesai (sudah diambil/diunduh warga): DISETUJUI -> SELESAI
   async complete(actor: AuthUser, id: string): Promise<LetterRequestDTO> {
-    requireStaffOrAdmin(actor);
+    requireStaff(actor);
     const row = await getRowOrThrow(id);
     if (row.request.status !== "DISETUJUI") {
       throw new Error("Hanya surat Disetujui yang bisa ditandai selesai");
@@ -440,7 +468,7 @@ export const letterRequestService = {
 
   // Petugas merapikan field dinamis warga (mis. salah ketik) sebelum surat diproses
   async updateData(actor: AuthUser, id: string, input: unknown): Promise<LetterRequestDTO> {
-    requireStaffOrAdmin(actor);
+    requireStaff(actor);
     const { purpose, data } = updateLetterRequestDataSchema.parse(input);
     const row = await getRowOrThrow(id);
     if (row.request.status !== "DIAJUKAN") {
