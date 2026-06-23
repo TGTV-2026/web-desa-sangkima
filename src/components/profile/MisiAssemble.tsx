@@ -1,13 +1,13 @@
 "use client";
 
 // Scrollytelling ber-pin (GSAP ScrollTrigger) untuk seksi Visi & Misi:
-//  1. Kotak Visi BERUBAH BENTUK (morph) menjadi pil "Misi Utama" — elemen SAMA,
-//     bukan fade replace (width menyusut, height mengecil, border-radius membulat,
-//     naik ke atas). Pil ini lalu DIAM di atas (tidak ikut bergulir).
-//  2. Chip nomor berserak MERAPAT ke posisi selang-seling, lalu crossfade jadi
-//     kartu teks misi.
-//  3. Seluruh "rel" timeline (garis + kartu) BERGULIR ke atas di dalam pin, supaya
-//     misi 6-7 terungkap tanpa tabrakan dengan pil.
+//  1. Kotak Visi MORPH jadi pil "Misi Utama" (elemen sama; pil parkir di rel timeline,
+//     ikut tergulir di fase akhir — tidak menempel di viewport).
+//  2. Tiap misi adalah SATU elemen (.misi-item): mula-mula kotak kecil ber-angka yang
+//     berserak, lalu merapat selang-seling, lalu MELEBAR jadi kartu teks penuh
+//     (angka besar memudar → jadi watermark sudut, teks muncul). Tanpa crossfade dua
+//     kotak terpisah, jadi transisinya menyatu.
+//  3. Seluruh rel (garis + kartu + pil) bergulir mengungkap misi 6-7.
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -22,7 +22,7 @@ const SCATTER = [
   { top: "50%", left: "8%" },
 ];
 
-// Posisi akhir tiap kartu pada "rel" timeline (boleh >100%, terungkap saat rel bergulir)
+// Posisi akhir tiap kartu pada rel timeline (boleh >100%, terungkap saat rel bergulir)
 const ASSEMBLED = [
   { top: "24%", leftSide: true },
   { top: "37%", leftSide: false },
@@ -32,6 +32,8 @@ const ASSEMBLED = [
   { top: "89%", leftSide: false },
   { top: "102%", leftSide: true },
 ] as const;
+
+const CARD_HEIGHT = 132;
 
 export default function MisiAssemble({
   visi,
@@ -51,11 +53,10 @@ export default function MisiAssemble({
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
-      const chips = gsap.utils.toArray<HTMLElement>(".misi-chip");
-      const cards = gsap.utils.toArray<HTMLElement>(".misi-card");
+      const items = gsap.utils.toArray<HTMLElement>(".misi-item");
       const cardEl = st.querySelector<HTMLElement>(".misi-visi-card");
 
-      // Kunci dimensi awal kartu Visi (px) agar bisa di-morph oleh GSAP
+      // Kartu Visi: kunci dimensi awal (px) agar bisa di-morph.
       gsap.set(".misi-visi-card", {
         xPercent: -50,
         yPercent: -50,
@@ -67,25 +68,30 @@ export default function MisiAssemble({
       gsap.set(".misi-visi-text", { autoAlpha: 1 });
       gsap.set(".misi-pill-text", { autoAlpha: 0 });
 
-      chips.forEach((chip, i) => {
-        gsap.set(chip, {
+      // Tiap item dimulai sebagai kotak kecil ber-angka, berserak & miring.
+      items.forEach((item, i) => {
+        gsap.set(item, {
           top: SCATTER[i % SCATTER.length]?.top,
           left: SCATTER[i % SCATTER.length]?.left,
           xPercent: -50,
           yPercent: -50,
           autoAlpha: 1,
           rotation: gsap.utils.random(-14, 14),
-          scale: 0.9,
+          width: "5%",
+          height: 56,
         });
       });
-      gsap.set(cards, { autoAlpha: 0 });
+      gsap.set(".misi-num-big", { autoAlpha: 1 });
+      gsap.set(".misi-num-wm", { autoAlpha: 0 });
+      gsap.set(".misi-text", { autoAlpha: 0 });
+      gsap.set(".misi-dot", { autoAlpha: 0 });
       gsap.set(".misi-track", { y: 0 });
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: st,
           start: "top top",
-          end: "+=240%",
+          end: "+=250%",
           scrub: 1,
           pin: st,
           anticipatePin: 1,
@@ -93,11 +99,9 @@ export default function MisiAssemble({
         },
       });
 
-      // Fase 1 (0 → 0.4): teks Visi memudar, kotak MORPH jadi pil, chip merapat
-      tl.to(".misi-visi-text", { autoAlpha: 0, duration: 0.12, ease: "power1.in" }, 0);
-      // Pil mengecil jadi oval ramping & parkir di tempatnya pada rel timeline
-      // (bukan menempel di viewport — ia ikut tergulir di fase 3). Padding py-12
-      // (96px) ikut diciutkan ke 0 — kalau tidak, border-box menahan tinggi tetap besar.
+      // Fase 1: kotak Visi MORPH jadi pil oval ramping (padding py-12 ikut ke 0,
+      // kalau tidak border-box menahan tinggi kotak tetap besar).
+      tl.to(".misi-visi-text", { autoAlpha: 0, duration: 0.1, ease: "power1.in" }, 0);
       tl.to(
         ".misi-visi-card",
         {
@@ -110,48 +114,55 @@ export default function MisiAssemble({
           paddingLeft: 32,
           paddingRight: 32,
           borderRadius: "9999px",
-          duration: 0.26,
+          duration: 0.24,
           ease: "power2.inOut",
         },
         0,
       );
-      tl.to(".misi-pill-text", { autoAlpha: 1, duration: 0.16, ease: "power1.out" }, 0.14);
-      chips.forEach((chip, i) => {
+      tl.to(".misi-pill-text", { autoAlpha: 1, duration: 0.14, ease: "power1.out" }, 0.14);
+
+      // Fase 2: kotak kecil merapat ke posisi selang-seling (masih kotak angka).
+      items.forEach((item, i) => {
         const a = ASSEMBLED[i % ASSEMBLED.length]!;
         tl.to(
-          chip,
+          item,
           {
             top: a.top,
             left: a.leftSide ? "25%" : "75%",
             xPercent: -50,
             yPercent: -50,
             rotation: 0,
-            scale: 1,
-            duration: 0.5,
+            duration: 0.4,
             ease: "power2.inOut",
           },
-          i * 0.008,
+          0.06 + i * 0.01,
         );
       });
 
-      // Fase 2 (0.4 → 0.5): chip crossfade jadi kartu teks
-      tl.to(chips, { autoAlpha: 0, duration: 0.18, ease: "power1.in" }, 0.4);
-      tl.to(
-        cards,
-        { autoAlpha: 1, duration: 0.22, ease: "power2.out", stagger: 0.02 },
-        0.42,
-      );
+      // Fase 3: kotak MELEBAR jadi kartu (lebar & tinggi tumbuh dari kotak yang sama).
+      // Angka besar memudar, watermark sudut & teks muncul saat kotak sudah melebar.
+      items.forEach((item, i) => {
+        tl.to(
+          item,
+          {
+            width: "46%",
+            height: CARD_HEIGHT,
+            duration: 0.3,
+            ease: "power3.inOut",
+          },
+          0.5 + i * 0.012,
+        );
+      });
+      tl.to(".misi-num-big", { autoAlpha: 0, duration: 0.18, ease: "power1.in" }, 0.52);
+      tl.to(".misi-num-wm", { autoAlpha: 1, duration: 0.26, ease: "power1.out" }, 0.6);
+      tl.to(".misi-text", { autoAlpha: 1, duration: 0.26, ease: "power2.out" }, 0.64);
+      tl.to(".misi-dot", { autoAlpha: 1, duration: 0.2, ease: "power1.out" }, 0.66);
 
-      // Fase 3 (0.55 → 1.0): seluruh rel (garis + kartu + pil) bergulir ke atas untuk
-      // mengungkap misi 6-7 — pil ikut tergulir, tidak menempel di tepi atas viewport.
+      // Fase 4: seluruh rel (garis + kartu + pil) bergulir mengungkap misi 6-7.
       tl.to(
         ".misi-track",
-        {
-          y: () => -0.22 * window.innerHeight,
-          duration: 0.45,
-          ease: "none",
-        },
-        0.55,
+        { y: () => -0.22 * window.innerHeight, duration: 0.4, ease: "none" },
+        0.8,
       );
 
       ScrollTrigger.refresh();
@@ -163,8 +174,11 @@ export default function MisiAssemble({
   return (
     <div ref={root} className="relative">
       <div ref={stage} className="relative h-screen overflow-hidden">
-        {/* Rel timeline (garis + kartu) — bergulir ke atas di fase akhir */}
+        {/* Rel timeline — garis + kartu + pil; bergulir ke atas di fase akhir */}
         <div className="misi-track absolute inset-0 z-20">
+          {/* Wrapper ter-pusat ber-lebar tetap: semua persen (posisi & lebar kartu)
+              mengacu ke sini, BUKAN ke stage yang lebarnya berubah saat di-pin. */}
+          <div className="relative mx-auto h-full w-full max-w-5xl px-4">
           {/* Garis timeline vertikal (desktop) */}
           <div
             className="pointer-events-none absolute left-1/2 top-[16%] z-10 hidden w-px -translate-x-1/2 border-l-2 border-dashed border-line lg:block"
@@ -172,39 +186,53 @@ export default function MisiAssemble({
             aria-hidden
           />
 
-          {/* Kartu teks misi — fade in setelah chip tiba (timeline final) */}
-          {misi.map((m, i) => {
+          {/* Dot di garis tengah (default tampil; saat animasi: muncul di fase melebar) */}
+          {misi.map((_, i) => {
             const a = ASSEMBLED[i % ASSEMBLED.length]!;
             return (
+              <span
+                key={`dot-${i}`}
+                className="misi-dot absolute z-30 hidden h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-line bg-paper lg:block"
+                style={{ top: a.top, left: "50%" }}
+                aria-hidden
+              />
+            );
+          })}
+
+          {/* Tiap misi = SATU kotak: angka kecil → melebar jadi kartu teks.
+              Default (reduce-motion / tanpa JS) = kartu penuh statis. GSAP yang
+              menyusutkannya jadi kotak angka di awal animasi. */}
+          {misi.map((m, i) => {
+            const a = ASSEMBLED[i % ASSEMBLED.length]!;
+            const nn = String(i + 1).padStart(2, "0");
+            return (
               <div
-                key={`card-${i}`}
-                className="misi-card absolute z-20 opacity-0"
+                key={`item-${i}`}
+                className="misi-item absolute z-20 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl border border-line bg-card/80 shadow-[0_8px_24px_-10px_rgba(20,41,31,0.25)] backdrop-blur"
                 style={{
                   top: a.top,
-                  transform: "translateY(-50%)",
-                  ...(a.leftSide
-                    ? { right: "calc(50% + 10px)", width: "46%" }
-                    : { left: "calc(50% + 10px)", width: "46%" }),
+                  left: a.leftSide ? "25%" : "75%",
+                  width: "46%",
+                  height: CARD_HEIGHT,
                 }}
               >
-                <div className="relative overflow-hidden rounded-xl border border-line bg-card/80 p-6 backdrop-blur">
-                  <span className="pointer-events-none absolute -right-2 -top-5 select-none font-serif text-[80px] font-bold leading-none text-pine-900/5">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <p className="relative z-10 line-clamp-4 text-[13px] leading-relaxed text-ink">
-                    {m}
-                  </p>
-                </div>
-                <span
-                  className="absolute top-1/2 z-40 hidden h-3 w-3 -translate-y-1/2 rounded-full border-2 border-line bg-paper lg:block"
-                  style={a.leftSide ? { right: "-18px" } : { left: "-18px" }}
-                />
+                {/* Angka watermark sudut (kartu) */}
+                <span className="misi-num-wm pointer-events-none absolute -right-2 -top-5 select-none font-serif text-[80px] font-bold leading-none text-pine-900/5">
+                  {nn}
+                </span>
+                {/* Angka besar di tengah (saat masih kotak kecil) */}
+                <span className="misi-num-big pointer-events-none absolute inset-0 flex select-none items-center justify-center font-serif text-lg font-semibold text-pine-900 opacity-0">
+                  {nn}
+                </span>
+                {/* Teks misi (muncul saat kotak melebar) */}
+                <p className="misi-text absolute inset-x-0 top-1/2 -translate-y-1/2 px-6 line-clamp-4 text-[13px] leading-relaxed text-ink">
+                  {m}
+                </p>
               </div>
             );
           })}
 
-          {/* Pil "Misi Utama" — DI DALAM track agar IKUT tergulir saat fase akhir
-              (tidak menempel di tepi atas viewport). Morph dari kotak Visi. */}
+          {/* Pil "Misi Utama" — morph dari kotak Visi; parkir di rel & ikut tergulir */}
           <div
             className="misi-visi-card absolute left-1/2 top-1/2 z-30 overflow-hidden rounded-2xl border border-line bg-card/80 px-8 py-12 text-center backdrop-blur"
             style={{ width: "min(100%, 42rem)" }}
@@ -223,17 +251,8 @@ export default function MisiAssemble({
               </span>
             </div>
           </div>
-        </div>
-
-        {/* Chip nomor berserak — GSAP atur posisi awal & rapat */}
-        {misi.map((_, i) => (
-          <div
-            key={`chip-${i}`}
-            className="misi-chip absolute z-40 flex h-12 w-12 items-center justify-center rounded-xl border border-line bg-card font-serif text-lg font-semibold text-pine-900 opacity-0 shadow-[0_8px_24px_-8px_rgba(20,41,31,0.3)]"
-          >
-            {String(i + 1).padStart(2, "0")}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
