@@ -75,6 +75,8 @@ export const userService = {
   async createByAdmin(input: unknown): Promise<UserDTO> {
     const data = createUserByAdminSchema.parse(input);
 
+    await userRepository.resolveSoftDeletedConflicts(data.email, data.nik);
+
     const existing = await userRepository.findByEmailOrNik(
       data.email,
       data.nik,
@@ -101,11 +103,13 @@ export const userService = {
     if (!current) throw new Error("User tidak ditemukan");
 
     if (data.email && data.email !== current.user.email) {
+      await userRepository.resolveSoftDeletedConflicts(data.email);
       const duplicate = await userRepository.findByEmailExcept(data.email, id);
       if (duplicate) throw new Error("Email sudah digunakan");
     }
 
     if (data.nik && data.nik !== current.user.nik) {
+      await userRepository.resolveSoftDeletedConflicts("", data.nik);
       const duplicate = await userRepository.findByNikExcept(data.nik, id);
       if (duplicate) throw new Error("NIK sudah digunakan");
     }

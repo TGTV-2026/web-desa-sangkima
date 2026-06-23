@@ -33,6 +33,11 @@ export const authService = {
   async register(input: TRegisterInput) {
     const validatedData = registerSchema.parse(input);
 
+    await userRepository.resolveSoftDeletedConflicts(
+      validatedData.email,
+      validatedData.nik,
+    );
+
     const existingUser = await userRepository.findByEmailOrNik(
       validatedData.email,
       validatedData.nik,
@@ -322,6 +327,9 @@ export const authService = {
     if (!user) {
       throw new Error("User tidak ditemukan");
     }
+
+    // Resolve soft-deleted users holding this email
+    await userRepository.resolveSoftDeletedConflicts(validatedData.newEmail);
 
     // Check if new email already registered
     const existingUser = await userRepository.findByEmail(
