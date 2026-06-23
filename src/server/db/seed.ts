@@ -333,18 +333,18 @@ const SEED_LETTER_TYPES: TCreateLetterTypeInput[] = [
 const SEED_POSITIONS: { name: string; category: string }[] = [
   { name: "Kepala Desa", category: "Kepala Desa" },
   { name: "Sekretaris Desa", category: "Sekretaris Desa" },
-  { name: "Kaur Keuangan", category: "Kepala Urusan" },
   { name: "Kaur Umum", category: "Kepala Urusan" },
-  { name: "Kaur Perencanaan", category: "Kepala Urusan" },
-  { name: "Kasi Pemerintahan", category: "Kepala Seksi" },
-  { name: "Kasi Kesejahteraan", category: "Kepala Seksi" },
+  // { name: "Kaur Keuangan", category: "Kepala Urusan" },
+  // { name: "Kaur Perencanaan", category: "Kepala Urusan" },
+  // { name: "Kasi Pemerintahan", category: "Kepala Seksi" },
+  // { name: "Kasi Kesejahteraan", category: "Kepala Seksi" },
   { name: "Kasi Pelayanan", category: "Kepala Seksi" },
-  { name: "Staff Umum", category: "Staff" },
-  { name: "Staf Kesejahteraan", category: "Staff" },
-  { name: "Staf Pemerintahan", category: "Staff" },
+  // { name: "Staff Umum", category: "Staff" },
+  // { name: "Staf Kesejahteraan", category: "Staff" },
+  // { name: "Staf Pemerintahan", category: "Staff" },
   { name: "Staf Pelayanan", category: "Staff" },
-  { name: "Staf Perencanaan", category: "Staff" },
-  { name: "Staf Keuangan", category: "Staff" },
+  // { name: "Staf Perencanaan", category: "Staff" },
+  // { name: "Staf Keuangan", category: "Staff" },
 ];
 
 // email slug dari nama jabatan, mis. "Kaur Keuangan" -> "kaur-keuangan@example.com"

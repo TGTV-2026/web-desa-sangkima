@@ -79,7 +79,7 @@ export default function LetterDetailCard({
                   : "Pratinjau Surat"}
               </p>
               <iframe
-                key={request.status}
+                key={`${request.status}-${request.purpose}-${JSON.stringify(request.data)}`}
                 src={`/esurat/api/letter-requests/${request.id}/preview`}
                 title="Pratinjau surat"
                 className="w-full aspect-[210/297] border border-line rounded-sm mt-3 bg-paper2/20"
