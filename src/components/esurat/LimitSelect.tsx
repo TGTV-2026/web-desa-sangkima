@@ -18,7 +18,11 @@ export default function LimitSelect({ value }: { value: number }) {
   };
 
   return (
-    <select value={value} onChange={handleChange} className="input-doc !w-auto py-1.5 text-xs">
+    <select
+      value={value}
+      onChange={handleChange}
+      className="input-doc !w-auto py-1.5 sm:py-1 text-xs sm:text-sm"
+    >
       {OPTIONS.map((o) => (
         <option key={o} value={o}>
           {o} / halaman

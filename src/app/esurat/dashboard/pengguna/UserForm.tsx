@@ -154,7 +154,7 @@ export default function UserForm(props: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-5 sm:p-7 flex flex-col gap-5">
+    <form onSubmit={handleSubmit} className="p-4 md:p-5 flex flex-col gap-4 md:gap-5 w-full">
       <div className="grid sm:grid-cols-2 gap-5">
         <FormField
           id="name" label="Nama Lengkap" value={name}
@@ -273,7 +273,7 @@ export default function UserForm(props: Props) {
         onChange={setAddress} optionalHint
       />
 
-      <div className="pt-2">
+      <div className="">
         <button type="submit" disabled={busy} className="btn-primary w-full disabled:opacity-60">
           {busy ? "Menyimpan..." : props.mode === "edit" ? "Simpan Perubahan" : "Buat Pengguna"}
         </button>

@@ -16,9 +16,12 @@ export default async function TambahPenggunaPage() {
       <PageHeader
         breadcrumb={{ parent: "Pengguna", current: "Tambah Pengguna" }}
         title="Tambah Pengguna Baru"
+        bordered
+        description="Masukkan identitas pengguna dengan lengkap."
+        descriptionClassName="max-w-full text-[16px]"
       />
 
-      <div className="card-doc rise-in max-w-2xl" style={{ animationDelay: "100ms" }}>
+      <div className="card-doc rise-in mt-4 md:mt-5 w-full" style={{ animationDelay: "100ms" }}>
         <UserForm
           mode="create"
           positions={positions}
