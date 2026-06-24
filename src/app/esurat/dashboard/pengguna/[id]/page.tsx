@@ -10,7 +10,8 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function EditPenggunaPage({ params }: PageProps) {
   const session = await getSessionUser();
   if (!session) redirect("/esurat");
-  if (session.role !== "staff" && session.role !== "admin") redirect("/esurat/dashboard");
+  if (session.role !== "staff" && session.role !== "admin")
+    redirect("/esurat/dashboard");
 
   const { id } = await params;
   let user;
@@ -28,9 +29,18 @@ export default async function EditPenggunaPage({ params }: PageProps) {
 
   return (
     <div>
-      <PageHeader breadcrumb={{ parent: "Pengguna", current: user.name }} title="Edit Pengguna" />
+      <PageHeader
+        breadcrumb={{ parent: "Pengguna", current: user.name }}
+        title="Edit Pengguna"
+        bordered
+        description="Ubah identitas pengguna yang sesuai."
+        descriptionClassName="max-w-full text-[16px]"
+      />
 
-      <div className="card-doc rise-in max-w-2xl" style={{ animationDelay: "100ms" }}>
+      <div
+        className="card-doc rise-in w-full mt-4 md:mt-5"
+        style={{ animationDelay: "100ms" }}
+      >
         <UserForm
           mode="edit"
           user={user}

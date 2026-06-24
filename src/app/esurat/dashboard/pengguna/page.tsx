@@ -8,12 +8,15 @@ import { getSessionUser } from "@/server/utils/session";
 import { userService } from "@/server/services/user.service";
 import PenggunaTable from "./PenggunaTable";
 
-type PageProps = { searchParams: Promise<{ q?: string; page?: string; limit?: string }> };
+type PageProps = {
+  searchParams: Promise<{ q?: string; page?: string; limit?: string }>;
+};
 
 export default async function PenggunaPage({ searchParams }: PageProps) {
   const session = await getSessionUser();
   if (!session) redirect("/esurat");
-  if (session.role !== "staff" && session.role !== "admin") redirect("/esurat/dashboard");
+  if (session.role !== "staff" && session.role !== "admin")
+    redirect("/esurat/dashboard");
   const isStaff = session.role === "staff";
 
   const { q, page: pageParam, limit: limitParam } = await searchParams;
@@ -30,9 +33,13 @@ export default async function PenggunaPage({ searchParams }: PageProps) {
   return (
     <div>
       <PageHeader
-        overline="Manajemen Akun"
+        breadcrumb={{ parent: "Layanan Administrasi", current: "Pengguna" }}
         title="Pengguna"
-        description={isStaff ? "Kelola akun warga." : "Kelola akun warga, staff, dan admin."}
+        description={
+          isStaff
+            ? "Kelola akun warga."
+            : "Kelola akun warga, staff, dan admin."
+        }
         action={
           <Link
             href="/esurat/dashboard/pengguna/tambah"
@@ -41,21 +48,30 @@ export default async function PenggunaPage({ searchParams }: PageProps) {
             + Tambah Pengguna
           </Link>
         }
+        bordered
       />
 
       <div
-        className="flex items-center justify-between gap-3 mb-6 rise-in"
+        className="w-full mb-5 mt-5 rise-in"
         style={{ animationDelay: "60ms" }}
       >
-        <form method="GET">
+        <form method="GET" className="flex items-center gap-5 w-full">
           <input type="hidden" name="limit" value={limit} />
+
           <input
             type="text"
             name="q"
             defaultValue={q ?? ""}
             placeholder="Cari nama, email, atau NIK..."
-            className="input-doc max-w-sm"
+            className="input-doc py-2 w-7/8"
           />
+
+          <button
+            type="submit"
+            className="btn-primary py-2 w-1/8 flex items-center justify-center whitespace-nowrap"
+          >
+            Cari
+          </button>
         </form>
       </div>
 
@@ -73,21 +89,28 @@ export default async function PenggunaPage({ searchParams }: PageProps) {
             }
           />
         ) : (
-          <PenggunaTable users={users} currentUserId={session.id} canDelete={!isStaff} />
+          <PenggunaTable
+            users={users}
+            currentUserId={session.id}
+            canDelete={!isStaff}
+          />
         )}
       </div>
-      <div className="flex items-center justify-between gap-3 rise-in" style={{ animationDelay: "180ms" }}>
-      <LimitSelect value={limit} />
-      <Pagination
-        pagination={pagination}
-        makeHref={(p) =>
-          `/esurat/dashboard/pengguna?${new URLSearchParams({
-            ...(q ? { q } : {}),
-            limit: String(limit),
-            page: String(p),
-          })}`
-        }
-      />
+      <div
+        className="flex items-center justify-between gap-3 rise-in mt-5"
+        style={{ animationDelay: "180ms" }}
+      >
+        <LimitSelect value={limit} />
+        <Pagination
+          pagination={pagination}
+          makeHref={(p) =>
+            `/esurat/dashboard/pengguna?${new URLSearchParams({
+              ...(q ? { q } : {}),
+              limit: String(limit),
+              page: String(p),
+            })}`
+          }
+        />
       </div>
     </div>
   );
