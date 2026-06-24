@@ -92,7 +92,7 @@ export default function SiteNav() {
                 : "bg-paper text-pine-900 hover:bg-white"
             }`}
           >
-            Masuk
+            E-Surat
           </Link>
         </div>
 
@@ -127,7 +127,7 @@ export default function SiteNav() {
             onClick={() => setOpen(false)}
             className="mt-1 block rounded-sm bg-pine-900 px-4 py-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-paper"
           >
-            Masuk
+            E-Surat
           </Link>
         </div>
       )}
