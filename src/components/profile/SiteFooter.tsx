@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MapPin, Mail, Share } from "./icons";
+import { siteContentService } from "@/server/services/siteContent.service";
 
 const NAVIGASI = [
   { label: "Beranda", href: "/#beranda" },
@@ -15,7 +16,8 @@ const LEGAL = [
   "Aksesibilitas",
 ];
 
-export default function SiteFooter() {
+export default async function SiteFooter() {
+  const footer = await siteContentService.get("footer");
   return (
     <footer className="w-full border-t border-pine-800/40 bg-pine-950 pb-8 pt-16 text-paper">
       <div className="mx-auto mb-12 grid max-w-[1280px] grid-cols-1 gap-8 px-5 md:grid-cols-4 md:px-12">
@@ -24,10 +26,7 @@ export default function SiteFooter() {
           <h2 className="mb-4 font-serif text-[32px] leading-none text-paper">
             DESA SANGKIMA
           </h2>
-          <p className="text-sm leading-6 text-paper/70">
-            Pusat administrasi dan informasi terpadu, mewujudkan pelayanan
-            masyarakat yang modern dan berbudaya.
-          </p>
+          <p className="text-sm leading-6 text-paper/70">{footer.deskripsi}</p>
         </div>
 
         {/* Navigasi */}
@@ -76,14 +75,11 @@ export default function SiteFooter() {
           <ul className="space-y-3 text-sm text-paper/70">
             <li className="flex items-start gap-2 transition-transform duration-300 hover:translate-x-1">
               <MapPin className="mt-0.5 h-[18px] w-[18px] shrink-0" />
-              <span>
-                Kantor Kepala Desa Sangkima, Kec. Sangatta Selatan, Kab. Kutai
-                Timur.
-              </span>
+              <span>{footer.alamat}</span>
             </li>
             <li className="flex items-center gap-2 transition-transform duration-300 hover:translate-x-1">
               <Mail className="h-[18px] w-[18px] shrink-0" />
-              <span>admin@sangkima.desa.id</span>
+              <span>{footer.email}</span>
             </li>
           </ul>
         </div>

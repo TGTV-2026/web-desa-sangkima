@@ -1,0 +1,41 @@
+import { NextResponse } from "next/server";
+import { getSessionUser } from "@/server/utils/session";
+import { saveProfileImage } from "@/server/utils/imageUpload";
+
+// Upload gambar konten web profil. Hanya operator (staff) / kepala desa (admin).
+export async function POST(req: Request) {
+  const user = await getSessionUser();
+  if (!user || (user.role !== "staff" && user.role !== "admin")) {
+    return NextResponse.json(
+      { success: false, message: "Tidak berwenang" },
+      { status: user ? 403 : 401 },
+    );
+  }
+
+  const form = await req.formData();
+  const file = form.get("file");
+  if (!(file instanceof File)) {
+    return NextResponse.json(
+      { success: false, message: "Berkas gambar tidak ditemukan" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const url = await saveProfileImage({
+      mime: file.type,
+      size: file.size,
+      buffer,
+    });
+    return NextResponse.json({ success: true, data: { url } });
+  } catch (err) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: err instanceof Error ? err.message : "Gagal mengunggah",
+      },
+      { status: 400 },
+    );
+  }
+}
