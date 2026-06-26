@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/useToast";
 import AuthSplitLayout from "@/components/esurat/auth/AuthSplitLayout";
 import AuthFormHeader from "@/components/esurat/auth/AuthFormHeader";
 import FormField from "@/components/esurat/FormField";
+import Link from "next/link";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -118,12 +119,12 @@ export default function LoginForm() {
             autoComplete="current-password"
           />
           <div className="flex justify-end">
-            <a
-              href="/forgot-password"
+            <Link
+              href="/esurat/forgot-password"
               className="text-[14px] md:text-[15px] font-semibold text-brass hover:underline underline-offset-2"
             >
               Lupa sandi?
-            </a>
+            </Link>
           </div>
         </div>
         {/* --------------------------------------- */}
@@ -138,12 +139,12 @@ export default function LoginForm() {
 
         <div className="border-t border-line pt-2 md:pt-3 mt-1 text-center text-[15px] md:text-[16px] text-inkmut w-full">
           Belum punya akun?{" "}
-          <a
+          <Link
             href="/esurat/register"
             className="font-semibold text-brass hover:underline underline-offset-2"
           >
             Daftar sebagai warga
-          </a>
+          </Link>
         </div>
       </form>
     </AuthSplitLayout>

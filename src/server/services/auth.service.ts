@@ -212,7 +212,7 @@ export const authService = {
     );
 
     // Build reset URL
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/reset-password?userId=${user.id}&token=${resetToken}`;
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/esurat/reset-password?userId=${user.id}&token=${resetToken}`;
 
     // Send email
     try {

@@ -59,8 +59,13 @@ export default function ChangePasswordForm() {
         extractErrorMessage: (json) => {
           // Tampilkan error per-field inline (mis. "Password lama salah"),
           // toast tetap memakai json.message sebagai ringkasan.
-          const fieldErrors = json.errors as Errors | undefined;
-          if (fieldErrors) setErrors((prev) => ({ ...prev, ...fieldErrors }));
+          const fe = json.errors;
+          if (fe)
+            setErrors((prev) => ({
+              oldPassword: fe.oldPassword?.[0] ?? prev.oldPassword,
+              newPassword: fe.newPassword?.[0] ?? prev.newPassword,
+              confirmPassword: fe.confirmPassword?.[0] ?? prev.confirmPassword,
+            }));
           return json.message as string | undefined;
         },
         onSuccess: () => {
