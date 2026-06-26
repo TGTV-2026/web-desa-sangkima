@@ -42,6 +42,23 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
+export const changePasswordSchema = z
+  .object({
+    oldPassword: z.string().min(1, "Password lama tidak boleh kosong"),
+    newPassword: z.string().min(8, "Password baru minimal 8 karakter"),
+    confirmPassword: z
+      .string()
+      .min(1, "Konfirmasi password tidak boleh kosong"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Password baru dan konfirmasi tidak cocok",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.newPassword !== data.oldPassword, {
+    message: "Password baru harus berbeda dari password lama",
+    path: ["newPassword"],
+  });
+
 export const resendOTPSchema = z.object({
   email: z.string().email("Format email tidak valid"),
 });
@@ -71,6 +88,7 @@ export type TRegisterInput = z.infer<typeof registerSchema>;
 export type TLoginInput = z.infer<typeof loginSchema>;
 export type TForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type TResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type TChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type TResendOTPInput = z.infer<typeof resendOTPSchema>;
 export type TVerifyOTPInput = z.infer<typeof verifyOTPSchema>;
 export type TChangeEmailInput = z.infer<typeof changeEmailSchema>;

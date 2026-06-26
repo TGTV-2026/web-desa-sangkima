@@ -230,21 +230,27 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
             />
           </div>
           <div className="sm:col-span-2">
-            <div className="flex items-baseline justify-between gap-2">
-              <label className={`label-doc !mb-0 ${labelCls}`}>Email</label>
-              <Link
-                href="/esurat/dashboard/profil/ubah-email"
-                className="text-xs font-bold tracking-wider uppercase text-brass hover:underline underline-offset-2"
-              >
-                Ubah Email →
-              </Link>
-            </div>
+            <label className={`label-doc ${labelCls}`}>Email</label>
             <input
               type="text"
               value={user.email}
               readOnly
               className="input-doc mt-1.5 bg-paper2/50 text-inkmut cursor-not-allowed"
             />
+            <div className="flex flex-wrap gap-3 mt-3">
+              <Link
+                href="/esurat/dashboard/profil/ubah-email"
+                className="btn-outline py-2 px-4 font-bold tracking-wide uppercase text-xs"
+              >
+                Ubah Email
+              </Link>
+              <Link
+                href="/esurat/dashboard/profil/ubah-password"
+                className="btn-outline py-2 px-4 font-bold tracking-wide uppercase text-xs"
+              >
+                Ubah Password
+              </Link>
+            </div>
           </div>
         </div>
         <p className="text-[14px] text-inkmut mt-2.5 leading-relaxed">
