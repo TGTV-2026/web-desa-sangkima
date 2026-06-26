@@ -296,6 +296,23 @@ const defaultGaleri: GaleriContent = {
   ],
 };
 
+/* -------------------------------- Footer --------------------------------- */
+
+export const footerContentSchema = z.object({
+  deskripsi: z.string(),
+  alamat: z.string(),
+  email: z.string(),
+});
+export type FooterContent = z.infer<typeof footerContentSchema>;
+
+const defaultFooter: FooterContent = {
+  deskripsi:
+    "Pusat administrasi dan informasi terpadu, mewujudkan pelayanan masyarakat yang modern dan berbudaya.",
+  alamat:
+    "Kantor Kepala Desa Sangkima, Kec. Sangatta Selatan, Kab. Kutai Timur.",
+  email: "admin@sangkima.desa.id",
+};
+
 /* ------------------------------ Registry --------------------------------- */
 
 // Satu sumber kebenaran: key seksi → { skema validasi, nilai default, label UI }.
@@ -320,6 +337,7 @@ export const CONTENT_SECTIONS = {
   },
   galeri: { schema: galeriContentSchema, default: defaultGaleri, label: "Galeri & Potensi" },
   kontak: { schema: kontakContentSchema, default: defaultKontak, label: "Kontak & Peta" },
+  footer: { schema: footerContentSchema, default: defaultFooter, label: "Footer Situs" },
 } as const;
 
 export type ContentKey = keyof typeof CONTENT_SECTIONS;
@@ -332,6 +350,7 @@ export type ContentValueMap = {
   struktur: StrukturContent;
   galeri: GaleriContent;
   kontak: KontakContent;
+  footer: FooterContent;
 };
 
 export const CONTENT_KEYS = Object.keys(CONTENT_SECTIONS) as ContentKey[];
