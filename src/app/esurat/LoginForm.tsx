@@ -1,17 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
 import AuthSplitLayout from "@/components/esurat/auth/AuthSplitLayout";
 import AuthFormHeader from "@/components/esurat/auth/AuthFormHeader";
 import FormField from "@/components/esurat/FormField";
+import Turnstile, { type TurnstileHandle } from "@/components/esurat/Turnstile";
+import Link from "next/link";
 
 export default function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const turnstileRef = useRef<TurnstileHandle>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -22,7 +26,7 @@ export default function LoginForm() {
       const response = await fetch("/esurat/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, turnstileToken }),
       });
 
       const data = await response.json();
@@ -62,6 +66,10 @@ export default function LoginForm() {
     } catch (err: any) {
       const msg = err?.message || "Gagal terhubung ke server";
       toast(msg, "Gagal Masuk", "error", 5000);
+      // Token Turnstile sudah terpakai pada percobaan ini — minta token baru
+      // agar percobaan login berikutnya tidak tertolak sebagai duplikat.
+      setTurnstileToken("");
+      turnstileRef.current?.reset();
     } finally {
       setIsLoading(false);
     }
@@ -118,19 +126,21 @@ export default function LoginForm() {
             autoComplete="current-password"
           />
           <div className="flex justify-end">
-            <a
-              href="/forgot-password"
+            <Link
+              href="/esurat/forgot-password"
               className="text-[14px] md:text-[15px] font-semibold text-brass hover:underline underline-offset-2"
             >
               Lupa sandi?
-            </a>
+            </Link>
           </div>
         </div>
         {/* --------------------------------------- */}
 
+        <Turnstile ref={turnstileRef} onVerify={setTurnstileToken} />
+
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !turnstileToken}
           className="btn-primary mt-1 md:mt-2 py-2.5 md:py-3.5 text-[15px] md:text-[16px] font-semibold w-full"
         >
           {isLoading ? "Memproses..." : "Masuk"}
@@ -138,12 +148,12 @@ export default function LoginForm() {
 
         <div className="border-t border-line pt-2 md:pt-3 mt-1 text-center text-[15px] md:text-[16px] text-inkmut w-full">
           Belum punya akun?{" "}
-          <a
+          <Link
             href="/esurat/register"
             className="font-semibold text-brass hover:underline underline-offset-2"
           >
             Daftar sebagai warga
-          </a>
+          </Link>
         </div>
       </form>
     </AuthSplitLayout>

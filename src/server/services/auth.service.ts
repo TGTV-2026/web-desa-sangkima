@@ -3,6 +3,7 @@ import {
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  changePasswordSchema,
   resendOTPSchema,
   verifyOTPSchema,
   changeEmailSchema,
@@ -11,6 +12,7 @@ import {
   TLoginInput,
   TForgotPasswordInput,
   TResetPasswordInput,
+  TChangePasswordInput,
   TResendOTPInput,
   TVerifyOTPInput,
   TChangeEmailInput,
@@ -210,7 +212,7 @@ export const authService = {
     );
 
     // Build reset URL
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/reset-password?userId=${user.id}&token=${resetToken}`;
+    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/esurat/reset-password?userId=${user.id}&token=${resetToken}`;
 
     // Send email
     try {
@@ -267,6 +269,33 @@ export const authService = {
       success: true,
       message:
         "Password berhasil direset. Silakan login dengan password baru Anda.",
+    };
+  },
+
+  async changePassword(input: TChangePasswordInput & { userId: string }) {
+    const validatedData = changePasswordSchema.parse(input);
+
+    const user = await userRepository.findById(input.userId);
+    if (!user) {
+      throw new Error("User tidak ditemukan");
+    }
+
+    const isOldValid = await comparePassword(
+      validatedData.oldPassword,
+      user.password,
+    );
+    if (!isOldValid) {
+      throw Object.assign(new Error("Password lama salah"), {
+        field: "oldPassword" as const,
+      });
+    }
+
+    const passwordHash = await hashPassword(validatedData.newPassword);
+    await userRepository.updateUserPassword(input.userId, passwordHash);
+
+    return {
+      success: true,
+      message: "Password berhasil diubah",
     };
   },
 

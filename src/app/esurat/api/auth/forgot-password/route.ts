@@ -38,11 +38,19 @@
 
 import { NextResponse } from "next/server";
 import { authService } from "@/server/services/auth.service";
+import { verifyTurnstile } from "@/server/utils/turnstile";
 import z from "zod";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const { turnstileToken, ...body } = (await req.json()) ?? {};
+
+    if (!(await verifyTurnstile(turnstileToken))) {
+      return NextResponse.json(
+        { success: false, message: "Verifikasi keamanan gagal. Silakan coba lagi." },
+        { status: 400 },
+      );
+    }
 
     const result = await authService.forgotPassword(body);
 
