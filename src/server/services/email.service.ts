@@ -23,16 +23,6 @@ function shouldUseConsoleMode(): boolean {
   if (process.env.EMAIL_MODE === "console") {
     return true;
   }
-
-  // Jika tidak ada SMTP credentials, fallback ke console
-  if (
-    !process.env.SMTP_HOST ||
-    !process.env.SMTP_USER ||
-    !process.env.SMTP_PASSWORD
-  ) {
-    return true;
-  }
-
   return false;
 }
 
