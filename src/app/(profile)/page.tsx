@@ -5,6 +5,18 @@ import GallerySection from "@/components/profile/GallerySection";
 import ContactSection from "@/components/profile/ContactSection";
 import { ArrowRight, FileText, Store, Trees } from "@/components/profile/icons";
 import type { CSSProperties } from "react";
+import { siteContentService } from "@/server/services/siteContent.service";
+import type { LayananContent } from "@/server/types/content";
+
+// Konten dari CMS — selalu tampilkan versi terbaru.
+export const dynamic = "force-dynamic";
+
+// Pemetaan nama ikon (string di DB) → komponen ikon.
+const ICONS: Record<LayananContent["items"][number]["icon"], typeof FileText> = {
+  FileText,
+  Trees,
+  Store,
+};
 
 // Posisi awal "berserak" tiap kartu layanan untuk animasi assemble (.sd-assemble).
 const SCATTER: CSSProperties[] = [
@@ -13,34 +25,15 @@ const SCATTER: CSSProperties[] = [
   { "--tx": "140px", "--ty": "30px", "--rot": "7deg" } as CSSProperties,
 ];
 
-const LAYANAN = [
-  {
-    icon: FileText,
-    title: "Administrasi Digital",
-    desc: "Pengurusan surat pengantar, perizinan, dan dokumen kependudukan secara efisien melalui portal satu pintu.",
-    cta: "Akses Layanan",
-    href: "/esurat",
-  },
-  {
-    icon: Trees,
-    title: "Ekowisata",
-    desc: "Jelajahi keindahan alam tersembunyi Sangkima. Area konservasi, jalur tracking, dan wisata budaya lokal.",
-    cta: "Lihat Destinasi",
-    href: "#galeri",
-  },
-  {
-    icon: Store,
-    title: "Potensi Lokal",
-    desc: "Dukung produk unggulan UMKM desa. Dari kerajinan tangan tradisional hingga hasil bumi berkualitas.",
-    cta: "Katalog UMKM",
-    href: "#galeri",
-  },
-];
+export default async function BerandaPage() {
+  const hero = await siteContentService.get("hero");
+  const layanan = await siteContentService.get("layanan");
+  const galeri = await siteContentService.get("galeri");
+  const kontak = await siteContentService.get("kontak");
 
-export default function BerandaPage() {
   return (
     <>
-      <Hero />
+      <Hero content={hero} />
 
       {/* Layanan & Potensi */}
       <section
@@ -53,21 +46,21 @@ export default function BerandaPage() {
         <div className="relative z-10 mx-auto max-w-[1280px] px-5 md:px-12">
           <Reveal className="mb-16 text-center">
             <span className="mb-4 block text-[11px] font-bold uppercase tracking-[0.2em] text-brass">
-              Fasilitas Utama
+              {layanan.eyebrow}
             </span>
             <h2 className="font-serif text-[32px] font-medium leading-[40px] text-pine-900">
-              Layanan &amp; Potensi
+              {layanan.title}
             </h2>
           </Reveal>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {LAYANAN.map((l, i) => {
-              const Icon = l.icon;
+            {layanan.items.map((l, i) => {
+              const Icon = ICONS[l.icon] ?? FileText;
               return (
                 <div
-                  key={l.title}
+                  key={`${l.title}-${i}`}
                   className="sd-assemble h-full"
-                  style={SCATTER[i]}
+                  style={SCATTER[i % SCATTER.length]}
                 >
                   <Seal className="group h-full bg-card transition-all duration-500 hover:-translate-y-2 hover:shadow-xl">
                     <div className="p-8">
@@ -96,9 +89,9 @@ export default function BerandaPage() {
         </div>
       </section>
 
-      <GallerySection />
+      <GallerySection content={galeri} />
 
-      <ContactSection />
+      <ContactSection content={kontak} />
     </>
   );
 }
