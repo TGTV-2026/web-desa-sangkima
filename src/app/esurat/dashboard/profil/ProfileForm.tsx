@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSubmitAction } from "@/hooks/useSubmitAction";
 import FormField from "@/components/esurat/FormField";
@@ -229,7 +230,15 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
             />
           </div>
           <div className="sm:col-span-2">
-            <label className={`label-doc ${labelCls}`}>Email</label>
+            <div className="flex items-baseline justify-between gap-2">
+              <label className={`label-doc !mb-0 ${labelCls}`}>Email</label>
+              <Link
+                href="/esurat/dashboard/profil/ubah-email"
+                className="text-xs font-bold tracking-wider uppercase text-brass hover:underline underline-offset-2"
+              >
+                Ubah Email →
+              </Link>
+            </div>
             <input
               type="text"
               value={user.email}
