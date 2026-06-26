@@ -5,7 +5,7 @@
  *     tags:
  *       - Utilities
  *     summary: "🧪 Test email configuration (admin)"
- *     description: Test email configuration by sending a test email. Development/debugging purpose only. Admin only.
+ *     description: Test email configuration by sending a test email via Resend. Development/debugging purpose only. Admin only.
  *     operationId: testEmailConfig
  *     security:
  *       - BearerAuth: []
@@ -35,7 +35,7 @@
  *                 message:
  *                   type: string
  *       400:
- *         description: Missing testEmail parameter
+ *         description: Missing testEmail parameter or send failed
  */
 
 import { NextResponse } from "next/server";
@@ -43,6 +43,7 @@ import {
   requireRole,
   handleACLError,
 } from "@/server/middlewares/acl.middleware";
+import { Resend } from "resend";
 
 export async function POST(req: Request) {
   // endpoint utilitas: hanya admin, agar tidak bisa dipakai spam email
@@ -66,132 +67,104 @@ export async function POST(req: Request) {
       );
     }
 
-    // Development mode
-    if (process.env.NODE_ENV !== "production") {
-      console.log("\n🧪 TEST EMAIL (Development Mode)");
+    // Console mode — tidak ada API key
+    if (!process.env.RESEND_API_KEY || process.env.EMAIL_MODE === "console") {
+      console.log("\n🧪 TEST EMAIL (Console Mode)");
       console.log(`   To: ${testEmail}`);
-      console.log(`   NODE_ENV: development`);
       console.log(
-        `   Status: Akan ditampilkan di console, tidak ada email real\n`,
+        `   Status: Tidak ada RESEND_API_KEY — email tidak dikirim\n`,
       );
 
       return NextResponse.json(
         {
           success: true,
-          message: "Development mode - check console untuk OTP",
-          mode: "development",
+          message: "Console mode — set RESEND_API_KEY di .env untuk kirim email sungguhan",
+          mode: "console",
           info: {
             email: testEmail,
-            note: "Email ditampilkan di console, bukan dikirim real",
+            note: "Email tidak dikirim, ditampilkan di console",
           },
         },
         { status: 200 },
       );
     }
 
-    // Production mode - test SMTP connection
-    console.log("\n🧪 Testing SMTP Configuration...");
-    console.log(`   Host: ${process.env.SMTP_HOST}`);
-    console.log(`   Port: ${process.env.SMTP_PORT}`);
-    console.log(`   User: ${process.env.SMTP_USER}`);
-    console.log(`   From: ${process.env.SMTP_FROM_EMAIL}`);
+    // Kirim test email via Resend
+    console.log("\n🧪 Testing Resend Configuration...");
+    console.log(`   From: ${process.env.RESEND_FROM_EMAIL}`);
+    console.log(`   To:   ${testEmail}`);
 
-    const nodemailer = await import("nodemailer");
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-    const transporter = nodemailer.default.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
-    // Verify connection
-    console.log(`   Verifying connection...`);
-    await transporter.verify();
-    console.log(`   ✅ SMTP connection verified\n`);
-
-    // Send test email
-    console.log(`   Sending test email to ${testEmail}...`);
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM_EMAIL,
+    const { data, error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev",
       to: testEmail,
       subject: "Test Email - Desa Sangkima OTP System",
       html: `
         <h2>Test Email</h2>
-        <p>Jika Anda menerima email ini, berarti SMTP configuration benar! ✅</p>
+        <p>Jika Anda menerima email ini, berarti konfigurasi Resend sudah benar! ✅</p>
         <p>
           <strong>Info:</strong><br>
-          From: ${process.env.SMTP_FROM_EMAIL}<br>
-          Time: ${new Date().toLocaleString()}
+          From: ${process.env.RESEND_FROM_EMAIL}<br>
+          Time: ${new Date().toLocaleString("id-ID")}
         </p>
       `,
     });
 
-    console.log(`✅ Test email sent successfully`);
-    console.log(`   Message ID: ${info.messageId}\n`);
+    if (error) {
+      console.error(`❌ Resend error:`, error);
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Test email gagal dikirim via Resend",
+          error: {
+            message: error.message,
+            tips: getErrorTips(error),
+          },
+        },
+        { status: 400 },
+      );
+    }
+
+    console.log(`✅ Test email sent — id: ${data?.id}\n`);
 
     return NextResponse.json(
       {
         success: true,
-        message: "Test email berhasil dikirim!",
-        mode: "production",
+        message: "Test email berhasil dikirim via Resend!",
+        mode: "resend",
         info: {
           email: testEmail,
-          messageId: info.messageId,
-          smtpHost: process.env.SMTP_HOST,
+          emailId: data?.id,
           timestamp: new Date().toISOString(),
         },
       },
       { status: 200 },
     );
-  } catch (error: any) {
-    console.error(`\n❌ SMTP TEST FAILED`);
-    console.error(`   Error: ${error.message}`);
-    console.error(`   Code: ${error.code}\n`);
-
-    // Determine error type
-    let errorType = "unknown";
-    if (error.code === "ECONNREFUSED") {
-      errorType = "Connection refused - cek SMTP_HOST & SMTP_PORT";
-    } else if (error.code === "EAUTH") {
-      errorType = "Authentication failed - cek SMTP_USER & SMTP_PASSWORD";
-    } else if (error.code === "ETIMEDOUT") {
-      errorType = "Connection timeout - cek firewall & internet";
-    }
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`\n❌ TEST EMAIL FAILED: ${msg}`);
 
     return NextResponse.json(
       {
         success: false,
         message: "Email test gagal",
-        error: {
-          type: errorType,
-          message: error.message,
-          code: error.code,
-          tips: getErrorTips(error.code),
-        },
+        error: { message: msg },
       },
       { status: 400 },
     );
   }
 }
 
-function getErrorTips(code?: string): string[] {
+function getErrorTips(error: { message?: string; name?: string }): string[] {
   const tips = [
-    "Pastikan .env variables sudah benar (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD)",
-    "Jika Gmail: gunakan App Password (bukan Google password biasa)",
-    "Cek firewall - port 587 atau 465 harus bisa diakses",
-    "Cek internet connection",
+    "Pastikan RESEND_API_KEY sudah diisi di .env",
+    "Pastikan domain pengirim sudah diverifikasi di dashboard Resend",
+    "Gunakan format 'Name <email@domain.com>' untuk RESEND_FROM_EMAIL",
   ];
 
-  if (code === "ECONNREFUSED") {
-    tips.push("SMTP server unreachable - cek host & port");
-  } else if (code === "EAUTH") {
-    tips.push("Re-generate credentials jika belum diperbaharui");
-  } else if (code === "ETIMEDOUT") {
-    tips.push("Coba ganti port (587 → 465 atau sebaliknya)");
+  if (error.name === "validation_error") {
+    tips.push("Cek format email penerima sudah benar");
   }
 
   return tips;

@@ -1,11 +1,11 @@
 /**
- * Email Service - Send OTP via email
- * Menggunakan Nodemailer dengan SMTP
+ * Email Service - Kirim OTP & reset password via Resend
  *
- * CATATAN: Jangan gunakan NODE_ENV untuk menentukan mode email,
- * karena Next.js memaksa NODE_ENV=development saat `next dev`.
- * Gunakan EMAIL_MODE=console di .env jika ingin mode console saja.
+ * CATATAN: Gunakan EMAIL_MODE=console di .env jika ingin mode console saja
+ * (tidak mengirim email sungguhan) — berguna saat development tanpa API key.
  */
+
+import { Resend } from "resend";
 
 interface SendEmailOptions {
   to: string;
@@ -13,82 +13,70 @@ interface SendEmailOptions {
   html: string;
 }
 
+const RESEND_FROM = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
+
 /**
  * Cek apakah harus menggunakan mode console (tidak kirim email sungguhan)
  * - Jika EMAIL_MODE=console → mode console
- * - Jika SMTP credentials tidak lengkap → mode console (fallback)
- * - Selain itu → kirim email sungguhan via SMTP
+ * - Jika RESEND_API_KEY tidak ada → mode console (fallback)
+ * - Selain itu → kirim email sungguhan via Resend
  */
 function shouldUseConsoleMode(): boolean {
-  if (process.env.EMAIL_MODE === "console") {
-    return true;
+  if (process.env.EMAIL_MODE === "console") return true;
+  if (!process.env.RESEND_API_KEY) return true;
+  return false;
+}
+
+/**
+ * Kirim email via Resend; lempar Error jika gagal.
+ */
+async function sendEmail(options: SendEmailOptions): Promise<void> {
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
+  const { data, error } = await resend.emails.send({
+    from: RESEND_FROM,
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+  });
+
+  if (error) {
+    console.error(`❌ Resend error:`, error);
+    throw new Error(`Email send failed: ${error.message}`);
   }
 
-  // Jika tidak ada SMTP credentials, fallback ke console
-  if (
-    !process.env.SMTP_HOST ||
-    !process.env.SMTP_USER ||
-    !process.env.SMTP_PASSWORD
-  ) {
-    return true;
-  }
-  
-  return false;
+  console.log(`✅ Email sent via Resend — id: ${data?.id}`);
 }
 
 /**
  * Send OTP email
  */
 export async function sendOTPEmail(to: string, otp: string): Promise<void> {
-  // Console mode - hanya tampilkan di console, tidak kirim email
   if (shouldUseConsoleMode()) {
     console.log(`\n📧 OTP EMAIL (Console Mode - email TIDAK terkirim)`);
     console.log(`   To: ${to}`);
     console.log(`   Code: ${otp}`);
     console.log(`   Valid for: 15 minutes`);
     console.log(
-      `   💡 Set EMAIL_MODE=smtp di .env untuk kirim email sungguhan\n`,
+      `   💡 Set EMAIL_MODE=smtp & RESEND_API_KEY di .env untuk kirim email sungguhan\n`,
     );
     return;
   }
 
-  // SMTP mode - kirim email sungguhan via Nodemailer
-  console.log(`\n🔄 Sending OTP email to ${to}...`);
+  console.log(`\n🔄 Sending OTP email to ${to} via Resend...`);
 
   try {
-    const nodemailer = await import("nodemailer");
-
-    const transporter = nodemailer.default.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
-    // Test connection
-    console.log(
-      `   Connecting to ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}...`,
-    );
-    await transporter.verify();
-    console.log(`   ✅ SMTP connection verified`);
-
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM_EMAIL,
+    await sendEmail({
       to,
       subject: "Kode Aktivasi Akun - Desa Sangkima",
       html: getOTPEmailTemplate(otp),
     });
 
-    console.log(`✅ Email sent successfully to ${to}`);
-    console.log(`   Message ID: ${info.messageId}\n`);
-  } catch (error: any) {
-    console.error(`❌ Failed to send OTP email to ${to}`);
-    console.error(`   Error: ${error.message}`);
-    console.error(`   Code: ${error.code}\n`);
-    throw new Error(`Email send failed: ${error.message}`);
+    console.log(`✅ OTP email sent successfully to ${to}\n`);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`❌ Failed to send OTP email to ${to}: ${msg}`);
+    throw new Error(`Email send failed: ${msg}`);
   }
 }
 
@@ -100,7 +88,6 @@ export async function sendPasswordResetEmail(
   resetToken: string,
   resetUrl: string,
 ): Promise<void> {
-  // Console mode
   if (shouldUseConsoleMode()) {
     console.log(
       `\n📧 PASSWORD RESET EMAIL (Console Mode - email TIDAK terkirim)`,
@@ -112,42 +99,20 @@ export async function sendPasswordResetEmail(
     return;
   }
 
-  // SMTP mode
-  console.log(`\n🔄 Sending password reset email to ${to}...`);
+  console.log(`\n🔄 Sending password reset email to ${to} via Resend...`);
 
   try {
-    const nodemailer = await import("nodemailer");
-
-    const transporter = nodemailer.default.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
-      },
-    });
-
-    console.log(
-      `   Connecting to ${process.env.SMTP_HOST}:${process.env.SMTP_PORT}...`,
-    );
-    await transporter.verify();
-    console.log(`   ✅ SMTP connection verified`);
-
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM_EMAIL,
+    await sendEmail({
       to,
       subject: "Reset Password - Desa Sangkima",
       html: getPasswordResetEmailTemplate(resetUrl),
     });
 
-    console.log(`✅ Password reset email sent successfully to ${to}`);
-    console.log(`   Message ID: ${info.messageId}\n`);
-  } catch (error: any) {
-    console.error(`❌ Failed to send password reset email to ${to}`);
-    console.error(`   Error: ${error.message}`);
-    console.error(`   Code: ${error.code}\n`);
-    throw new Error(`Email send failed: ${error.message}`);
+    console.log(`✅ Password reset email sent successfully to ${to}\n`);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`❌ Failed to send password reset email to ${to}: ${msg}`);
+    throw new Error(`Email send failed: ${msg}`);
   }
 }
 
