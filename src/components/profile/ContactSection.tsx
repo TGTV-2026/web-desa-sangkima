@@ -1,16 +1,19 @@
 // Seksi #kontak: form pesan resmi + blok info + peta interaktif Leaflet kantor desa.
+// Alamat, surel, dan titik peta dari CMS (props); warna kategori marker tetap dari peta-data.
 import Reveal from "./Reveal";
 import Seal from "./Seal";
 import ContactForm from "./ContactForm";
 import ContactMap from "./ContactMap";
-import { KATEGORI_WARNA, PETA_CENTER, TITIK } from "./peta-data";
+import { KATEGORI_WARNA } from "./peta-data";
 import { Mail, MapPin, Move } from "./icons";
+import type { KontakContent } from "@/server/types/content";
 
-const ALAMAT =
-  "Jl. Poros Sangatta – Bontang Km. 18, Kecamatan Sangatta Selatan, Kabupaten Kutai Timur, Kalimantan Timur 75611";
-const EMAIL = "pemdes@sangkima.desa.id";
-
-export default function ContactSection() {
+export default function ContactSection({
+  content,
+}: {
+  content: KontakContent;
+}) {
+  const { alamat: ALAMAT, email: EMAIL } = content;
   return (
     <section id="kontak" className="relative bg-paper py-24 md:py-32">
       <div className="mx-auto max-w-[1280px] px-5 md:px-12">
@@ -78,7 +81,7 @@ export default function ContactSection() {
                     </span>
                   </div>
 
-                  <ContactMap titik={TITIK} center={PETA_CENTER} />
+                  <ContactMap titik={content.titik} center={content.petaCenter} />
                 </div>
               </div>
 

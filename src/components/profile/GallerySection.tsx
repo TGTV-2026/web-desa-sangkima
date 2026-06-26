@@ -1,76 +1,24 @@
 "use client";
 
 // Seksi #galeri: arsip visual (masonry + filter) dan potensi ekonomi/UMKM (bento).
-// Client karena filter tab menggunakan state. Gambar = placeholder Stitch di
-// public/profile/galeri/* — ganti dengan foto asli desa bila sudah tersedia.
+// Client karena filter tab menggunakan state. Konten dari CMS (props).
 import { useState } from "react";
 import Reveal from "./Reveal";
 import Seal from "./Seal";
 import { ArrowRight } from "./icons";
+import type { GaleriContent } from "@/server/types/content";
 
-type Kategori = "Lanskap" | "Budaya";
+export default function GallerySection({
+  content,
+}: {
+  content: GaleriContent;
+}) {
+  const { koleksi: GALERI, potensiUtama: POTENSI_UTAMA, potensi: POTENSI } =
+    content;
+  // Filter tab diturunkan dari kategori unik yang ada + "Semua".
+  const FILTER = ["Semua", ...new Set(GALERI.map((g) => g.kategori))];
 
-const GALERI: {
-  src: string;
-  kategori: Kategori;
-  judul: string;
-  arsip: string;
-  alt: string;
-}[] = [
-  {
-    src: "/profile/galeri/hutan-lindung.jpg",
-    kategori: "Lanskap",
-    judul: "Hutan Lindung Sangkima",
-    arsip: "Arsip No. 042/ALM/2024",
-    alt: "Kanopi hutan hujan tropis Sangkima dari udara saat cahaya keemasan.",
-  },
-  {
-    src: "/profile/galeri/tari-tradisional.jpg",
-    kategori: "Budaya",
-    judul: "Tari Tradisional Penyambutan",
-    arsip: "Arsip No. 115/BDY/2023",
-    alt: "Penari berbusana adat menampilkan tari penyambutan khas Sangkima.",
-  },
-  {
-    src: "/profile/galeri/sungai-sangkima.jpg",
-    kategori: "Lanskap",
-    judul: "Sungai Sangkima",
-    arsip: "Arsip No. 088/ALM/2024",
-    alt: "Sungai jernih mengalir membelah rimbunnya hutan Sangkima.",
-  },
-];
-
-const FILTER = ["Semua", "Lanskap", "Budaya"] as const;
-type Filter = (typeof FILTER)[number];
-
-const POTENSI_UTAMA = {
-  src: "/profile/galeri/kerajinan-rotan.jpg",
-  badge: "Sektor Unggulan",
-  judul: "Kerajinan Rotan Tradisional",
-  desc: "Pusat produksi kerajinan tangan berbahan dasar rotan kualitas premium, dikelola langsung oleh kelompok pengerajin lokal Desa Sangkima.",
-  cta: "Lihat Profil UMKM",
-  alt: "Pengrajin menganyam rotan tradisional di sanggar kerja yang terang.",
-};
-
-const POTENSI = [
-  {
-    src: "/profile/galeri/kopi-lokal.jpg",
-    judul: "Agrikultur: Kopi Lokal",
-    desc: "Pengembangan perkebunan kopi robusta dengan metode tanam berkelanjutan.",
-    tag: "3 Kelompok Tani",
-    alt: "Biji kopi lokal pilihan tertata di atas meja kayu.",
-  },
-  {
-    src: "/profile/galeri/ekowisata.jpg",
-    judul: "Ekowisata Terpadu",
-    desc: "Fasilitas pariwisata berbasis alam yang dikelola oleh BUMDes.",
-    tag: "Dalam Pengembangan",
-    alt: "Dek pengamatan kayu menghadap lembah hijau untuk ekowisata.",
-  },
-];
-
-export default function GallerySection() {
-  const [filter, setFilter] = useState<Filter>("Semua");
+  const [filter, setFilter] = useState<string>("Semua");
   const galeri =
     filter === "Semua" ? GALERI : GALERI.filter((g) => g.kategori === filter);
 
@@ -83,14 +31,13 @@ export default function GallerySection() {
         {/* Judul seksi */}
         <Reveal className="mb-16">
           <span className="mb-4 block text-[11px] font-bold uppercase tracking-[0.2em] text-brass">
-            Arsip Desa
+            {content.eyebrow}
           </span>
           <h2 className="mb-4 font-serif text-[32px] font-medium leading-[40px] text-pine-900">
-            Galeri &amp; Potensi
+            {content.title}
           </h2>
           <p className="max-w-2xl text-sm leading-6 text-inkmut">
-            Dokumentasi kekayaan alam, warisan budaya, dan kekuatan ekonomi
-            lokal yang membentuk identitas Desa Sangkima.
+            {content.subtitle}
           </p>
         </Reveal>
 
