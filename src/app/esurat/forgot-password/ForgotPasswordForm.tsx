@@ -6,12 +6,14 @@ import { useSubmitAction } from "@/hooks/useSubmitAction";
 import AuthSplitLayout from "@/components/esurat/auth/AuthSplitLayout";
 import AuthFormHeader from "@/components/esurat/auth/AuthFormHeader";
 import FormField from "@/components/esurat/FormField";
+import Turnstile from "@/components/esurat/Turnstile";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordForm() {
   const { busy, submit } = useSubmitAction();
   const [email, setEmail] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [emailError, setEmailError] = useState("");
   const [sent, setSent] = useState(false);
   // Hanya terisi di mode dev (EMAIL_MODE=console) — link langsung untuk uji coba.
@@ -31,7 +33,7 @@ export default function ForgotPasswordForm() {
         fetch("/esurat/api/auth/forgot-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: v }),
+          body: JSON.stringify({ email: v, turnstileToken }),
         }),
       {
         successMessage: "Jika email terdaftar, link reset telah dikirim.",
@@ -124,9 +126,11 @@ export default function ForgotPasswordForm() {
             error={emailError}
           />
 
+          <Turnstile onVerify={setTurnstileToken} />
+
           <button
             type="submit"
-            disabled={busy}
+            disabled={busy || !turnstileToken}
             className="btn-primary py-2.5 md:py-3.5 text-[15px] md:text-[16px] font-semibold w-full disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {busy ? "Mengirim..." : "Kirim Link Reset"}

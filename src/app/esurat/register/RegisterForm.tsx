@@ -6,6 +6,7 @@ import Link from "next/link";
 import AuthSplitLayout from "@/components/esurat/auth/AuthSplitLayout";
 import AuthFormHeader from "@/components/esurat/auth/AuthFormHeader";
 import FormField from "@/components/esurat/FormField";
+import Turnstile from "@/components/esurat/Turnstile";
 import { useSubmitAction, type SubmitActionError } from "@/hooks/useSubmitAction";
 
 // ─── Aturan validasi (selaras dengan Zod schema di server) ─────────────────
@@ -46,6 +47,7 @@ export default function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   // Track field yang sudah pernah di-blur agar error tidak muncul saat pertama ketik
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -98,7 +100,7 @@ export default function RegisterForm() {
           fetch("/esurat/api/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, nik, email, password, confirmPassword }),
+            body: JSON.stringify({ name, nik, email, password, confirmPassword, turnstileToken }),
           }),
         {
           successMessage: "Pendaftaran berhasil. Silahkan verifikasi kode OTP yang dikirimkan.",
@@ -256,9 +258,11 @@ export default function RegisterForm() {
           />
         </div>
 
+        <Turnstile onVerify={setTurnstileToken} />
+
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || !turnstileToken}
           className="btn-primary mt-1 md:mt-2 py-2 md:py-3.5 text-[15px] md:text-[16px] font-semibold w-full"
         >
           {isLoading ? "Memproses..." : "Daftar Sekarang"}
