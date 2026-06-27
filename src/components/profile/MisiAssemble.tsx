@@ -56,6 +56,21 @@ export default function MisiAssemble({
       const items = gsap.utils.toArray<HTMLElement>(".misi-item");
       const cardEl = st.querySelector<HTMLElement>(".misi-visi-card");
 
+      // Responsif: mobile = 1 kolom (kartu lebar) supaya tidak jadi sliver sempit;
+      // desktop = 2 kolom selang-seling. Animasinya sama persis.
+      const mobile = window.innerWidth < 1024;
+      const chipW = mobile ? "15%" : "5%";
+      const cardW = mobile ? "86%" : "46%";
+      const cardH = mobile ? 122 : CARD_HEIGHT;
+      const posOf = (i: number) =>
+        mobile
+          ? { top: `${24 + i * 22}%`, left: "50%" } // mulai 24% agar kartu 1 di bawah pil
+          : {
+              top: ASSEMBLED[i % ASSEMBLED.length]!.top,
+              left: ASSEMBLED[i % ASSEMBLED.length]!.leftSide ? "25%" : "75%",
+            };
+      const trackY = mobile ? -0.74 : -0.22;
+
       // Kartu Visi: kunci dimensi awal (px) agar bisa di-morph.
       gsap.set(".misi-visi-card", {
         xPercent: -50,
@@ -77,7 +92,7 @@ export default function MisiAssemble({
           yPercent: -50,
           autoAlpha: 1,
           rotation: gsap.utils.random(-14, 14),
-          width: "5%",
+          width: chipW,
           height: 56,
         });
       });
@@ -91,7 +106,7 @@ export default function MisiAssemble({
         scrollTrigger: {
           trigger: st,
           start: "top top",
-          end: "+=250%",
+          end: mobile ? "+=340%" : "+=250%",
           scrub: 1,
           pin: st,
           anticipatePin: 1,
@@ -123,12 +138,12 @@ export default function MisiAssemble({
 
       // Fase 2: kotak kecil merapat ke posisi selang-seling (masih kotak angka).
       items.forEach((item, i) => {
-        const a = ASSEMBLED[i % ASSEMBLED.length]!;
+        const p = posOf(i);
         tl.to(
           item,
           {
-            top: a.top,
-            left: a.leftSide ? "25%" : "75%",
+            top: p.top,
+            left: p.left,
             xPercent: -50,
             yPercent: -50,
             rotation: 0,
@@ -145,8 +160,8 @@ export default function MisiAssemble({
         tl.to(
           item,
           {
-            width: "46%",
-            height: CARD_HEIGHT,
+            width: cardW,
+            height: cardH,
             duration: 0.3,
             ease: "power3.inOut",
           },
@@ -161,7 +176,7 @@ export default function MisiAssemble({
       // Fase 4: seluruh rel (garis + kartu + pil) bergulir mengungkap misi 6-7.
       tl.to(
         ".misi-track",
-        { y: () => -0.22 * window.innerHeight, duration: 0.4, ease: "none" },
+        { y: () => trackY * window.innerHeight, duration: 0.4, ease: "none" },
         0.8,
       );
 
