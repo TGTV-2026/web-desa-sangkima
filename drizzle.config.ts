@@ -6,10 +6,6 @@ export default defineConfig({
   schema: "./src/server/db/schema/*",
   dialect: "mysql",
   dbCredentials: {
-    host: process.env.DB_HOST!,
-    port: parseInt(process.env.DB_PORT!),
-    user: process.env.DB_USER!,
-    password: process.env.DB_PASSWORD || undefined,
-    database: process.env.DB_NAME!,
+    url: process.env.DATABASE_URL || "mysql://root@localhost:3306/db_websangkima",
   },
 });
