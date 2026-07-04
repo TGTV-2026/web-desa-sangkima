@@ -29,6 +29,8 @@ export default function KontakEditor({
 
   const [alamat, setAlamat] = useState(initial.alamat);
   const [email, setEmail] = useState(initial.email);
+  const [whatsapp, setWhatsapp] = useState(initial.whatsapp);
+  const [instagram, setInstagram] = useState(initial.instagram);
   const [centerLat, setCenterLat] = useState(String(initial.petaCenter[0]));
   const [centerLng, setCenterLng] = useState(String(initial.petaCenter[1]));
   const [titik, setTitik] = useState<TitikForm[]>(
@@ -48,6 +50,8 @@ export default function KontakEditor({
       const res = await saveSection("kontak", {
         alamat,
         email,
+        whatsapp: whatsapp.trim(),
+        instagram: instagram.trim(),
         petaCenter: [Number(centerLat), Number(centerLng)],
         titik: titik.map((t) => ({
           nama: t.nama,
@@ -77,6 +81,26 @@ export default function KontakEditor({
             value={alamat}
             onChange={(e) => setAlamat(e.target.value)}
           />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="label-doc text-xs">Link WhatsApp</label>
+            <input
+              className="input-doc mt-1 w-full"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              placeholder="https://wa.me/62..."
+            />
+          </div>
+          <div>
+            <label className="label-doc text-xs">Link Instagram</label>
+            <input
+              className="input-doc mt-1 w-full"
+              value={instagram}
+              onChange={(e) => setInstagram(e.target.value)}
+              placeholder="https://instagram.com/..."
+            />
+          </div>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
