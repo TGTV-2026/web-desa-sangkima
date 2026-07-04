@@ -79,6 +79,9 @@ const petaTitikSchema = z.object({
 export const kontakContentSchema = z.object({
   alamat: z.string().min(1, "Alamat wajib diisi"),
   email: z.string().email("Email tidak valid"),
+  // URL/handle sosial (kosong = tombolnya disembunyikan). default("") agar data lama aman.
+  whatsapp: z.string().default(""),
+  instagram: z.string().default(""),
   petaCenter: z.tuple([z.number(), z.number()]),
   titik: z.array(petaTitikSchema),
 });
@@ -88,6 +91,8 @@ const defaultKontak: KontakContent = {
   alamat:
     "Jl. Poros Sangatta – Bontang Km. 18, Kecamatan Sangatta Selatan, Kabupaten Kutai Timur, Kalimantan Timur 75611",
   email: "pemdes@sangkima.desa.id",
+  whatsapp: "https://wa.me/6281234567890",
+  instagram: "https://instagram.com/desasangkima",
   petaCenter: [0.4067, 117.539],
   titik: [
     {
