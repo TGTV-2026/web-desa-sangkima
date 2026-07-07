@@ -5,7 +5,7 @@ import ScrollToTop from "@/components/profile/ScrollToTop";
 import ScrollSnap from "@/components/profile/ScrollSnap";
 
 export const metadata: Metadata = {
-  title: "Desa Sangkima — Pemerintah Desa Sangkima",
+  title: "Desa Sangkima",
   description:
     "Situs resmi Pemerintah Desa Sangkima, Kecamatan Sangatta Selatan, Kabupaten Kutai Timur. Pusat informasi, profil desa, potensi lokal, dan layanan administrasi digital.",
 };
