@@ -2,12 +2,14 @@ import type { ContentKey } from "@/server/types/content";
 
 // Daftar menu CMS. `ready` menandai seksi yang editornya sudah tersedia;
 // yang belum ditandai "Segera" di UI (dibangun bertahap).
+// `key` bisa ContentKey (seksi konten) atau string lain (mis. "berita" = modul tersendiri).
 export const ADMIN_NAV: {
-  key: ContentKey;
+  key: ContentKey | string;
   href: string;
   label: string;
   ready: boolean;
 }[] = [
+  { key: "berita", href: "/admin/berita", label: "Berita & Pengumuman", ready: true },
   { key: "hero", href: "/admin/hero", label: "Hero Beranda", ready: true },
   { key: "layanan", href: "/admin/layanan", label: "Layanan & Potensi", ready: true },
   { key: "profil", href: "/admin/profil", label: "Sejarah, Visi & Misi", ready: true },

@@ -6,6 +6,7 @@ const NAVIGASI = [
   { label: "Beranda", href: "/#beranda" },
   { label: "Layanan Digital", href: "/#layanan" },
   { label: "Profil Desa", href: "/profil" },
+  { label: "Berita & Pengumuman", href: "/berita" },
   { label: "Galeri & Potensi", href: "/#galeri" },
 ];
 

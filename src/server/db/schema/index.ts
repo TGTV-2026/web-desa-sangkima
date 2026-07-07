@@ -5,3 +5,4 @@ export * from "./letterTypes";
 export * from "./letterRequests";
 export * from "./letterRequestLogs";
 export * from "./siteContent";
+export * from "./news";
