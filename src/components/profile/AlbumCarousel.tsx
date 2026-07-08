@@ -21,46 +21,64 @@ export default function AlbumCarousel({
   heading: string;
 }) {
   const [page, setPage] = useState(0);
-  const [drag, setDrag] = useState(0); // offset px saat menyeret
-  const [dragging, setDragging] = useState(false);
+  const [drag, setDrag] = useState(0); // offset px saat menyeret (untuk transform)
+  const [dragging, setDragging] = useState(false); // untuk kursor & transisi
 
   const containerRef = useRef<HTMLDivElement>(null);
   const startX = useRef(0);
   const moved = useRef(false);
+  // ref-based gate & nilai drag agar tak bergantung state async (event awal tak hilang)
+  const draggingRef = useRef(false);
+  const dragRef = useRef(0);
+  const pageRef = useRef(0);
 
   const pageCount = Math.max(1, Math.ceil(albums.length / PER_PAGE));
   const pages = Array.from({ length: pageCount }, (_, i) =>
     albums.slice(i * PER_PAGE, i * PER_PAGE + PER_PAGE),
   );
 
-  const go = (p: number) => setPage(Math.min(pageCount - 1, Math.max(0, p)));
+  const go = (p: number) => {
+    const clamped = Math.min(pageCount - 1, Math.max(0, p));
+    pageRef.current = clamped;
+    setPage(clamped);
+  };
 
   function onPointerDown(e: React.PointerEvent) {
     if (pageCount <= 1) return;
+    draggingRef.current = true;
     setDragging(true);
     moved.current = false;
     startX.current = e.clientX;
-    containerRef.current?.setPointerCapture?.(e.pointerId);
+    try {
+      containerRef.current?.setPointerCapture(e.pointerId);
+    } catch {
+      /* pointer sintetis/tak aktif — abaikan */
+    }
   }
 
   function onPointerMove(e: React.PointerEvent) {
-    if (!dragging) return;
+    if (!draggingRef.current) return;
     let delta = e.clientX - startX.current;
     if (Math.abs(delta) > DRAG_TAP_SLOP) moved.current = true;
     // tahan (resistance) saat menyeret melewati ujung
-    if ((page === 0 && delta > 0) || (page === pageCount - 1 && delta < 0)) {
+    const p = pageRef.current;
+    if ((p === 0 && delta > 0) || (p === pageCount - 1 && delta < 0)) {
       delta *= 0.3;
     }
+    dragRef.current = delta;
     setDrag(delta);
   }
 
   function endDrag() {
-    if (!dragging) return;
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
     setDragging(false);
     const width = containerRef.current?.offsetWidth ?? 1;
-    const threshold = Math.min(width * 0.15, 80);
-    if (drag <= -threshold) go(page + 1);
-    else if (drag >= threshold) go(page - 1);
+    const threshold = Math.min(width * 0.15, 60);
+    const d = dragRef.current;
+    if (d <= -threshold) go(pageRef.current + 1);
+    else if (d >= threshold) go(pageRef.current - 1);
+    dragRef.current = 0;
     setDrag(0);
   }
 
@@ -121,9 +139,7 @@ export default function AlbumCarousel({
             onClickCapture={onClickCapture}
             className={`overflow-hidden ${
               pageCount > 1
-                ? dragging
-                  ? "cursor-grabbing"
-                  : "cursor-grab"
+                ? `select-none ${dragging ? "cursor-grabbing" : "cursor-grab"}`
                 : ""
             }`}
             style={{ touchAction: "pan-y" }}
