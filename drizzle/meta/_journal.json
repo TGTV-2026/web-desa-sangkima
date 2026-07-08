@@ -71,6 +71,13 @@
       "when": 1783470536155,
       "tag": "0009_spooky_sharon_carter",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1783488428106,
+      "tag": "0010_little_shockwave",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,7 @@ export const ADMIN_NAV: {
   { key: "berita", href: "/admin/berita", label: "Berita & Pengumuman", ready: true },
   { key: "ppid", href: "/admin/ppid", label: "PPID / Informasi Publik", ready: true },
   { key: "produk", href: "/admin/produk", label: "Produk Koperasi", ready: true },
+  { key: "album", href: "/admin/album", label: "Album Galeri", ready: true },
   { key: "hero", href: "/admin/hero", label: "Hero Beranda", ready: true },
   { key: "layanan", href: "/admin/layanan", label: "Layanan & Potensi", ready: true },
   { key: "profil", href: "/admin/profil", label: "Sejarah, Visi & Misi", ready: true },

@@ -6,6 +6,7 @@ import ContactSection from "@/components/profile/ContactSection";
 import { ArrowRight, FileText, Store, Trees } from "@/components/profile/icons";
 import type { CSSProperties } from "react";
 import { siteContentService } from "@/server/services/siteContent.service";
+import { galleryService } from "@/server/services/gallery.service";
 import type { LayananContent } from "@/server/types/content";
 
 // Konten dari CMS — selalu tampilkan versi terbaru.
@@ -30,6 +31,7 @@ export default async function BerandaPage() {
   const layanan = await siteContentService.get("layanan");
   const galeri = await siteContentService.get("galeri");
   const kontak = await siteContentService.get("kontak");
+  const albums = await galleryService.listPublishedAlbums(12);
 
   return (
     <>
@@ -89,7 +91,7 @@ export default async function BerandaPage() {
         </div>
       </section>
 
-      <GallerySection content={galeri} />
+      <GallerySection content={galeri} albums={albums} />
 
       <ContactSection content={kontak} />
     </>
