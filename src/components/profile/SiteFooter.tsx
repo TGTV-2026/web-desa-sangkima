@@ -9,7 +9,7 @@ const NAVIGASI = [
   { label: "Berita & Pengumuman", href: "/berita" },
   { label: "Produk Koperasi", href: "/produk" },
   { label: "PPID / Informasi Publik", href: "/ppid" },
-  { label: "Galeri & Potensi", href: "/#galeri" },
+  { label: "Galeri Media", href: "/galeri" },
 ];
 
 const LEGAL = [

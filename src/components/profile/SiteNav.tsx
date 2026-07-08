@@ -14,7 +14,7 @@ const LINKS = [
   { label: "Berita", href: "/berita" },
   { label: "Produk", href: "/produk" },
   { label: "PPID", href: "/ppid" },
-  { label: "Galeri", href: "/#galeri" },
+  { label: "Galeri", href: "/galeri" },
   { label: "Kontak", href: "/#kontak" },
 ];
 

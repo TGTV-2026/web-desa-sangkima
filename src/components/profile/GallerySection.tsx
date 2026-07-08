@@ -1,26 +1,20 @@
-"use client";
-
-// Seksi #galeri: arsip visual (masonry + filter) dan potensi ekonomi/UMKM (bento).
-// Client karena filter tab menggunakan state. Konten dari CMS (props).
-import { useState } from "react";
+// Seksi #galeri: album dokumentasi (carousel) + potensi ekonomi/UMKM (bento).
+// Konten galeri kini dari album yang diunggah tim media (bukan koleksi statis).
 import Reveal from "./Reveal";
 import Seal from "./Seal";
+import AlbumCarousel from "./AlbumCarousel";
 import { ArrowRight } from "./icons";
 import type { GaleriContent } from "@/server/types/content";
+import type { AlbumDTO } from "@/server/types/gallery";
 
 export default function GallerySection({
   content,
+  albums,
 }: {
   content: GaleriContent;
+  albums: AlbumDTO[];
 }) {
-  const { koleksi: GALERI, potensiUtama: POTENSI_UTAMA, potensi: POTENSI } =
-    content;
-  // Filter tab diturunkan dari kategori unik yang ada + "Semua".
-  const FILTER = ["Semua", ...new Set(GALERI.map((g) => g.kategori))];
-
-  const [filter, setFilter] = useState<string>("Semua");
-  const galeri =
-    filter === "Semua" ? GALERI : GALERI.filter((g) => g.kategori === filter);
+  const { potensiUtama: POTENSI_UTAMA, potensi: POTENSI } = content;
 
   return (
     <section
@@ -41,58 +35,10 @@ export default function GallerySection({
           </p>
         </Reveal>
 
-        {/* Galeri masonry + filter */}
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-line pb-4">
-          <h3 className="font-serif text-[24px] text-pine-900">
-            Koleksi Keindahan Alam
-          </h3>
-          <div className="flex gap-5">
-            {FILTER.map((f) => (
-              <button
-                key={f}
-                type="button"
-                onClick={() => setFilter(f)}
-                className={`border-b-2 pb-1 text-[11px] font-bold uppercase tracking-[0.18em] transition-colors ${
-                  filter === f
-                    ? "border-pine-900 text-pine-900"
-                    : "border-transparent text-inkmut hover:text-pine-900"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="columns-1 gap-6 md:columns-2 lg:columns-3">
-          {galeri.map((g, i) => (
-            <Reveal
-              key={g.judul}
-              delay={i * 80}
-              className="mb-6 break-inside-avoid"
-            >
-              <Seal className="group block bg-card transition-shadow duration-500 hover:shadow-md">
-                <div className="mb-4 overflow-hidden">
-                  <img
-                    src={g.src}
-                    alt={g.alt}
-                    loading="lazy"
-                    className="w-full sd-zoom"
-                  />
-                </div>
-                <div className="px-4 pb-4">
-                  <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.18em] text-brass">
-                    {g.kategori}
-                  </span>
-                  <h4 className="mb-2 font-serif text-[20px] text-pine-900 transition-colors group-hover:text-brass">
-                    {g.judul}
-                  </h4>
-                  <p className="font-mono text-xs text-inkmut">{g.arsip}</p>
-                </div>
-              </Seal>
-            </Reveal>
-          ))}
-        </div>
+        {/* Album dokumentasi (carousel, 3 per halaman, klik → /galeri/<slug>) */}
+        <Reveal>
+          <AlbumCarousel albums={albums} heading="Koleksi Keindahan Alam" />
+        </Reveal>
 
         {/* Potensi ekonomi & UMKM (bento) */}
         <div className="mt-24">
