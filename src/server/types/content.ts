@@ -318,6 +318,90 @@ const defaultFooter: FooterContent = {
   email: "admin@sangkima.desa.id",
 };
 
+/* ------------------------ Surat: Tanda Tangan & Kop ---------------------- */
+
+export const suratContentSchema = z.object({
+  kopKabupaten: z.string(),
+  kopKecamatan: z.string(),
+  kopDesa: z.string(),
+  alamatKop: z.string(),
+  // Nama & jabatan penandatangan diambil otomatis dari akun yang menyetujui.
+  // Di sini hanya gambar TTD (dan opsional nama override kalau perlu).
+  signatureImage: z.string().default(""),
+  penandatanganNama: z.string().default(""),
+});
+export type SuratContent = z.infer<typeof suratContentSchema>;
+
+const defaultSurat: SuratContent = {
+  kopKabupaten: "PEMERINTAH KABUPATEN KUTAI TIMUR",
+  kopKecamatan: "KECAMATAN SANGATTA SELATAN",
+  kopDesa: "DESA SANGKIMA",
+  alamatKop: "Jl. Poros Sangatta - Bontang, Desa Sangkima, Kutai Timur",
+  signatureImage: "",
+  penandatanganNama: "",
+};
+
+/* ---------------------------------- PPID --------------------------------- */
+
+// Teks halaman PPID (ringkasan, tugas, prosedur, kontak). Daftar dokumennya
+// dikelola terpisah lewat tabel ppid_documents (bukan seksi konten ini).
+export const ppidContentSchema = z.object({
+  ringkasan: z.string().min(1, "Ringkasan wajib diisi"),
+  tugas: z.array(z.string().min(1, "Poin tidak boleh kosong")).min(1),
+  prosedur: z.array(z.string().min(1, "Poin tidak boleh kosong")).min(1),
+  waktuLayanan: z.string().default(""),
+  kontakNama: z.string().default(""),
+  kontakTelepon: z.string().default(""),
+  kontakEmail: z.string().default(""),
+  kontakAlamat: z.string().default(""),
+});
+export type PpidContent = z.infer<typeof ppidContentSchema>;
+
+const defaultPpid: PpidContent = {
+  ringkasan:
+    "Pejabat Pengelola Informasi dan Dokumentasi (PPID) Desa Sangkima bertugas menyediakan, menyimpan, mendokumentasikan, dan melayani permohonan informasi publik guna mewujudkan penyelenggaraan pemerintahan desa yang transparan dan akuntabel sesuai Undang-Undang Nomor 14 Tahun 2008 tentang Keterbukaan Informasi Publik.",
+  tugas: [
+    "Menyediakan dan memberikan pelayanan informasi publik kepada masyarakat.",
+    "Mengumpulkan, mengelola, dan mendokumentasikan informasi publik desa.",
+    "Menyusun dan memutakhirkan Daftar Informasi Publik (DIP) secara berkala.",
+    "Melakukan pengujian tentang konsekuensi atas informasi yang dikecualikan.",
+  ],
+  prosedur: [
+    "Pemohon mengajukan permohonan informasi secara tertulis atau lisan kepada PPID Desa.",
+    "PPID mencatat permohonan dan memberikan tanda bukti penerimaan.",
+    "PPID memproses permohonan dan menyampaikan pemberitahuan tertulis.",
+    "Informasi diberikan sesuai ketentuan, atau ditolak disertai alasan bila termasuk informasi yang dikecualikan.",
+  ],
+  waktuLayanan:
+    "Paling lambat 10 hari kerja sejak permohonan diterima, dapat diperpanjang 7 hari kerja dengan pemberitahuan tertulis.",
+  kontakNama: "PPID Desa Sangkima",
+  kontakTelepon: "",
+  kontakEmail: "ppid@sangkima.desa.id",
+  kontakAlamat:
+    "Kantor Kepala Desa Sangkima, Kec. Sangatta Selatan, Kab. Kutai Timur.",
+};
+
+/* -------------------------------- Produk --------------------------------- */
+
+// Pengaturan halaman produk koperasi (teks + nomor WA tujuan pemesanan).
+// Daftar produknya dikelola terpisah lewat tabel products.
+export const produkContentSchema = z.object({
+  judul: z.string().min(1, "Judul wajib diisi"),
+  deskripsi: z.string().default(""),
+  namaKoperasi: z.string().default(""),
+  // nomor WhatsApp tujuan pemesanan (format bebas; dinormalkan ke 62… saat dipakai)
+  whatsapp: z.string().default(""),
+});
+export type ProdukContent = z.infer<typeof produkContentSchema>;
+
+const defaultProduk: ProdukContent = {
+  judul: "Produk Koperasi Desa",
+  deskripsi:
+    "Produk unggulan hasil koperasi dan UMKM Desa Sangkima. Pilih produk, atur jumlah, lalu pesan langsung lewat WhatsApp.",
+  namaKoperasi: "Koperasi Desa Sangkima",
+  whatsapp: "",
+};
+
 /* ------------------------------ Registry --------------------------------- */
 
 // Satu sumber kebenaran: key seksi → { skema validasi, nilai default, label UI }.
@@ -343,6 +427,21 @@ export const CONTENT_SECTIONS = {
   galeri: { schema: galeriContentSchema, default: defaultGaleri, label: "Galeri & Potensi" },
   kontak: { schema: kontakContentSchema, default: defaultKontak, label: "Kontak & Peta" },
   footer: { schema: footerContentSchema, default: defaultFooter, label: "Footer Situs" },
+  surat: {
+    schema: suratContentSchema,
+    default: defaultSurat,
+    label: "Tanda Tangan & Kop Surat",
+  },
+  ppid: {
+    schema: ppidContentSchema,
+    default: defaultPpid,
+    label: "PPID: Halaman Informasi Publik",
+  },
+  produk: {
+    schema: produkContentSchema,
+    default: defaultProduk,
+    label: "Produk: Pengaturan Koperasi",
+  },
 } as const;
 
 export type ContentKey = keyof typeof CONTENT_SECTIONS;
@@ -356,6 +455,9 @@ export type ContentValueMap = {
   galeri: GaleriContent;
   kontak: KontakContent;
   footer: FooterContent;
+  surat: SuratContent;
+  ppid: PpidContent;
+  produk: ProdukContent;
 };
 
 export const CONTENT_KEYS = Object.keys(CONTENT_SECTIONS) as ContentKey[];
