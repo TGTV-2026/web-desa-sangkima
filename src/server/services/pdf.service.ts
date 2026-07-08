@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { PDFDocument, StandardFonts, rgb, degrees, type PDFFont, type PDFPage } from "pdf-lib";
 import QRCode from "qrcode";
+import { siteContentService } from "./siteContent.service";
 
 // PDF surat disimpan sekali saat DISETUJUI agar isinya tidak ikut berubah
 // kalau data warga (alamat, pekerjaan, dst.) diedit belakangan.
@@ -99,6 +100,8 @@ export type LetterPdfInput = {
 };
 
 export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Array> {
+  // Kop & tanda tangan bisa diatur lewat CMS (fallback ke default bila belum diisi).
+  const surat = await siteContentService.get("surat");
   const doc = await PDFDocument.create();
   const page = doc.addPage([595.28, 841.89]); // A4 portrait
   const { width, height } = page.getSize();
@@ -128,10 +131,10 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
 
   // === KOP SURAT ===
   let y = height - margin;
-  center("PEMERINTAH KABUPATEN KUTAI TIMUR", y, 13, bold); y -= 16;
-  center("KECAMATAN SANGATTA SELATAN", y, 13, bold); y -= 16;
-  center("DESA SANGKIMA", y, 16, bold); y -= 16;
-  center("Jl. Poros Sangatta - Bontang, Desa Sangkima, Kutai Timur", y, 9, normal); y -= 18;
+  center(surat.kopKabupaten, y, 13, bold); y -= 16;
+  center(surat.kopKecamatan, y, 13, bold); y -= 16;
+  center(surat.kopDesa, y, 16, bold); y -= 16;
+  center(surat.alamatKop, y, 9, normal); y -= 18;
   page.drawLine({
     start: { x: margin, y }, end: { x: width - margin, y },
     thickness: 2, color: rgb(0, 0, 0),
@@ -207,21 +210,50 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
   
   sy -= 70; // ruang tanda tangan
 
-  // tempel gambar TTD bila tersedia di public/ttd-kepala-desa.png
-  // TODO: Sesuaikan gambar TTD jika Sekretaris Desa yang menandatangani
+  // Gambar TTD dari pengaturan CMS (disimpan di public/<url>), fallback ke file lama.
   try {
-    const ttdPath = path.join(process.cwd(), "public", "ttd-kepala-desa.png");
-    if (fs.existsSync(ttdPath)) {
-      const png = await doc.embedPng(fs.readFileSync(ttdPath));
-      const scaled = png.scaleToFit(150, 60);
-      page.drawImage(png, { x: signX, y: sy + 8, width: scaled.width, height: scaled.height });
+    let ttdBytes: Buffer | null = null;
+    let ext = ".png";
+    if (surat.signatureImage) {
+      const p = path.join(
+        process.cwd(),
+        "public",
+        surat.signatureImage.replace(/^\/+/, ""),
+      );
+      if (fs.existsSync(p)) {
+        ttdBytes = fs.readFileSync(p);
+        ext = path.extname(p).toLowerCase();
+      }
+    }
+    if (!ttdBytes) {
+      const legacy = path.join(process.cwd(), "public", "ttd-kepala-desa.png");
+      if (fs.existsSync(legacy)) ttdBytes = fs.readFileSync(legacy);
+    }
+    if (ttdBytes) {
+      const img =
+        ext === ".jpg" || ext === ".jpeg"
+          ? await doc.embedJpg(ttdBytes)
+          : await doc.embedPng(ttdBytes);
+      const scaled = img.scaleToFit(150, 60);
+      page.drawImage(img, {
+        x: signX,
+        y: sy + 8,
+        width: scaled.width,
+        height: scaled.height,
+      });
     }
   } catch {
     // abaikan bila gagal embed ttd
   }
-  
-  const signName = input.signatory?.name || "............................";
-  const signText = input.signatory?.name ? `( ${signName} )` : "( ............................ )";
+
+  // Nama penandatangan: kalau Sekdes menandatangani a.n., pakai nama akun-nya;
+  // selain itu boleh di-override lewat CMS (penandatanganNama), fallback ke akun penyetuju.
+  const effectiveName = isSekdes
+    ? input.signatory?.name
+    : surat.penandatanganNama || input.signatory?.name;
+  const signText = effectiveName
+    ? `( ${effectiveName} )`
+    : "( ............................ )";
   page.drawText(signText, { x: signX, y: sy, size: 11, font: bold });
 
   // === QR VERIFIKASI (kiri bawah) — hanya untuk surat yang sudah resmi disetujui ===

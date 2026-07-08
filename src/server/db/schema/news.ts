@@ -18,6 +18,10 @@ export const news = mysqlTable("news", {
   excerpt: varchar({ length: 500 }),
   content: text("content"),
   coverImage: varchar("cover_image", { length: 500 }),
+  // Penulis (akun CMS pembuat). authorName = snapshot nama saat menulis,
+  // agar byline tetap benar walau akun di-rename/nonaktif.
+  authorId: varchar("author_id", { length: 128 }),
+  authorName: varchar("author_name", { length: 255 }),
   // false = draf (tidak tampil di publik)
   published: boolean().notNull().default(true),
   publishedAt: timestamp("published_at").defaultNow(),

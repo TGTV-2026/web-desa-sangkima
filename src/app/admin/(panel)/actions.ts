@@ -16,6 +16,9 @@ const REVALIDATE: Record<ContentKey, string[]> = {
   hero: ["/"],
   layanan: ["/"],
   footer: ["/", "/profil"],
+  surat: [], // dipakai saat generate PDF surat, tak ada halaman publik untuk di-revalidate
+  ppid: ["/ppid"],
+  produk: ["/produk"],
 };
 
 export type SaveResult =
@@ -33,6 +36,13 @@ export async function saveSection(
   const user = await requireCmsUser();
   if (!(key in CONTENT_SECTIONS)) {
     return { success: false, message: "Seksi tidak dikenal" };
+  }
+  // Tanda tangan surat bersifat sensitif — hanya super admin, bukan editor.
+  if (key === "surat" && user.role !== "super_admin") {
+    return {
+      success: false,
+      message: "Hanya Super Admin yang boleh mengubah tanda tangan surat.",
+    };
   }
 
   try {

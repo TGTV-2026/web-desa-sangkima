@@ -4,6 +4,7 @@ import LampiranList from "@/components/esurat/LampiranList";
 import RejectionReasonAlert from "@/components/esurat/RejectionReasonAlert";
 import LetterMetaList from "@/components/esurat/LetterMetaList";
 import LetterTimeline from "@/components/esurat/LetterTimeline";
+import LetterPreview from "@/components/esurat/LetterPreview";
 import type { LetterLogDTO, LetterRequestDTO } from "@/server/types/letter";
 
 export interface LetterDetailCardProps {
@@ -73,26 +74,13 @@ export default function LetterDetailCard({
           {/* KOLOM PRATINJAU */}
           <div className="lg:col-span-2 lg:sticky lg:top-6 lg:self-start">
             <div className="mt-6 border-t border-line pt-5 lg:mt-0 lg:border-t-0 lg:pt-0">
-              <p className="label-doc">
-                {request.status === "DISETUJUI" || request.status === "SELESAI"
-                  ? "Surat Terbit"
-                  : "Pratinjau Surat"}
-              </p>
-              <iframe
-                key={`${request.status}-${request.purpose}-${JSON.stringify(request.data)}`}
-                src={`/esurat/api/letter-requests/${request.id}/preview`}
-                title="Pratinjau surat"
-                className="w-full aspect-[210/297] border border-line rounded-sm mt-3 bg-paper2/20"
+              <LetterPreview
+                requestId={request.id}
+                issued={
+                  request.status === "DISETUJUI" || request.status === "SELESAI"
+                }
+                refreshKey={`${request.status}-${request.purpose}-${JSON.stringify(request.data)}`}
               />
-              {(request.status === "DISETUJUI" || request.status === "SELESAI") && (
-                <a
-                  href={`/esurat/api/letter-requests/${request.id}/pdf`}
-                  target="_blank"
-                  className="btn-primary w-full mt-4 text-center"
-                >
-                  Unduh Surat (PDF)
-                </a>
-              )}
             </div>
           </div>
         </div>

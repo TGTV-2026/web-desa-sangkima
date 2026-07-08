@@ -12,6 +12,8 @@ const LINKS = [
   { label: "Layanan", href: "/#layanan" },
   { label: "Profil", href: "/profil" },
   { label: "Berita", href: "/berita" },
+  { label: "Produk", href: "/produk" },
+  { label: "PPID", href: "/ppid" },
   { label: "Galeri", href: "/#galeri" },
   { label: "Kontak", href: "/#kontak" },
 ];

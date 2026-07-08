@@ -36,6 +36,41 @@
       "when": 1781779116815,
       "tag": "0004_yellow_warstar",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1782452801107,
+      "tag": "0005_productive_firelord",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1783138175676,
+      "tag": "0006_nebulous_crusher_hogan",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1783434642143,
+      "tag": "0007_new_morbius",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1783469577154,
+      "tag": "0008_exotic_longshot",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1783470536155,
+      "tag": "0009_spooky_sharon_carter",
+      "breakpoints": true
     }
   ]
 }

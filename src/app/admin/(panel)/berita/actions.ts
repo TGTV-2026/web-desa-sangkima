@@ -16,9 +16,9 @@ function revalidateBerita() {
 }
 
 export async function createNews(input: unknown): Promise<NewsResult> {
-  await requireCmsUser();
+  const user = await requireCmsUser();
   try {
-    await newsService.create(input);
+    await newsService.create(input, { id: user.id, name: user.name });
     revalidateBerita();
   } catch (err) {
     if (err instanceof z.ZodError) {

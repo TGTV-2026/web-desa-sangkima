@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { getSessionUser } from "@/server/utils/session";
+import { getCmsUser } from "@/server/utils/cmsSession";
 import { saveProfileImage } from "@/server/utils/imageUpload";
 
-// Upload gambar konten web profil. Hanya operator (staff) / kepala desa (admin).
+// Upload gambar konten web profil. Hanya akun CMS (super_admin/editor).
 export async function POST(req: Request) {
-  const user = await getSessionUser();
-  if (!user || (user.role !== "staff" && user.role !== "admin")) {
+  const user = await getCmsUser();
+  if (!user) {
     return NextResponse.json(
       { success: false, message: "Tidak berwenang" },
-      { status: user ? 403 : 401 },
+      { status: 401 },
     );
   }
 

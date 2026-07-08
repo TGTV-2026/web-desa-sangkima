@@ -157,6 +157,35 @@ export function Eye(props: SVGProps<SVGSVGElement>) {
 }
 
 // Ikon brand (filled) — pakai fill, bukan stroke.
+// Keranjang belanja
+export function ShoppingCart(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <circle cx="9" cy="21" r="1" />
+      <circle cx="19" cy="21" r="1" />
+      <path d="M2.5 3h2l2.2 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L21.5 7H6" />
+    </Svg>
+  );
+}
+
+// Unduh dokumen
+export function Download(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+    </Svg>
+  );
+}
+
+// Tautan luar
+export function ExternalLink(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    </Svg>
+  );
+}
+
 export function WhatsApp(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>

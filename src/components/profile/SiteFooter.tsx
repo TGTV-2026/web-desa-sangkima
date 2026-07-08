@@ -7,6 +7,8 @@ const NAVIGASI = [
   { label: "Layanan Digital", href: "/#layanan" },
   { label: "Profil Desa", href: "/profil" },
   { label: "Berita & Pengumuman", href: "/berita" },
+  { label: "Produk Koperasi", href: "/produk" },
+  { label: "PPID / Informasi Publik", href: "/ppid" },
   { label: "Galeri & Potensi", href: "/#galeri" },
 ];
 
