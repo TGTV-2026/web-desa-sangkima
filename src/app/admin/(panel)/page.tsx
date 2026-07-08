@@ -1,7 +1,15 @@
 import Link from "next/link";
+import { requireCmsUser } from "@/server/utils/cmsSession";
 import { ADMIN_NAV } from "./nav";
 
-export default function AdminDashboardPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminDashboardPage() {
+  const user = await requireCmsUser();
+  const items = ADMIN_NAV.filter(
+    (item) => !item.superAdminOnly || user.role === "super_admin",
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -16,7 +24,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {ADMIN_NAV.map((item) =>
+        {items.map((item) =>
           item.ready ? (
             <Link
               key={item.key}

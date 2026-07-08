@@ -53,6 +53,12 @@ export default async function BeritaDetailPage({
         {b.excerpt && (
           <p className="text-[15px] leading-7 text-inkmut">{b.excerpt}</p>
         )}
+        {b.authorName && (
+          <p className="text-[13px] text-inkmut">
+            Ditulis oleh{" "}
+            <span className="font-semibold text-ink">{b.authorName}</span>
+          </p>
+        )}
       </header>
 
       {b.coverImage && (

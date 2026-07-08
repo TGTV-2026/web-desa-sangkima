@@ -1,14 +1,12 @@
-import { redirect } from "next/navigation";
-import { requireCmsUser } from "@/server/utils/cmsSession";
+import { requireSuperAdmin } from "@/server/utils/cmsSession";
 import { siteContentService } from "@/server/services/siteContent.service";
 import SuratEditor from "./SuratEditor";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSuratPage() {
-  // Hanya kepala desa (admin) — tanda tangan surat bersifat sensitif.
-  const user = await requireCmsUser();
-  if (user.role !== "admin") redirect("/admin");
+  // Tanda tangan surat bersifat sensitif — hanya super admin.
+  await requireSuperAdmin();
 
   const surat = await siteContentService.get("surat");
 

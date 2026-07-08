@@ -1,21 +1,86 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getSessionUser, type SessionUser } from "./session";
+import { SignJWT, jwtVerify } from "jose";
+import { cmsUserRepository } from "../repositories/cmsUser.repository";
+import type { CmsRole } from "../types/cmsUser";
 
-// Role yang boleh mengelola CMS web profil:
-// "staff" = operator, "admin" = kepala desa. Warga biasa ("user") ditolak.
-const CMS_ROLES = ["staff", "admin"] as const;
+// Sesi CMS TERPISAH dari e-surat: cookie sendiri (cms_session), tabel cms_users
+// sendiri. Menandai token dengan scope "cms" agar tak tertukar dengan token
+// e-surat yang memakai secret sama.
+const COOKIE = "cms_session";
+const SCOPE = "cms";
 
-/**
- * Pengaman halaman /admin (Server Component). Memakai sesi e-surat yang sama
- * (cookie access_token). Bila belum login atau bukan operator/kepala desa,
- * dialihkan ke halaman login e-surat — tidak ada tombol menuju /admin, jadi
- * akses memang harus diketik manual lalu lolos guard ini.
- */
-export async function requireCmsUser(): Promise<SessionUser> {
-  const user = await getSessionUser();
-  if (!user) redirect("/esurat");
-  if (!CMS_ROLES.includes(user.role as (typeof CMS_ROLES)[number])) {
-    redirect("/esurat");
+export type CmsSessionUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: CmsRole;
+};
+
+function secret() {
+  const s = process.env.JWT_SECRET;
+  if (!s) throw new Error("JWT_SECRET is not set");
+  return new TextEncoder().encode(s);
+}
+
+async function signCmsToken(userId: string): Promise<string> {
+  return new SignJWT({ id: userId, scope: SCOPE })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("8h")
+    .sign(secret());
+}
+
+export async function setCmsSession(userId: string): Promise<void> {
+  const token = await signCmsToken(userId);
+  const cookieStore = await cookies();
+  cookieStore.set({
+    name: COOKIE,
+    value: token,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 8,
+  });
+}
+
+export async function clearCmsSession(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set({ name: COOKIE, value: "", httpOnly: true, path: "/", maxAge: 0 });
+}
+
+/** Ambil akun CMS yang login dari cookie. null bila belum login/nonaktif. */
+export async function getCmsUser(): Promise<CmsSessionUser | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(COOKIE)?.value;
+  if (!token) return null;
+  try {
+    const { payload } = await jwtVerify(token, secret());
+    if (payload.scope !== SCOPE || !payload.id) return null;
+    const row = await cmsUserRepository.findById(payload.id as string);
+    if (!row || row.deletedAt) return null;
+    return {
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      role: row.role as CmsRole,
+    };
+  } catch {
+    return null;
   }
+}
+
+/** Guard halaman CMS: redirect ke login bila belum masuk. */
+export async function requireCmsUser(): Promise<CmsSessionUser> {
+  const user = await getCmsUser();
+  if (!user) redirect("/admin/login");
+  return user;
+}
+
+/** Guard khusus super admin (kelola akun & tanda tangan surat). */
+export async function requireSuperAdmin(): Promise<CmsSessionUser> {
+  const user = await requireCmsUser();
+  if (user.role !== "super_admin") redirect("/admin");
   return user;
 }

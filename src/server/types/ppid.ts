@@ -66,6 +66,11 @@ export type PpidDocDTO = {
   fileUrl: string | null;
   externalUrl: string | null;
   year: string | null;
+  authorId: string | null;
+  authorName: string | null;
   published: boolean;
   createdAt: Date | null;
 };
+
+// Pengunggah (akun CMS) yang dilampirkan saat membuat dokumen.
+export type PpidAuthor = { id: string; name: string };

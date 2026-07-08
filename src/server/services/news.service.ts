@@ -3,6 +3,7 @@ import { newsRepository } from "../repositories/news.repository";
 import {
   makeSlug,
   newsInputSchema,
+  type ContentAuthor,
   type NewsDTO,
 } from "../types/news";
 
@@ -14,6 +15,8 @@ function toDTO(row: NonNullable<Awaited<ReturnType<typeof newsRepository.findByI
     excerpt: row.excerpt,
     content: row.content,
     coverImage: row.coverImage,
+    authorId: row.authorId,
+    authorName: row.authorName,
     published: row.published,
     publishedAt: row.publishedAt,
   };
@@ -46,7 +49,7 @@ export const newsService = {
     return row ? toDTO(row) : null;
   },
 
-  async create(input: unknown): Promise<NewsDTO> {
+  async create(input: unknown, author: ContentAuthor): Promise<NewsDTO> {
     const data = newsInputSchema.parse(input);
     const id = createId();
     const slug = makeSlug(data.title, id);
@@ -57,6 +60,8 @@ export const newsService = {
       excerpt: data.excerpt,
       content: data.content,
       coverImage: data.coverImage,
+      authorId: author.id,
+      authorName: author.name,
       published: data.published,
       publishedAt: new Date(),
     });

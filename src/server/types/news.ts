@@ -19,9 +19,14 @@ export type NewsDTO = {
   excerpt: string | null;
   content: string | null;
   coverImage: string | null;
+  authorId: string | null;
+  authorName: string | null;
   published: boolean;
   publishedAt: Date | null;
 };
+
+// Penulis (akun CMS) yang dilampirkan saat membuat konten.
+export type ContentAuthor = { id: string; name: string };
 
 /** Ubah judul jadi slug URL-aman, dengan sufiks unik agar tidak bentrok. */
 export function makeSlug(title: string, id: string): string {

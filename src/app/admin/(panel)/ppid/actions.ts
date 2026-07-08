@@ -3,23 +3,23 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { newsService } from "@/server/services/news.service";
+import { ppidService } from "@/server/services/ppid.service";
 import { requireCmsUser } from "@/server/utils/cmsSession";
 
-export type NewsResult =
+export type PpidResult =
   | { success: true }
   | { success: false; message: string };
 
-function revalidateBerita() {
-  revalidatePath("/berita");
-  revalidatePath("/admin/berita");
+function revalidatePpid() {
+  revalidatePath("/ppid");
+  revalidatePath("/admin/ppid");
 }
 
-export async function createNews(input: unknown): Promise<NewsResult> {
-  await requireCmsUser();
+export async function createPpidDoc(input: unknown): Promise<PpidResult> {
+  const user = await requireCmsUser();
   try {
-    await newsService.create(input);
-    revalidateBerita();
+    await ppidService.create(input, { id: user.id, name: user.name });
+    revalidatePpid();
   } catch (err) {
     if (err instanceof z.ZodError) {
       return { success: false, message: "Periksa isian — ada yang belum valid." };
@@ -29,18 +29,18 @@ export async function createNews(input: unknown): Promise<NewsResult> {
       message: err instanceof Error ? err.message : "Gagal menyimpan.",
     };
   }
-  redirect("/admin/berita");
+  redirect("/admin/ppid");
 }
 
-export async function updateNews(
+export async function updatePpidDoc(
   id: string,
   input: unknown,
-): Promise<NewsResult> {
+): Promise<PpidResult> {
   await requireCmsUser();
   try {
-    await newsService.update(id, input);
-    revalidateBerita();
-    revalidatePath(`/admin/berita/${id}`);
+    await ppidService.update(id, input);
+    revalidatePpid();
+    revalidatePath(`/admin/ppid/${id}`);
   } catch (err) {
     if (err instanceof z.ZodError) {
       return { success: false, message: "Periksa isian — ada yang belum valid." };
@@ -50,14 +50,14 @@ export async function updateNews(
       message: err instanceof Error ? err.message : "Gagal menyimpan.",
     };
   }
-  redirect("/admin/berita");
+  redirect("/admin/ppid");
 }
 
-export async function deleteNews(id: string): Promise<NewsResult> {
+export async function deletePpidDoc(id: string): Promise<PpidResult> {
   await requireCmsUser();
   try {
-    await newsService.remove(id);
-    revalidateBerita();
+    await ppidService.remove(id);
+    revalidatePpid();
     return { success: true };
   } catch (err) {
     return {

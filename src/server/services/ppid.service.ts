@@ -2,6 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { ppidRepository } from "../repositories/ppid.repository";
 import {
   ppidDocInputSchema,
+  type PpidAuthor,
   type PpidCategory,
   type PpidDocDTO,
 } from "../types/ppid";
@@ -17,6 +18,8 @@ function toDTO(
     fileUrl: row.fileUrl,
     externalUrl: row.externalUrl,
     year: row.year,
+    authorId: row.authorId,
+    authorName: row.authorName,
     published: row.published,
     createdAt: row.createdAt,
   };
@@ -44,7 +47,7 @@ export const ppidService = {
     return row ? toDTO(row) : null;
   },
 
-  async create(input: unknown): Promise<PpidDocDTO> {
+  async create(input: unknown, author: PpidAuthor): Promise<PpidDocDTO> {
     const data = ppidDocInputSchema.parse(input);
     const id = createId();
     await ppidRepository.insert({
@@ -55,6 +58,8 @@ export const ppidService = {
       fileUrl: data.fileUrl || null,
       externalUrl: data.externalUrl || null,
       year: data.year || null,
+      authorId: author.id,
+      authorName: author.name,
       published: data.published,
     });
     const created = await ppidRepository.findById(id);

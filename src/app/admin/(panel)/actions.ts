@@ -37,11 +37,11 @@ export async function saveSection(
   if (!(key in CONTENT_SECTIONS)) {
     return { success: false, message: "Seksi tidak dikenal" };
   }
-  // Tanda tangan surat bersifat sensitif — hanya kepala desa (admin), bukan operator.
-  if (key === "surat" && user.role !== "admin") {
+  // Tanda tangan surat bersifat sensitif — hanya super admin, bukan editor.
+  if (key === "surat" && user.role !== "super_admin") {
     return {
       success: false,
-      message: "Hanya kepala desa (admin) yang boleh mengubah tanda tangan surat.",
+      message: "Hanya Super Admin yang boleh mengubah tanda tangan surat.",
     };
   }
 
