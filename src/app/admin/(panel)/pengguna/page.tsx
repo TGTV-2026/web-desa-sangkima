@@ -24,7 +24,7 @@ export default async function AdminPenggunaPage() {
           </p>
         </div>
         <Link href="/admin/pengguna/baru" className="btn-primary shrink-0">
-          + Tambah Akun
+          + Tambah Editor
         </Link>
       </div>
 

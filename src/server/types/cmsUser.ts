@@ -15,20 +15,18 @@ export const cmsLoginSchema = z.object({
 });
 export type CmsLoginInput = z.infer<typeof cmsLoginSchema>;
 
-// Buat akun baru — kata sandi wajib.
+// Buat akun baru — selalu sebagai editor (super_admin tidak bisa dibuat lewat UI).
 export const cmsUserCreateSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter").max(255),
   email: z.string().email("Email tidak valid").max(255),
-  role: z.enum(["super_admin", "editor"]),
   password: z.string().min(6, "Kata sandi minimal 6 karakter"),
 });
 export type CmsUserCreateInput = z.infer<typeof cmsUserCreateSchema>;
 
-// Sunting akun — kata sandi opsional (diisi hanya bila ingin di-reset).
+// Sunting akun — peran tidak diubah lewat UI; kata sandi opsional (reset).
 export const cmsUserUpdateSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter").max(255),
   email: z.string().email("Email tidak valid").max(255),
-  role: z.enum(["super_admin", "editor"]),
   password: z
     .string()
     .min(6, "Kata sandi minimal 6 karakter")

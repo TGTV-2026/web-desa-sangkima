@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/useToast";
 import { CMS_ROLE_LABELS, type CmsUserDTO } from "@/server/types/cmsUser";
-import { setCmsUserActive } from "./actions";
+import { deleteCmsUser, setCmsUserActive } from "./actions";
 
 export default function CmsUserList({
   items,
@@ -17,6 +17,7 @@ export default function CmsUserList({
   const { toast } = useToast();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   function toggle(id: string, active: boolean) {
     startTransition(async () => {
@@ -27,6 +28,19 @@ export default function CmsUserList({
       } else {
         toast(res.message, "Gagal", "error");
       }
+    });
+  }
+
+  function hapusPermanen(id: string) {
+    startTransition(async () => {
+      const res = await deleteCmsUser(id);
+      if (res.success) {
+        toast("Akun dihapus permanen.", "Terhapus", "success");
+        router.refresh();
+      } else {
+        toast(res.message, "Gagal", "error");
+      }
+      setConfirmDeleteId(null);
     });
   }
 
@@ -73,26 +87,58 @@ export default function CmsUserList({
           >
             Edit
           </Link>
-          {u.id !== currentUserId &&
-            (u.active ? (
-              <button
-                type="button"
-                onClick={() => toggle(u.id, false)}
-                disabled={pending}
-                className="btn-danger shrink-0 px-3 py-2 text-xs disabled:opacity-50"
-              >
-                Nonaktifkan
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => toggle(u.id, true)}
-                disabled={pending}
-                className="btn-outline shrink-0 px-3 py-2 text-xs disabled:opacity-50"
-              >
-                Aktifkan
-              </button>
-            ))}
+          {u.id !== currentUserId && (
+            <>
+              {u.active ? (
+                <button
+                  type="button"
+                  onClick={() => toggle(u.id, false)}
+                  disabled={pending}
+                  className="btn-outline shrink-0 px-3 py-2 text-xs disabled:opacity-50"
+                >
+                  Nonaktifkan
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => toggle(u.id, true)}
+                  disabled={pending}
+                  className="btn-outline shrink-0 px-3 py-2 text-xs disabled:opacity-50"
+                >
+                  Aktifkan
+                </button>
+              )}
+              {/* Hapus permanen hanya untuk editor (super admin dilindungi). */}
+              {u.role === "editor" &&
+                (confirmDeleteId === u.id ? (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => hapusPermanen(u.id)}
+                      disabled={pending}
+                      className="btn-danger px-3 py-2 text-xs disabled:opacity-50"
+                    >
+                      Hapus permanen?
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="btn-outline px-3 py-2 text-xs"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteId(u.id)}
+                    className="btn-danger shrink-0 px-3 py-2 text-xs"
+                  >
+                    Hapus
+                  </button>
+                ))}
+            </>
+          )}
         </div>
       ))}
     </div>

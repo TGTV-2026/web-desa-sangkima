@@ -3,13 +3,8 @@
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/useToast";
 import FormField from "@/components/esurat/FormField";
-import type { CmsUserDTO } from "@/server/types/cmsUser";
+import { CMS_ROLE_LABELS, type CmsUserDTO } from "@/server/types/cmsUser";
 import { createCmsUser, updateCmsUser } from "./actions";
-
-const ROLE_OPTIONS = [
-  { value: "editor", label: "Editor — kelola konten" },
-  { value: "super_admin", label: "Super Admin — kelola akun + konten" },
-];
 
 export default function CmsUserForm({ initial }: { initial?: CmsUserDTO }) {
   const { toast } = useToast();
@@ -17,12 +12,11 @@ export default function CmsUserForm({ initial }: { initial?: CmsUserDTO }) {
 
   const [name, setName] = useState(initial?.name ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
-  const [role, setRole] = useState<string>(initial?.role ?? "editor");
   const [password, setPassword] = useState("");
 
   function save() {
     startTransition(async () => {
-      const payload = { name, email, role, password };
+      const payload = { name, email, password };
       const res = initial
         ? await updateCmsUser(initial.id, payload)
         : await createCmsUser(payload);
@@ -49,14 +43,17 @@ export default function CmsUserForm({ initial }: { initial?: CmsUserDTO }) {
           placeholder="editor@sangkima.desa.id"
           autoComplete="off"
         />
-        <FormField
-          id="role"
-          label="Peran"
-          type="select"
-          value={role}
-          onChange={setRole}
-          options={ROLE_OPTIONS}
-        />
+        <div>
+          <span className="label-doc text-xs">Peran</span>
+          <p className="mt-1 rounded-sm border border-line bg-paper2/40 px-3 py-2 text-sm text-ink">
+            {initial ? CMS_ROLE_LABELS[initial.role] : "Editor"}
+            <span className="ml-2 text-[11px] text-inkmut">
+              {initial
+                ? "(peran tidak dapat diubah)"
+                : "— akun baru selalu dibuat sebagai Editor"}
+            </span>
+          </p>
+        </div>
         <FormField
           id="password"
           label={

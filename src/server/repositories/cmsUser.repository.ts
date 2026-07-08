@@ -34,6 +34,11 @@ export const cmsUserRepository = {
     await db.update(cmsUsers).set(patch).where(eq(cmsUsers.id, id));
   },
 
+  // Hapus permanen (hard delete) — baris benar-benar dihilangkan dari DB.
+  async hardDelete(id: string) {
+    await db.delete(cmsUsers).where(eq(cmsUsers.id, id));
+  },
+
   // Hitung super_admin aktif (untuk cegah menonaktifkan super_admin terakhir).
   async countActiveSuperAdmins() {
     const rows = await db

@@ -57,7 +57,8 @@ export const cmsUserService = {
       id,
       name: data.name,
       email: data.email,
-      role: data.role,
+      // Selalu editor — super_admin tidak bisa dibuat lewat UI.
+      role: "editor",
       password: await hashPassword(data.password),
     });
     const created = await cmsUserRepository.findById(id);
@@ -75,19 +76,10 @@ export const cmsUserService = {
       throw new Error("Email sudah dipakai akun lain");
     }
 
-    // Menurunkan super_admin terakhir bisa mengunci semua orang keluar dari
-    // pengelolaan akun — cegah.
-    if (target.role === "super_admin" && data.role !== "super_admin") {
-      const count = await cmsUserRepository.countActiveSuperAdmins();
-      if (count <= 1) {
-        throw new Error("Minimal harus ada satu Super Admin aktif");
-      }
-    }
-
+    // Peran tidak diubah lewat UI (tetap seperti semula).
     const patch: Record<string, unknown> = {
       name: data.name,
       email: data.email,
-      role: data.role,
     };
     if (data.password) patch.password = await hashPassword(data.password);
     await cmsUserRepository.update(id, patch);
@@ -108,5 +100,19 @@ export const cmsUserService = {
 
   async reactivate(id: string): Promise<void> {
     await cmsUserRepository.update(id, { deletedAt: null });
+  },
+
+  /**
+   * Hapus permanen. Hanya untuk akun editor — akun Super Admin tak boleh
+   * dihapus permanen (cegah lockout). Byline berita/PPID tetap utuh karena
+   * memakai snapshot `authorName`, bukan join ke akun.
+   */
+  async hardDelete(id: string): Promise<void> {
+    const target = await cmsUserRepository.findById(id);
+    if (!target) return;
+    if (target.role === "super_admin") {
+      throw new Error("Akun Super Admin tidak bisa dihapus permanen.");
+    }
+    await cmsUserRepository.hardDelete(id);
   },
 };

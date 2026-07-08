@@ -69,3 +69,20 @@ export async function setCmsUserActive(
     };
   }
 }
+
+export async function deleteCmsUser(id: string): Promise<CmsUserResult> {
+  const me = await requireSuperAdmin();
+  if (id === me.id) {
+    return { success: false, message: "Tidak bisa menghapus akun sendiri." };
+  }
+  try {
+    await cmsUserService.hardDelete(id);
+    revalidatePath("/admin/pengguna");
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : "Gagal menghapus.",
+    };
+  }
+}
