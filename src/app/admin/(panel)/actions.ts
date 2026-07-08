@@ -19,6 +19,7 @@ const REVALIDATE: Record<ContentKey, string[]> = {
   surat: [], // dipakai saat generate PDF surat, tak ada halaman publik untuk di-revalidate
   ppid: ["/ppid"],
   produk: ["/produk"],
+  statistikDusun: ["/profil"],
 };
 
 export type SaveResult =
