@@ -3,6 +3,8 @@ import { requireCmsUser } from "@/server/utils/cmsSession";
 import { CMS_ROLE_LABELS } from "@/server/types/cmsUser";
 import AdminNav from "./AdminNav";
 import AdminLogout from "./AdminLogout";
+import TourButton from "./TourButton";
+import CmsTour from "./CmsTour";
 
 // Shell + guard untuk seluruh halaman CMS. Belum login → requireCmsUser
 // mengalihkan ke /admin/login.
@@ -33,6 +35,7 @@ export default async function AdminPanelLayout({
                 {CMS_ROLE_LABELS[user.role]}
               </div>
             </div>
+            <TourButton />
             <AdminLogout />
           </div>
         </div>
@@ -51,6 +54,7 @@ export default async function AdminPanelLayout({
           <Link
             href="/"
             target="_blank"
+            data-tour="view-site"
             className="mt-6 block text-[11px] text-inkmut hover:text-pine-900"
           >
             Lihat situs publik ↗
@@ -60,6 +64,9 @@ export default async function AdminPanelLayout({
         {/* Konten */}
         <main className="min-w-0 flex-1">{children}</main>
       </div>
+
+      {/* Tur berpandu untuk operator (auto saat pertama, ulang via tombol Panduan) */}
+      <CmsTour />
     </div>
   );
 }

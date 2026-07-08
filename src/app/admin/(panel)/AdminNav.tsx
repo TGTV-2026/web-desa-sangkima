@@ -13,7 +13,7 @@ export default function AdminNav({ role }: { role: CmsRole }) {
     (item) => !item.superAdminOnly || role === "super_admin",
   );
   return (
-    <nav className="flex flex-col gap-1">
+    <nav className="flex flex-col gap-1" data-tour="nav">
       {items.map((item) => {
         const active = pathname === item.href;
         if (!item.ready) {
@@ -33,6 +33,7 @@ export default function AdminNav({ role }: { role: CmsRole }) {
           <Link
             key={item.key}
             href={item.href}
+            data-tour={`nav-${item.key}`}
             className={`rounded-sm px-3 py-2 text-sm transition-colors ${
               active
                 ? "bg-pine-900 font-semibold text-paper"
