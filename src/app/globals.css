@@ -75,6 +75,24 @@ body::after {
   .btn-danger {
     @apply inline-flex items-center justify-center gap-2 bg-card border border-oxide/40 text-oxide text-sm font-semibold rounded-[4px] px-5 py-3 transition-colors hover:bg-oxide/5 disabled:opacity-50 disabled:cursor-not-allowed;
   }
+
+  /* Strip aksi (hapus/jadikan sampul) di atas thumbnail foto/video album.
+     Sengaja pakai CSS eksplisit, BUKAN utility `group-hover:opacity-*` Tailwind:
+     Tailwind v4 membungkus semua varian hover di `@media (hover: hover)`, sehingga
+     di perangkat sentuh (hover: none) tombol tak pernah muncul walau bisa diklik.
+     Aturan `.group:hover` di sini tidak di-gate media query jadi tetap merespons
+     pointer trackpad/mouse; `pointer-events: none` saat tersembunyi mencegah klik
+     tak sengaja (dulu tombol transparan tetap bisa terpencil → foto terhapus). */
+  .thumb-actions {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .group:hover .thumb-actions,
+  .group:focus-within .thumb-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 /* ---------- animasi toast (dipertahankan) ---------- */

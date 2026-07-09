@@ -146,8 +146,8 @@ export default function AlbumPhotoManager({
                     Sampul
                   </span>
                 )}
-                {/* Aksi (muncul saat hover / selalu di layar sentuh) */}
-                <div className="absolute inset-x-0 bottom-0 flex justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                {/* Aksi muncul saat kartu di-hover (lihat .thumb-actions di globals.css) */}
+                <div className="thumb-actions absolute inset-x-0 bottom-0 flex justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent p-1.5">
                   <button
                     type="button"
                     onClick={() => jadikanSampul(p.id)}
