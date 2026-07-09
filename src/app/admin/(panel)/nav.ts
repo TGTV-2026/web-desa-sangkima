@@ -80,6 +80,14 @@ export const ADMIN_NAV: AdminNavItem[] = [
     ready: true,
   },
   {
+    key: "statistikDusun",
+    href: "/admin/statistik",
+    label: "Statistik Dusun",
+    desc: "Jumlah penduduk & KK tiap dusun.",
+    group: "konten",
+    ready: true,
+  },
+  {
     key: "galeri",
     href: "/admin/galeri",
     label: "Galeri & Potensi",

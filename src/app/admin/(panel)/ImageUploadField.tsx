@@ -2,20 +2,24 @@
 
 import { useRef, useState } from "react";
 import { useToast } from "@/hooks/useToast";
+import { MAX_IMAGE_BYTES, MAX_IMAGE_LABEL } from "@/lib/uploadLimits";
 
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
-const MAX = 4 * 1024 * 1024;
+const MAX = MAX_IMAGE_BYTES; // dikompres otomatis di server
 
 // Field upload satu gambar: tampil preview + tombol ganti. Mengunggah ke
 // /admin/api/upload lalu mengembalikan URL publik lewat onChange.
+// `variant="graphic"` untuk tanda tangan/logo yang harus tetap PNG.
 export default function ImageUploadField({
   value,
   onChange,
   label,
+  variant = "photo",
 }: {
   value: string;
   onChange: (url: string) => void;
   label?: string;
+  variant?: "photo" | "graphic";
 }) {
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,13 +32,14 @@ export default function ImageUploadField({
       return;
     }
     if (file.size > MAX) {
-      toast("Ukuran gambar melebihi 4 MB.", "Terlalu besar", "error");
+      toast(`Ukuran gambar melebihi ${MAX_IMAGE_LABEL}.`, "Terlalu besar", "error");
       return;
     }
     setBusy(true);
     try {
       const fd = new FormData();
       fd.append("file", file);
+      fd.append("variant", variant);
       const res = await fetch("/admin/api/upload", { method: "POST", body: fd });
       const json = (await res.json()) as {
         success: boolean;

@@ -20,14 +20,15 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+  // "graphic" = tanda tangan/logo yang harus tetap PNG (dipakai pdf-lib).
+  const variant = form.get("variant") === "graphic" ? "graphic" : "photo";
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const url = await saveProfileImage({
-      mime: file.type,
-      size: file.size,
-      buffer,
-    });
+    const url = await saveProfileImage(
+      { mime: file.type, size: file.size, buffer },
+      { variant },
+    );
     return NextResponse.json({ success: true, data: { url } });
   } catch (err) {
     return NextResponse.json(

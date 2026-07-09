@@ -402,6 +402,39 @@ const defaultProduk: ProdukContent = {
   whatsapp: "",
 };
 
+/* ---------------------------- Statistik Dusun ----------------------------- */
+
+// Data kependudukan per dusun (diisi manual oleh desa — bukan dihitung dari
+// data warga e-surat, karena alamat warga masih berupa teks bebas).
+export const dusunStatSchema = z.object({
+  nama: z.string().min(1, "Nama dusun wajib diisi"),
+  lakiLaki: z.coerce.number().int().min(0).default(0),
+  perempuan: z.coerce.number().int().min(0).default(0),
+  kk: z.coerce.number().int().min(0).default(0),
+});
+export type DusunStat = z.infer<typeof dusunStatSchema>;
+
+export const statistikDusunContentSchema = z.object({
+  keterangan: z.string().default(""),
+  dusun: z.array(dusunStatSchema).min(1, "Minimal satu dusun"),
+});
+export type StatistikDusunContent = z.infer<typeof statistikDusunContentSchema>;
+
+const defaultStatistikDusun: StatistikDusunContent = {
+  keterangan: "",
+  dusun: [
+    "Dusun Patra",
+    "Dusun Lestari Jaya",
+    "Dusun Makmur Jaya",
+    "Dusun Mekar Jaya",
+    "Dusun Sungai Tabuan",
+    "Dusun Airport",
+    "Dusun Teluk Lombok",
+    "Dusun Mari Bangun",
+    "Dusun Mekar Baru",
+  ].map((nama) => ({ nama, lakiLaki: 0, perempuan: 0, kk: 0 })),
+};
+
 /* ------------------------------ Registry --------------------------------- */
 
 // Satu sumber kebenaran: key seksi → { skema validasi, nilai default, label UI }.
@@ -442,6 +475,11 @@ export const CONTENT_SECTIONS = {
     default: defaultProduk,
     label: "Produk: Pengaturan Koperasi",
   },
+  statistikDusun: {
+    schema: statistikDusunContentSchema,
+    default: defaultStatistikDusun,
+    label: "Statistik Dusun",
+  },
 } as const;
 
 export type ContentKey = keyof typeof CONTENT_SECTIONS;
@@ -458,6 +496,7 @@ export type ContentValueMap = {
   surat: SuratContent;
   ppid: PpidContent;
   produk: ProdukContent;
+  statistikDusun: StatistikDusunContent;
 };
 
 export const CONTENT_KEYS = Object.keys(CONTENT_SECTIONS) as ContentKey[];

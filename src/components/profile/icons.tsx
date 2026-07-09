@@ -79,6 +79,29 @@ export function Store(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+// Rumah / Kepala Keluarga (KK)
+export function Home(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <path d="M3 11 12 4l9 7" />
+      <path d="M5 9.5V20h14V9.5" />
+      <path d="M10 20v-6h4v6" />
+    </Svg>
+  );
+}
+
+// Dua orang / kelompok penduduk
+export function Users(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Svg {...props}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 20c0-3.3 2.5-6 5.5-6s5.5 2.7 5.5 6" />
+      <path d="M16 8.3a3 3 0 1 1 0 5.9" />
+      <path d="M15.2 14.2c2.6.3 4.8 2.8 4.8 5.8" />
+    </Svg>
+  );
+}
+
 export function MapPin(props: SVGProps<SVGSVGElement>) {
   return (
     <Svg {...props}>

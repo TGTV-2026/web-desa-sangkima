@@ -3,6 +3,7 @@ import Reveal from "@/components/profile/Reveal";
 import Seal from "@/components/profile/Seal";
 import { Eye, Person } from "@/components/profile/icons";
 import MisiAssemble from "@/components/profile/MisiAssemble";
+import StatistikDusunSection from "@/components/profile/StatistikDusunSection";
 import { siteContentService } from "@/server/services/siteContent.service";
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ export default async function ProfilPage() {
   // Konten dikelola lewat CMS /admin (fallback ke default bila belum disunting).
   const { sejarah, visi, misi } = await siteContentService.get("profil");
   const { kepalaDesa, aparatur } = await siteContentService.get("struktur");
+  const statistikDusun = await siteContentService.get("statistikDusun");
 
   return (
     <div className="mx-auto flex max-w-[1280px] flex-col gap-24 px-5 pb-24 pt-28 md:px-12 md:pt-32">
@@ -168,6 +170,11 @@ export default async function ProfilPage() {
           ))}
         </div>
       </section>
+
+      <div className="h-px w-full bg-line" />
+
+      {/* Statistik Dusun */}
+      <StatistikDusunSection content={statistikDusun} />
     </div>
   );
 }
