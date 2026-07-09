@@ -109,6 +109,7 @@ async function renderPdf(
   row: LetterRequestJoinedRow,
   appUrl: string,
   draft = false,
+  noSignature = false
 ): Promise<Uint8Array> {
   const user = await userRepository.findById(row.request.userId);
   const type = await letterTypeRepository.findById(row.request.letterTypeId);
@@ -143,6 +144,7 @@ async function renderPdf(
     data: parseJsonColumn<LetterRequestData | null>(row.request.data, null),
     appUrl,
     draft,
+    noSignature,
     signatory,
   });
 }
@@ -349,6 +351,11 @@ export const letterRequestService = {
     const approvedRow = await getRowOrThrow(id);
     const pdf = await renderPdf(approvedRow, appUrl);
     const pdfPath = await savePdf(id, pdf);
+    
+    // buat juga versi tanpa tanda tangan digital untuk cetak basah
+    const pdfNoSig = await renderPdf(approvedRow, appUrl, false, true);
+    await savePdf(id, pdfNoSig, true);
+
     await letterRequestRepository.update(id, { pdfPath });
 
     return toDTO(await getRowOrThrow(id));
@@ -430,6 +437,7 @@ export const letterRequestService = {
     id: string,
     actor: AuthUser,
     appUrl: string,
+    noSignature?: boolean
   ): Promise<Uint8Array> {
     const row = await getRowOrThrow(id);
     if (actor.role === "user" && row.request.userId !== actor.id) {
@@ -445,11 +453,14 @@ export const letterRequestService = {
     // surat normalnya sudah punya PDF tersimpan sejak di-approve (snapshot data
     // saat itu); fallback render+simpan di sini hanya untuk surat lama sebelum fitur ini ada
     if (row.request.pdfPath) {
-      const stored = await readPdf(id);
+      const stored = await readPdf(id, noSignature);
       if (stored) return stored;
     }
-    const pdf = await renderPdf(row, appUrl);
-    await letterRequestRepository.update(id, { pdfPath: await savePdf(id, pdf) });
+    const pdf = await renderPdf(row, appUrl, false, noSignature);
+    await savePdf(id, pdf, noSignature);
+    if (!noSignature) {
+      await letterRequestRepository.update(id, { pdfPath: await savePdf(id, pdf) });
+    }
     return pdf;
   },
 

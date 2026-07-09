@@ -8,16 +8,17 @@ import { siteContentService } from "./siteContent.service";
 // kalau data warga (alamat, pekerjaan, dst.) diedit belakangan.
 const PDF_DIR = path.join(process.cwd(), "uploads", "surat");
 
-export async function savePdf(requestId: string, bytes: Uint8Array): Promise<string> {
+export async function savePdf(requestId: string, bytes: Uint8Array, noSignature?: boolean): Promise<string> {
   await fs.promises.mkdir(PDF_DIR, { recursive: true });
-  const fileName = `${requestId}.pdf`;
+  const fileName = noSignature ? `${requestId}-nosig.pdf` : `${requestId}.pdf`;
   await fs.promises.writeFile(path.join(PDF_DIR, fileName), bytes);
   return fileName;
 }
 
-export async function readPdf(requestId: string): Promise<Buffer | null> {
+export async function readPdf(requestId: string, noSignature?: boolean): Promise<Buffer | null> {
   try {
-    return await fs.promises.readFile(path.join(PDF_DIR, `${requestId}.pdf`));
+    const fileName = noSignature ? `${requestId}-nosig.pdf` : `${requestId}.pdf`;
+    return await fs.promises.readFile(path.join(PDF_DIR, fileName));
   } catch {
     return null;
   }
@@ -98,6 +99,8 @@ export type LetterPdfInput = {
     positionCategory: string;
     signatureUrl?: string | null;
   } | null;
+  // Jika true, tanda tangan berupa gambar tidak dirender (untuk cetak basah)
+  noSignature?: boolean;
 };
 
 export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Array> {
@@ -211,38 +214,40 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
   
   sy -= 70; // ruang tanda tangan
 
-  // Gambar TTD: Prioritaskan dari profil penandatangan, lalu pengaturan CMS, lalu fallback.
-  try {
-    let ttdBytes: Buffer | null = null;
-    let ext = ".png";
+  // Gambar TTD: Prioritaskan dari profil penandatangan.
+  if (!input.noSignature) {
+    try {
+      let ttdBytes: Buffer | null = null;
+      let ext = ".png";
 
-    if (input.signatory?.signatureUrl) {
-      const p = path.join(
-        process.cwd(),
-        "uploads",
-        "profil",
-        path.basename(input.signatory.signatureUrl)
-      );
-      if (fs.existsSync(p)) {
-        ttdBytes = fs.readFileSync(p);
-        ext = path.extname(p).toLowerCase();
+      if (input.signatory?.signatureUrl) {
+        const p = path.join(
+          process.cwd(),
+          "uploads",
+          "profil",
+          path.basename(input.signatory.signatureUrl)
+        );
+        if (fs.existsSync(p)) {
+          ttdBytes = fs.readFileSync(p);
+          ext = path.extname(p).toLowerCase();
+        }
       }
+      if (ttdBytes) {
+        const img =
+          ext === ".jpg" || ext === ".jpeg"
+            ? await doc.embedJpg(ttdBytes)
+            : await doc.embedPng(ttdBytes);
+        const scaled = img.scaleToFit(150, 60);
+        page.drawImage(img, {
+          x: signX,
+          y: sy + 8,
+          width: scaled.width,
+          height: scaled.height,
+        });
+      }
+    } catch {
+      // abaikan bila gagal embed ttd
     }
-    if (ttdBytes) {
-      const img =
-        ext === ".jpg" || ext === ".jpeg"
-          ? await doc.embedJpg(ttdBytes)
-          : await doc.embedPng(ttdBytes);
-      const scaled = img.scaleToFit(150, 60);
-      page.drawImage(img, {
-        x: signX,
-        y: sy + 8,
-        width: scaled.width,
-        height: scaled.height,
-      });
-    }
-  } catch {
-    // abaikan bila gagal embed ttd
   }
 
   // Nama penandatangan: otomatis dari akun yang menyetujui.

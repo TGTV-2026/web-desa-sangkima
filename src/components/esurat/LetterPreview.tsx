@@ -74,14 +74,24 @@ export default function LetterPreview({
           Lihat Surat
         </button>
         {issued && (
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary w-full text-center"
-          >
-            Unduh Surat (PDF)
-          </a>
+          <div className="flex flex-col gap-2 mt-2">
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-primary w-full text-center"
+            >
+              Unduh Surat (PDF)
+            </a>
+            <a
+              href={`${pdfUrl}?nosig=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-outline w-full text-center text-xs text-ink/70"
+            >
+              Cetak Tanpa Tanda Tangan
+            </a>
+          </div>
         )}
       </div>
 
@@ -113,14 +123,25 @@ export default function LetterPreview({
                     Buka di tab baru
                   </a>
                   {issued && (
-                    <a
-                      href={pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-primary text-xs"
-                    >
-                      Unduh
-                    </a>
+                    <>
+                      <a
+                        href={`${pdfUrl}?nosig=1`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-outline hidden text-xs sm:inline-flex text-ink/70"
+                        title="Unduh Tanpa Tanda Tangan"
+                      >
+                        Cetak Basah
+                      </a>
+                      <a
+                        href={pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-primary text-xs"
+                      >
+                        Unduh
+                      </a>
+                    </>
                   )}
                   <button
                     type="button"

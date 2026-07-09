@@ -40,14 +40,19 @@ export async function GET(req: Request, { params }: RouteContext) {
     const auth = await requireRole(req, ["user", "staff", "admin"]);
 
     const { id } = await params;
-    const appUrl = new URL(req.url).origin;
-    const pdf = await letterRequestService.generatePdf(id, auth, appUrl);
+    const url = new URL(req.url);
+    const appUrl = url.origin;
+    const noSignature = url.searchParams.get("nosig") === "1";
+    
+    const pdf = await letterRequestService.generatePdf(id, auth, appUrl, noSignature);
+
+    const filename = noSignature ? `surat-${id}-nosig.pdf` : `surat-${id}.pdf`;
 
     return new Response(pdf as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="surat-${id}.pdf"`,
+        "Content-Disposition": `inline; filename="${filename}"`,
       },
     });
   } catch (error: any) {
