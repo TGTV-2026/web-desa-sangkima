@@ -23,19 +23,36 @@ export default function ContactMap({
 
   useEffect(() => {
     let cancelled = false;
+    let detachWheel: (() => void) | null = null;
 
     (async () => {
       // Import dinamis: Leaflet menyentuh window, jadi hanya dimuat di browser.
       const L = (await import("leaflet")).default;
       if (cancelled || !elRef.current || mapRef.current) return;
+      const el = elRef.current;
 
-      const map = L.map(elRef.current, {
+      const map = L.map(el, {
         center,
         zoom,
-        scrollWheelZoom: false, // jangan rebut scroll halaman — pakai tombol +/- atau drag
+        scrollWheelZoom: false, // jangan rebut scroll halaman — pakai tombol +/- atau pinch
         zoomControl: false,
+        zoomSnap: 0, // izinkan zoom pecahan agar pinch touchpad terasa halus
       });
       mapRef.current = map;
+
+      // Pinch touchpad dikirim browser sebagai wheel + ctrlKey (aksi default-nya
+      // zoom browser). Cegat khusus gesture itu untuk zoom peta ke arah kursor;
+      // scroll dua-jari biasa (tanpa ctrlKey) dibiarkan agar halaman tetap bisa
+      // di-scroll — persis niat awal scrollWheelZoom: false.
+      const onWheel = (e: WheelEvent) => {
+        if (!e.ctrlKey) return;
+        e.preventDefault();
+        const rect = el.getBoundingClientRect();
+        const point = L.point(e.clientX - rect.left, e.clientY - rect.top);
+        map.setZoomAround(point, map.getZoom() - e.deltaY * 0.01);
+      };
+      el.addEventListener("wheel", onWheel, { passive: false });
+      detachWheel = () => el.removeEventListener("wheel", onWheel);
 
       // Tombol zoom dipindah ke kanan agar tak menimpa label kiri-atas.
       L.control.zoom({ position: "topright" }).addTo(map);
@@ -116,6 +133,7 @@ export default function ContactMap({
 
     return () => {
       cancelled = true;
+      detachWheel?.();
       mapRef.current?.remove();
       mapRef.current = null;
     };
