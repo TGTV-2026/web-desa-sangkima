@@ -7,9 +7,7 @@ import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
 import "./contact-map.css";
 import type { Map as LeafletMap } from "leaflet";
-import { KATEGORI_WARNA, type TitikPeta } from "./peta-data";
-
-const WARNA_DEFAULT = "#275138";
+import { KATEGORI_WARNA, WARNA_DEFAULT, type TitikPeta } from "./peta-data";
 
 export default function ContactMap({
   titik,

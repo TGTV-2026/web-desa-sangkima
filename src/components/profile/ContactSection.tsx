@@ -2,7 +2,7 @@
 // Data (alamat, titik peta, link WA/IG) dari CMS; warna kategori marker dari peta-data.
 import Reveal from "./Reveal";
 import ContactMap from "./ContactMap";
-import { KATEGORI_WARNA } from "./peta-data";
+import { KATEGORI_WARNA, WARNA_DEFAULT } from "./peta-data";
 import { MapPin, Move, WhatsApp, Instagram } from "./icons";
 import type { KontakContent } from "@/server/types/content";
 
@@ -11,6 +11,12 @@ export default function ContactSection({
 }: {
   content: KontakContent;
 }) {
+  // Legend hanya menampilkan kategori yang benar-benar dipakai titik (bukan
+  // seluruh KATEGORI_WARNA) agar tak muncul kategori kosong.
+  const kategoriDipakai = Array.from(
+    new Set(content.titik.map((t) => t.kategori)),
+  );
+
   return (
     <section id="kontak" className="relative bg-paper py-24 md:py-32">
       <div className="mx-auto max-w-[1280px] px-5 md:px-12">
@@ -45,14 +51,14 @@ export default function ContactSection({
 
           {/* Legend kategori */}
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border border-line bg-card px-4 py-3">
-            {Object.entries(KATEGORI_WARNA).map(([kategori, warna]) => (
+            {kategoriDipakai.map((kategori) => (
               <span
                 key={kategori}
                 className="flex items-center gap-2 text-xs text-inkmut"
               >
                 <span
                   className="h-2.5 w-2.5 rounded-full"
-                  style={{ background: warna }}
+                  style={{ background: KATEGORI_WARNA[kategori] ?? WARNA_DEFAULT }}
                 />
                 {kategori}
               </span>
