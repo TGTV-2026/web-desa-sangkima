@@ -115,4 +115,32 @@ export const cmsUserService = {
     }
     await cmsUserRepository.hardDelete(id);
   },
+
+  /**
+   * Buat Super Admin pertama sekali di awal deployment — satu-satunya jalur
+   * karena super_admin tak bisa dibuat lewat UI. Menolak kalau sudah ada
+   * super_admin aktif, supaya endpoint setup di /admin/api/setup otomatis
+   * "mati" sendiri setelah dipakai sekali dan aman dibiarkan di kode.
+   */
+  async bootstrapSuperAdmin(input: {
+    name?: string;
+    email: string;
+    password: string;
+  }): Promise<{ created: boolean; reason?: string }> {
+    const activeSuperAdmins = await cmsUserRepository.countActiveSuperAdmins();
+    if (activeSuperAdmins > 0) {
+      return { created: false, reason: "Super Admin sudah ada." };
+    }
+    const existing = await cmsUserRepository.findByEmail(input.email);
+    if (existing) {
+      return { created: false, reason: "Email sudah dipakai akun lain." };
+    }
+    await cmsUserRepository.insert({
+      name: input.name || "Administrator",
+      email: input.email,
+      role: "super_admin",
+      password: await hashPassword(input.password),
+    });
+    return { created: true };
+  },
 };
