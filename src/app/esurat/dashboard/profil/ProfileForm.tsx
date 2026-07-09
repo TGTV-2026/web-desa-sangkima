@@ -10,9 +10,10 @@ import type { UserDTO } from "@/server/types/user";
 // Re-declare agar tidak import langsung dari server types di client
 type ProfileUser = Pick<
   UserDTO,
-  | "id" | "name" | "nik" | "email"
+  | "id" | "name" | "nik" | "email" | "role"
   | "gender" | "placeOfBirth" | "birthday" | "religion"
   | "address" | "job" | "telp" | "citizenship" | "status" | "education"
+  | "positionName" | "signatureUrl"
 >;
 
 const GENDER_OPTIONS = [
@@ -105,6 +106,8 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
   const [citizenship, setCitizenship] = useState(user.citizenship ?? "");
   const [status, setStatus] = useState(user.status ?? "");
   const [education, setEducation] = useState(user.education ?? "");
+  const [signatureImage, setSignatureImage] = useState<File | null>(null);
+  const [signatureCleared, setSignatureCleared] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -145,25 +148,29 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
 
     if (!validateAll()) return;
 
-    const payload = {
-      gender,
-      placeOfBirth,
-      birthday,
-      religion,
-      address,
-      job,
-      telp,
-      citizenship,
-      status,
-      education,
-    };
+    const fd = new FormData();
+    fd.append("gender", gender);
+    fd.append("placeOfBirth", placeOfBirth);
+    fd.append("birthday", birthday);
+    fd.append("religion", religion);
+    fd.append("address", address);
+    fd.append("job", job);
+    fd.append("telp", telp);
+    fd.append("citizenship", citizenship);
+    fd.append("status", status);
+    fd.append("education", education);
+
+    if (signatureImage) {
+      fd.append("signatureImage", signatureImage);
+    } else if (signatureCleared) {
+      fd.append("signatureUrl", "null");
+    }
 
     await submit(
       () =>
         fetch("/esurat/api/users/profile", {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: fd,
         }),
       {
         successMessage:
@@ -452,6 +459,68 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
           </div>
         </div>
       </div>
+
+      {/* ─── SECTION 4: SCAN TANDA TANGAN (Khusus Penandatangan) ─── */}
+      {(user.positionName === "Kepala Desa" || user.positionName === "Sekretaris Desa") && (
+        <div className="border-t border-line/50 pt-5">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-1 h-3 bg-pine-600 rounded-full shrink-0" />
+            <h2 className="font-serif text-[18px] font-medium text-pine-900 uppercase">
+              Scan Tanda Tangan (Khusus Penandatangan Surat)
+            </h2>
+          </div>
+          <div className="flex items-start gap-5">
+            <div className="w-32 h-24 shrink-0 bg-paper2/50 border border-line/70 rounded flex items-center justify-center relative overflow-hidden group">
+              {signatureImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={URL.createObjectURL(signatureImage)}
+                  alt="Tanda Tangan"
+                  className="w-full h-full object-contain p-2"
+                />
+              ) : user.signatureUrl && !signatureCleared ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.signatureUrl}
+                  alt="Tanda Tangan"
+                  className="w-full h-full object-contain p-2"
+                />
+              ) : (
+                <span className="text-xs text-inkmut/50 text-center p-2">Belum ada</span>
+              )}
+              {(signatureImage || (user.signatureUrl && !signatureCleared)) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSignatureImage(null);
+                    setSignatureCleared(true);
+                  }}
+                  className="absolute inset-0 bg-ink/70 text-paper font-medium text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  Hapus
+                </button>
+              )}
+            </div>
+            <div className="flex-1">
+              <input
+                type="file"
+                accept="image/png, image/jpeg, image/webp"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setSignatureImage(file);
+                    setSignatureCleared(false);
+                  }
+                }}
+                className="input-doc w-full cursor-pointer p-0 file:border-0 file:bg-paper3 file:text-ink file:font-medium file:px-4 file:py-2.5 file:mr-4 file:cursor-pointer hover:file:bg-line/50 file:transition-colors text-sm"
+              />
+              <p className="text-xs text-inkmut mt-2">
+                Format: PNG/JPG (disarankan background transparan). Tanda tangan ini akan dicetak pada PDF surat yang disetujui.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── SUBMIT ─── */}
       <div className="pt-2">

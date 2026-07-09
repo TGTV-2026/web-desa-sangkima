@@ -89,6 +89,7 @@ export const updateProfileSchema = z.object({
   citizenship: z.enum(["wni", "wna"], "Kewarganegaraan wajib dipilih"),
   status: z.enum(maritalStatus, "Status perkawinan wajib dipilih"),
   education: z.enum(educations, "Pendidikan terakhir wajib dipilih"),
+  signatureUrl: z.string().optional().nullable(),
 });
 
 /* ---------- */
