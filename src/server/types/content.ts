@@ -82,6 +82,8 @@ export const kontakContentSchema = z.object({
   // URL/handle sosial (kosong = tombolnya disembunyikan). default("") agar data lama aman.
   whatsapp: z.string().default(""),
   instagram: z.string().default(""),
+  facebook: z.string().default(""),
+  tiktok: z.string().default(""),
   petaCenter: z.tuple([z.number(), z.number()]),
   titik: z.array(petaTitikSchema),
 });
@@ -93,6 +95,8 @@ const defaultKontak: KontakContent = {
   email: "pemdes@sangkima.desa.id",
   whatsapp: "https://wa.me/6281234567890",
   instagram: "https://instagram.com/desasangkima",
+  facebook: "https://facebook.com/desasangkima",
+  tiktok: "https://tiktok.com/@desasangkima",
   // Titik = masjid/mushola & sekolah sekitar Sangkima; koordinat dari Google Maps
   // (plus code). Foto placeholder karena belum ada foto asli lokasi.
   petaCenter: [0.3789, 117.5138],
