@@ -133,8 +133,8 @@ export default function AlbumVideoManager({
               <span className="absolute left-1.5 top-1.5 rounded-sm bg-pine-900 px-1.5 py-0.5 text-[10px] font-bold uppercase text-paper">
                 {PLATFORM_LABEL[v.platform]}
               </span>
-              {/* Aksi selalu tampil (bukan cuma saat hover) — lihat catatan di AlbumPhotoManager.tsx */}
-              <div className="absolute inset-x-0 bottom-0 flex justify-end bg-gradient-to-t from-black/70 to-transparent p-1.5">
+              {/* Aksi (muncul saat hover / selalu di layar sentuh) */}
+              <div className="absolute inset-x-0 bottom-0 flex justify-end bg-gradient-to-t from-black/70 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
                 <button
                   type="button"
                   onClick={() => hapus(v.id)}
