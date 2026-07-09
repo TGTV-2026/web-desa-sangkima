@@ -4,9 +4,12 @@ import { createId } from "@paralleldrive/cuid2";
 import { compressImage } from "./imageCompress";
 import { MAX_DOC_BYTES, MAX_DOC_LABEL } from "@/lib/uploadLimits";
 
-// Dokumen PPID bersifat PUBLIK (bisa diunduh warga), jadi disimpan di
-// public/uploads/dokumen/ dan dilayani statis lewat URL /uploads/dokumen/<file>.
-const PUBLIC_DIR = path.join(process.cwd(), "public", "uploads", "dokumen");
+// Dokumen PPID bersifat PUBLIK (bisa diunduh warga), tapi disimpan DI LUAR
+// public/ dan dilayani lewat route handler
+// src/app/uploads/dokumen/[filename]/route.ts — bukan static file Next.js,
+// karena penulisan saat runtime tidak selalu langsung terlihat oleh static
+// serving di semua environment deploy (lihat serveUpload.ts).
+const PUBLIC_DIR = path.join(process.cwd(), "uploads", "dokumen");
 const PUBLIC_URL_BASE = "/uploads/dokumen";
 
 export const MAX_DOC_SIZE = MAX_DOC_BYTES; // PDF disimpan apa adanya

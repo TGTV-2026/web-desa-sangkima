@@ -4,10 +4,12 @@ import { createId } from "@paralleldrive/cuid2";
 import { compressImage, type ImageVariant } from "./imageCompress";
 import { MAX_IMAGE_BYTES, MAX_IMAGE_LABEL } from "@/lib/uploadLimits";
 
-// Gambar konten web profil (galeri, hero, titik peta) bersifat PUBLIK, jadi
-// disimpan di public/uploads/profil/ dan dilayani statis lewat URL /uploads/profil/<file>.
-// (Beda dengan lampiran surat yang privat di /uploads/lampiran.)
-const PUBLIC_DIR = path.join(process.cwd(), "public", "uploads", "profil");
+// Gambar konten web profil (galeri, hero, titik peta) bersifat PUBLIK, tapi
+// disimpan DI LUAR public/ (mis. /uploads/profil/) dan dilayani lewat route
+// handler src/app/uploads/profil/[filename]/route.ts — bukan static file
+// Next.js, karena penulisan saat runtime tidak selalu langsung terlihat oleh
+// static serving di semua environment deploy (lihat serveUpload.ts).
+const PUBLIC_DIR = path.join(process.cwd(), "uploads", "profil");
 const PUBLIC_URL_BASE = "/uploads/profil";
 
 // Plafon pengaman tinggi — gambar dikompres server-side jadi jauh lebih kecil
