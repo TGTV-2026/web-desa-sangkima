@@ -3,10 +3,12 @@ import { galleryRepository } from "../repositories/gallery.repository";
 import {
   albumInputSchema,
   makeAlbumSlug,
+  parseVideoUrl,
   type AlbumDTO,
   type AlbumDetailDTO,
   type GalleryAuthor,
   type PhotoDTO,
+  type VideoDTO,
 } from "../types/gallery";
 
 type AlbumRow = NonNullable<
@@ -14,6 +16,9 @@ type AlbumRow = NonNullable<
 >;
 type PhotoRow = NonNullable<
   Awaited<ReturnType<typeof galleryRepository.findPhotoById>>
+>;
+type VideoRow = NonNullable<
+  Awaited<ReturnType<typeof galleryRepository.findVideoById>>
 >;
 
 function albumToDTO(row: AlbumRow, photoCount: number): AlbumDTO {
@@ -37,6 +42,19 @@ function photoToDTO(row: PhotoRow): PhotoDTO {
     albumId: row.albumId,
     url: row.url,
     caption: row.caption,
+    sortOrder: row.sortOrder,
+  };
+}
+
+function videoToDTO(row: VideoRow): VideoDTO {
+  return {
+    id: row.id,
+    albumId: row.albumId,
+    platform: row.platform,
+    externalId: row.externalId,
+    url: row.url,
+    caption: row.caption,
+    thumbnailUrl: row.thumbnailUrl,
     sortOrder: row.sortOrder,
   };
 }
@@ -71,14 +89,24 @@ export const galleryService = {
     const row = await galleryRepository.findAlbumBySlug(slug);
     if (!row) return null;
     const photos = await galleryRepository.findPhotosByAlbum(row.id);
-    return { ...albumToDTO(row, photos.length), photos: photos.map(photoToDTO) };
+    const videos = await galleryRepository.findVideosByAlbum(row.id);
+    return {
+      ...albumToDTO(row, photos.length),
+      photos: photos.map(photoToDTO),
+      videos: videos.map(videoToDTO),
+    };
   },
 
   async getAlbumById(id: string): Promise<AlbumDetailDTO | null> {
     const row = await galleryRepository.findAlbumById(id);
     if (!row) return null;
     const photos = await galleryRepository.findPhotosByAlbum(id);
-    return { ...albumToDTO(row, photos.length), photos: photos.map(photoToDTO) };
+    const videos = await galleryRepository.findVideosByAlbum(id);
+    return {
+      ...albumToDTO(row, photos.length),
+      photos: photos.map(photoToDTO),
+      videos: videos.map(videoToDTO),
+    };
   },
 
   async createAlbum(input: unknown, author: GalleryAuthor): Promise<AlbumDTO> {
@@ -140,5 +168,37 @@ export const galleryService = {
     await galleryRepository.updateAlbum(photo.albumId, {
       coverImage: photo.url,
     });
+  },
+
+  // === Video ===
+  async addVideo(
+    albumId: string,
+    url: string,
+    caption?: string,
+  ): Promise<void> {
+    const parsed = parseVideoUrl(url);
+    if (!parsed) {
+      throw new Error("Link tidak dikenali. Gunakan link YouTube atau Instagram.");
+    }
+    // YouTube punya thumbnail publik tanpa API key; Instagram bawa preview
+    // sendiri lewat embed, jadi dibiarkan null.
+    const thumbnailUrl =
+      parsed.platform === "youtube"
+        ? `https://img.youtube.com/vi/${parsed.id}/hqdefault.jpg`
+        : null;
+    await galleryRepository.insertVideo({
+      id: createId(),
+      albumId,
+      platform: parsed.platform,
+      externalId: parsed.id,
+      url: url.trim(),
+      caption: caption || null,
+      thumbnailUrl,
+      sortOrder: Date.now() % 1_000_000_000,
+    });
+  },
+
+  async removeVideo(id: string): Promise<void> {
+    await galleryRepository.removeVideo(id);
   },
 };

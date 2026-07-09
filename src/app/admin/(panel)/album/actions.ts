@@ -129,3 +129,40 @@ export async function setAlbumCover(
     };
   }
 }
+
+export async function addAlbumVideo(
+  albumId: string,
+  url: string,
+  caption?: string,
+): Promise<AlbumResult> {
+  await requireCmsUser();
+  try {
+    await galleryService.addVideo(albumId, url, caption);
+    revalidateGaleri();
+    revalidatePath(`/admin/album/${albumId}`);
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : "Gagal menambah video.",
+    };
+  }
+}
+
+export async function deleteAlbumVideo(
+  videoId: string,
+  albumId: string,
+): Promise<AlbumResult> {
+  await requireCmsUser();
+  try {
+    await galleryService.removeVideo(videoId);
+    revalidateGaleri();
+    revalidatePath(`/admin/album/${albumId}`);
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : "Gagal menghapus video.",
+    };
+  }
+}

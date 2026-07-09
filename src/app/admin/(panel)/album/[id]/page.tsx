@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { galleryService } from "@/server/services/gallery.service";
 import AlbumForm from "../AlbumForm";
 import AlbumPhotoManager from "../AlbumPhotoManager";
+import AlbumVideoManager from "../AlbumVideoManager";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,8 @@ export default async function AdminAlbumEditPage({
         coverUrl={album.coverImage}
         photos={album.photos}
       />
+
+      <AlbumVideoManager albumId={album.id} videos={album.videos} />
 
       <div>
         <h2 className="mb-3 font-serif text-xl text-pine-900">Detail Album</h2>
