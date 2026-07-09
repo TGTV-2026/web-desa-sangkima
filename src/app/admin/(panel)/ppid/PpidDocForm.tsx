@@ -91,7 +91,7 @@ export default function PpidDocForm({ initial }: { initial?: PpidDocDTO }) {
           salah satu harus diisi.
         </p>
         <DocUploadField
-          label="Unggah berkas (PDF, maks. 10 MB)"
+          label="Unggah berkas (PDF / gambar)"
           value={fileUrl}
           onChange={setFileUrl}
         />

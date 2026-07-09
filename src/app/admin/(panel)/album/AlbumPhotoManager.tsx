@@ -4,10 +4,11 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/useToast";
 import type { PhotoDTO } from "@/server/types/gallery";
+import { MAX_IMAGE_BYTES, MAX_IMAGE_LABEL } from "@/lib/uploadLimits";
 import { addAlbumPhoto, deleteAlbumPhoto, setAlbumCover } from "./actions";
 
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
-const MAX = 4 * 1024 * 1024;
+const MAX = MAX_IMAGE_BYTES;
 
 export default function AlbumPhotoManager({
   albumId,
@@ -59,7 +60,7 @@ export default function AlbumPhotoManager({
       toast(`${ok} foto terunggah.`, "Berhasil", "success");
     if (skipped > 0)
       toast(
-        `${skipped} berkas dilewati (harus JPG/PNG/WEBP maks 4 MB).`,
+        `${skipped} berkas dilewati (harus JPG/PNG/WEBP, maks ${MAX_IMAGE_LABEL}).`,
         "Sebagian dilewati",
         "error",
       );
@@ -96,8 +97,8 @@ export default function AlbumPhotoManager({
         <div>
           <span className="label-doc">Foto Album</span>
           <p className="mt-1 text-[11px] text-inkmut">
-            {photos.length} foto • JPG/PNG/WEBP, maks 4 MB per foto. Bisa pilih
-            banyak sekaligus.
+            {photos.length} foto • JPG/PNG/WEBP. Boleh langsung dari kamera —
+            otomatis dikompres agar ringan. Bisa pilih banyak sekaligus.
           </p>
         </div>
         <input

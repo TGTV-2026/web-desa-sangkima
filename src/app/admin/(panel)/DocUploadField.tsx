@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react";
 import { useToast } from "@/hooks/useToast";
+import { MAX_DOC_BYTES, MAX_DOC_LABEL } from "@/lib/uploadLimits";
 
 const ACCEPTED = ["application/pdf", "image/jpeg", "image/png"];
-const MAX = 10 * 1024 * 1024;
+const MAX = MAX_DOC_BYTES;
 
 // Field unggah satu dokumen (PDF disarankan). Mengunggah ke /admin/api/upload-doc
 // lalu mengembalikan URL publik lewat onChange. Kosongkan dengan tombol hapus.
@@ -28,7 +29,7 @@ export default function DocUploadField({
       return;
     }
     if (file.size > MAX) {
-      toast("Ukuran berkas melebihi 10 MB.", "Terlalu besar", "error");
+      toast(`Ukuran berkas melebihi ${MAX_DOC_LABEL}.`, "Terlalu besar", "error");
       return;
     }
     setBusy(true);

@@ -71,6 +71,7 @@ export default function SuratEditor({ initial }: { initial: SuratContent }) {
           label="Gambar tanda tangan (PNG transparan disarankan)"
           value={v.signatureImage}
           onChange={(url) => set("signatureImage", url)}
+          variant="graphic"
         />
         <div>
           <label className="label-doc text-xs">
