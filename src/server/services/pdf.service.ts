@@ -228,22 +228,6 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
         ext = path.extname(p).toLowerCase();
       }
     }
-
-    if (!ttdBytes && surat.signatureImage) {
-      const p = path.join(
-        process.cwd(),
-        "public",
-        surat.signatureImage.replace(/^\/+/, ""),
-      );
-      if (fs.existsSync(p)) {
-        ttdBytes = fs.readFileSync(p);
-        ext = path.extname(p).toLowerCase();
-      }
-    }
-    if (!ttdBytes) {
-      const legacy = path.join(process.cwd(), "public", "ttd-kepala-desa.png");
-      if (fs.existsSync(legacy)) ttdBytes = fs.readFileSync(legacy);
-    }
     if (ttdBytes) {
       const img =
         ext === ".jpg" || ext === ".jpeg"
@@ -261,11 +245,8 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
     // abaikan bila gagal embed ttd
   }
 
-  // Nama penandatangan: kalau Sekdes menandatangani a.n., pakai nama akun-nya;
-  // selain itu boleh di-override lewat CMS (penandatanganNama), fallback ke akun penyetuju.
-  const effectiveName = isSekdes
-    ? input.signatory?.name
-    : surat.penandatanganNama || input.signatory?.name;
+  // Nama penandatangan: otomatis dari akun yang menyetujui.
+  const effectiveName = input.signatory?.name;
   const signText = effectiveName
     ? `( ${effectiveName} )`
     : "( ............................ )";

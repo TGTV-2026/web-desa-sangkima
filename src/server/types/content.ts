@@ -325,10 +325,6 @@ export const suratContentSchema = z.object({
   kopKecamatan: z.string(),
   kopDesa: z.string(),
   alamatKop: z.string(),
-  // Nama & jabatan penandatangan diambil otomatis dari akun yang menyetujui.
-  // Di sini hanya gambar TTD (dan opsional nama override kalau perlu).
-  signatureImage: z.string().default(""),
-  penandatanganNama: z.string().default(""),
 });
 export type SuratContent = z.infer<typeof suratContentSchema>;
 
@@ -337,8 +333,6 @@ const defaultSurat: SuratContent = {
   kopKecamatan: "KECAMATAN SANGATTA SELATAN",
   kopDesa: "DESA SANGKIMA",
   alamatKop: "Jl. Poros Sangatta - Bontang, Desa Sangkima, Kutai Timur",
-  signatureImage: "",
-  penandatanganNama: "",
 };
 
 /* ---------------------------------- PPID --------------------------------- */

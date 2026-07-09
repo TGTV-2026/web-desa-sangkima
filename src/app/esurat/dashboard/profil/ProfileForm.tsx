@@ -469,55 +469,75 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
               Scan Tanda Tangan (Khusus Penandatangan Surat)
             </h2>
           </div>
-          <div className="flex items-start gap-5">
-            <div className="w-32 h-24 shrink-0 bg-paper2/50 border border-line/70 rounded flex items-center justify-center relative overflow-hidden group">
-              {signatureImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={URL.createObjectURL(signatureImage)}
-                  alt="Tanda Tangan"
-                  className="w-full h-full object-contain p-2"
-                />
-              ) : user.signatureUrl && !signatureCleared ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.signatureUrl}
-                  alt="Tanda Tangan"
-                  className="w-full h-full object-contain p-2"
-                />
-              ) : (
-                <span className="text-xs text-inkmut/50 text-center p-2">Belum ada</span>
-              )}
-              {(signatureImage || (user.signatureUrl && !signatureCleared)) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSignatureImage(null);
-                    setSignatureCleared(true);
+          <div className="flex flex-col gap-2">
+            <span className="label-doc text-xs">Gambar tanda tangan (PNG transparan disarankan)</span>
+            <div className="flex items-center gap-3">
+              <div className="h-20 w-28 shrink-0 overflow-hidden border border-line bg-paper2/40">
+                {signatureImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={URL.createObjectURL(signatureImage)}
+                    alt="Pratinjau"
+                    className="h-full w-full object-contain p-2"
+                  />
+                ) : user.signatureUrl && !signatureCleared ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.signatureUrl}
+                    alt="Pratinjau"
+                    className="h-full w-full object-contain p-2"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-[10px] text-inkmut/50">
+                    Tanpa gambar
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <input
+                  id="signatureUpload"
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSignatureImage(file);
+                      setSignatureCleared(false);
+                    }
                   }}
-                  className="absolute inset-0 bg-ink/70 text-paper font-medium text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  Hapus
-                </button>
-              )}
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("signatureUpload")?.click()}
+                    className="btn-outline text-xs"
+                  >
+                    {(signatureImage || (user.signatureUrl && !signatureCleared)) ? "Ganti gambar" : "Unggah gambar"}
+                  </button>
+                  {(signatureImage || (user.signatureUrl && !signatureCleared)) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSignatureImage(null);
+                        setSignatureCleared(true);
+                      }}
+                      className="btn-outline text-xs text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                    >
+                      Hapus
+                    </button>
+                  )}
+                </div>
+                {(signatureImage || (user.signatureUrl && !signatureCleared)) && (
+                  <span className="max-w-[200px] truncate font-mono text-[10px] text-inkmut mt-1">
+                    {signatureImage ? signatureImage.name : user.signatureUrl?.split("/").pop()}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="flex-1">
-              <input
-                type="file"
-                accept="image/png, image/jpeg, image/webp"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setSignatureImage(file);
-                    setSignatureCleared(false);
-                  }
-                }}
-                className="input-doc w-full cursor-pointer p-0 file:border-0 file:bg-paper3 file:text-ink file:font-medium file:px-4 file:py-2.5 file:mr-4 file:cursor-pointer hover:file:bg-line/50 file:transition-colors text-sm"
-              />
-              <p className="text-xs text-inkmut mt-2">
-                Format: PNG/JPG (disarankan background transparan). Tanda tangan ini akan dicetak pada PDF surat yang disetujui.
-              </p>
-            </div>
+            <p className="text-xs text-inkmut mt-1">
+              Format: PNG/JPG (disarankan background transparan). Tanda tangan ini akan dicetak pada PDF surat yang disetujui.
+            </p>
           </div>
         </div>
       )}

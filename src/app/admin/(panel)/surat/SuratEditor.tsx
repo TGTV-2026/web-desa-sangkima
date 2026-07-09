@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/useToast";
 import type { SuratContent } from "@/server/types/content";
 import { saveSection } from "../actions";
-import ImageUploadField from "../ImageUploadField";
 
 export default function SuratEditor({ initial }: { initial: SuratContent }) {
   const { toast } = useToast();
@@ -64,31 +63,7 @@ export default function SuratEditor({ initial }: { initial: SuratContent }) {
         </div>
       </section>
 
-      {/* Tanda tangan */}
-      <section className="card-doc flex flex-col gap-4 p-6">
-        <span className="label-doc">Tanda Tangan Kepala Desa</span>
-        <ImageUploadField
-          label="Gambar tanda tangan (PNG transparan disarankan)"
-          value={v.signatureImage}
-          onChange={(url) => set("signatureImage", url)}
-          variant="graphic"
-        />
-        <div>
-          <label className="label-doc text-xs">
-            Nama penandatangan (opsional — kosongkan untuk pakai nama akun penyetuju)
-          </label>
-          <input
-            className="input-doc mt-1 w-full"
-            value={v.penandatanganNama}
-            onChange={(e) => set("penandatanganNama", e.target.value)}
-            placeholder="mis. H. Ahmad Hidayat"
-          />
-          <p className="mt-1 text-[11px] text-inkmut">
-            Biasanya biarkan kosong: nama otomatis mengikuti akun kepala desa
-            yang menyetujui surat.
-          </p>
-        </div>
-      </section>
+
 
       <div className="sticky bottom-0 flex justify-end border-t border-line bg-paper/95 py-4 backdrop-blur">
         <button
