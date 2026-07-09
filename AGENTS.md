@@ -1,8 +1,22 @@
 # @AGENTS.md
 
+## Prinsip Pengembangan — BACA DULU SEBELUM MENGUBAH APA PUN
+
+Proyek ini **sudah berjalan di produksi** (staging: https://desasangkima.cloud, deploy via Coolify) dan ditujukan untuk layanan warga desa sungguhan. Tugas di sini adalah **melanjutkan & mengembangkan sistem yang sudah ada, bukan menulis ulang.**
+
+- **Pahami dulu, ubah kemudian.** Sebelum menambah/mengubah apa pun, telusuri file & pola yang sudah ada di domain terkait (alur `schema → repository → service → route/action → komponen`). Ikuti pola itu; jangan bikin gaya baru yang bersaing dengannya.
+- **Perluas, jangan gantikan.** Tambah fitur sebagai *pendamping* dari yang sudah ada — contoh nyata: `galleryVideos` dibuat sebagai tabel terpisah di samping `galleryPhotos`, BUKAN merombak `galleryPhotos` jadi media polymorphic. Hindari refactor besar sistem yang sudah bekerja hanya demi "lebih rapi".
+- **Jangan hapus/ubah perilaku yang sudah jalan** tanpa alasan kuat dan konfirmasi. Kalau sesuatu terlihat "aneh", cari tahu **kenapa** dulu — sering kali itu keputusan sengaja (biasanya ada komentar Indonesia yang menjelaskan invariannya).
+- **Konsistensi > preferensi pribadi.** Pakai konvensi, styling (`globals.css`), util, dan struktur yang ditetapkan di dokumen ini, walau kamu terbiasa cara lain.
+- **Verifikasi sebelum menyebut selesai.** `npx tsc --noEmit` dan `npm run lint` wajib bersih. Tidak ada test runner otomatis — untuk perubahan berdampak runtime, uji manual (`npm run dev`).
+
 ## Tentang Proyek
 
-Backend + frontend Next.js App Router untuk **E-Surat Desa Sangkima** — layanan permohonan surat digital warga (login/register/OTP, ajukan surat, alur approval 2 tingkat staff→admin, terbit PDF + verifikasi QR). Seluruh aplikasi saat ini hidup di bawah route `/esurat/*` (`src/app/page.tsx` di root baru berupa halaman placeholder, belum modul lain).
+Web desa terpadu untuk **Desa Sangkima**, satu aplikasi Next.js berisi **tiga bagian** yang berbagi satu database, satu design system, dan pola layering yang sama:
+
+1. **Web Profil publik** (route group `(profile)` di root `/`) — beranda, berita, galeri album (foto **dan** video), PPID/informasi publik, produk koperasi, profil/struktur/statistik desa. Awalnya dari desain Stitch.
+2. **E-Surat** (`/esurat/*`) — layanan permohonan surat digital warga: login/register/OTP, ajukan surat, alur approval 2 tingkat staff→admin, terbit PDF + verifikasi QR.
+3. **CMS Admin** (`/admin/*`) — panel kelola konten Web Profil. Akun CMS (`cms_users`, peran `super_admin`/`editor`) **terpisah** dari akun warga E-Surat.
 
 ## Tech Stack
 
@@ -74,31 +88,61 @@ Penempatan komponen frontend mengikuti dua kategori:
 
 Hook bersama di `src/hooks/`: `useToast` (notifikasi) dan `useSubmitAction` (konsolidasi pola `busy state → fetch → toast sukses/gagal`, dipakai komponen client yang melakukan mutasi). Jangan paksakan `useSubmitAction` pada alur yang punya percabangan non-generik (mis. redirect khusus berdasarkan kode error tertentu) — biarkan komponen itu pakai fetch manual agar perilakunya tetap eksplisit.
 
+### Web Profil & CMS (pola layering sama, hanya sesi & mutasi beda)
+
+Bagian Web Profil publik dan CMS Admin memakai layering identik dengan E-Surat (`schema → repository → service → …`). Perbedaannya:
+
+- **Sesi CMS terpisah dari sesi warga.** `getCmsUser()` / `requireCmsUser()` / `requireSuperAdmin()` di `src/server/utils/cmsSession.ts` (cookie `cms_session`, tabel `cms_users`). Jangan campur dengan `getSessionUser()`/`getAuthUser()` milik E-Surat.
+- **Mutasi CMS lewat Server Action, bukan API route.** Tiap modul CMS punya `actions.ts` co-located (mis. `src/app/admin/(panel)/album/actions.ts`), pakai `requireCmsUser()`, return bentuk `{ success, message }` (tipe `AlbumResult` dst.), lalu `revalidatePath(...)` + `router.refresh()` di klien.
+- **Domain**: `news` (berita), galeri = `galleryAlbums`/`galleryPhotos`/`galleryVideos`, `ppidDocuments`, `products`, plus konten teks generik lewat registry `siteContent`. Semua mengikuti pola yang sama — cari domain terdekat sebagai contoh sebelum menambah yang baru.
+- **Upload berkas**: gambar via `saveProfileImage()` (`imageUpload.ts`), dokumen via `saveDocument()` (`documentUpload.ts`). Berkas disimpan **DI LUAR `public/`** (folder `uploads/` di root) dan disajikan lewat route handler `src/app/uploads/**/route.ts`, **bukan** static file Next.js (alasan: lihat "Realitas Deployment"). Saat menghapus konten, **hapus juga file fisiknya** (`deleteProfileImage`/`deleteDocument`) — jangan hanya hapus baris DB.
+- **Video galeri** = referensi eksternal YouTube/Instagram (tabel `galleryVideos`), tidak diunggah ke server — URL di-parse via `parseVideoUrl()`, playback via embed.
+
+## Realitas Deployment & Operasional (jangan diabaikan — sudah menyebabkan bug nyata)
+
+Deploy ke **Coolify** (VPS Hostinger Debian, build Nixpacks, MySQL & app dalam container terpisah). Push ke branch `staging` memicu auto-redeploy. Hal-hal yang WAJIB dijaga:
+
+- **Kode ≠ data.** `git push`/redeploy hanya mengirim **kode**. Isi database dan file di `uploads/` **tidak** ikut. Konten CMS diisi di produksi atau dimigrasi terpisah (mysqldump + copy file).
+- **Folder `uploads/` HARUS berupa persistent volume** (`/app/uploads` di Coolify). Tanpa itu, setiap redeploy menghapus semua foto/dokumen yang diunggah. Inilah alasan berkas disimpan di `uploads/` (bukan `public/` yang di-snapshot saat build) dan disajikan lewat route handler.
+- **Schema DB produksi di-update manual** saat ada tabel/kolom baru — jalankan `npx drizzle-kit push` ke DB produksi **sebelum** fitur dipakai, kalau tidak halaman terkait crash (pernah terjadi pada `gallery_videos`).
+- **`EMAIL_MODE=smtp`** wajib di produksi, kalau `console` warga tak menerima OTP dan tak bisa daftar.
+- **Base URL / QR** harus domain produksi (bukan `localhost`), kalau tidak verifikasi surat rusak.
+- **Super admin CMS pertama** tidak dibuat oleh seed biasa — pakai `src/server/db/seedCms.ts` atau endpoint setup sekali-pakai.
+- **Tailwind v4 membungkus semua varian `hover:`/`group-hover:` di `@media (hover: hover)`** → efek hover mati di perangkat sentuh (`hover: none`). Untuk reveal-on-hover yang tetap jalan di layar sentuh, pakai CSS eksplisit (lihat `.thumb-actions` di `globals.css`), bukan utility `group-hover:` Tailwind.
+
+Checklist lengkap sebelum go-live ada di `docs/TESTING-DEPLOYMENT.md`.
+
 ## Struktur Folder
 
 ```
 src/
 ├── app/
-│   ├── esurat/                  # seluruh aplikasi (auth, dashboard, API) hidup di sini
+│   ├── (profile)/               # Web Profil publik (root /): beranda, berita, galeri, ppid, produk, dll
+│   ├── admin/                   # CMS: login/ + (panel)/<modul>/ (page.tsx + actions.ts + form co-located) + api/upload*
+│   ├── esurat/                  # E-Surat: auth, dashboard, api/ (route + JSDoc @swagger)
 │   │   ├── api/                 # API routes (auth, letter-requests, letter-types, users, position)
 │   │   ├── dashboard/           # halaman ber-sesi: ajukan, jenis-surat, permohonan, surat
 │   │   ├── register/, verify-otp/, verifikasi/[code]/, api-docs/
 │   │   ├── LoginForm.tsx, page.tsx
+│   ├── uploads/                 # route handler penyaji berkas upload (bukan static public/)
 │   ├── layout.tsx, page.tsx, globals.css
 ├── components/
 │   ├── Toast.tsx, ToastProvider.tsx     # sistem notifikasi global
-│   └── esurat/                          # komponen domain lintas-halaman (lihat di atas)
-│       └── auth/                        # shell layout halaman auth (AuthSplitLayout, AuthFormHeader)
+│   ├── esurat/                          # komponen domain E-Surat lintas-halaman
+│   │   └── auth/                        # shell layout halaman auth (AuthSplitLayout, AuthFormHeader)
+│   └── profile/                         # komponen Web Profil (AlbumLightbox, YoutubeEmbed, InstagramEmbed, dll)
 ├── hooks/                        # useToast, useSubmitAction
-├── lib/                          # format.ts (formatTanggal/formatTanggalWaktu), swagger.ts
+├── lib/                          # format.ts (formatTanggal/formatTanggalWaktu), swagger.ts, uploadLimits.ts
 └── server/
-    ├── db/                       # koneksi Drizzle + schema/
+    ├── db/                       # koneksi Drizzle + schema/ + seed.ts (E-Surat) + seedCms.ts (super admin CMS)
     ├── middlewares/              # role.middleware.ts (getAuthUser), acl.middleware.ts (requireRole)
-    ├── repositories/             # akses data per domain
+    ├── repositories/             # akses data per domain (E-Surat + web profil/CMS)
     ├── services/                 # logika bisnis + DTO shaping per domain
     ├── types/                    # Zod schema + TypeScript type per domain (gabung, bukan terpisah)
-    └── utils/                    # session.ts, jwt.ts, hash.ts, otp.ts, letter-number.ts, upload.ts
+    └── utils/                    # session.ts, cmsSession.ts, jwt.ts, hash.ts, otp.ts, letter-number.ts, upload.ts, imageUpload.ts, documentUpload.ts, serveUpload.ts
 ```
+
+Folder `uploads/` (root proyek, di-gitignore) = tempat berkas terunggah disimpan di runtime; **wajib** dipetakan ke persistent volume di produksi (lihat "Realitas Deployment").
 
 `src/controllers/` ada tapi kosong — sisa struktur lama, jangan dipakai untuk kode baru.
 
