@@ -68,6 +68,7 @@ export default function AlbumPhotoManager({
   }
 
   function hapus(photoId: string) {
+    if (!confirm("Hapus foto ini? Tindakan ini tidak bisa dibatalkan.")) return;
     startTransition(async () => {
       const res = await deleteAlbumPhoto(photoId, albumId);
       if (res.success) {
@@ -145,8 +146,9 @@ export default function AlbumPhotoManager({
                     Sampul
                   </span>
                 )}
-                {/* Aksi (muncul saat hover / selalu di layar sentuh) */}
-                <div className="absolute inset-x-0 bottom-0 flex justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                {/* Aksi selalu tampil (bukan cuma saat hover) — tombol transparan tak terlihat
+                    bikin admin tak sengaja mengklik & menghapus foto tanpa sadar. */}
+                <div className="absolute inset-x-0 bottom-0 flex justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent p-1.5">
                   <button
                     type="button"
                     onClick={() => jadikanSampul(p.id)}
