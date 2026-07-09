@@ -178,8 +178,8 @@ const ROLES = ["user", "staff", "admin"] as const;
 
 export async function GET(req: Request) {
   try {
-    // staff juga boleh membaca daftar (untuk mencari pemohon saat input pengajuan manual
-    // & kelola akun warga), tapi dibatasi hanya melihat akun ber-role warga
+    // staff juga boleh membaca daftar untuk mencari pemohon saat input pengajuan manual
+    // (bisa mencari semua user termasuk staff sendiri)
     const auth = await requireRole(req, ["staff", "admin"]);
 
     const { searchParams } = new URL(req.url);
@@ -188,11 +188,9 @@ export async function GET(req: Request) {
     const q = searchParams.get("q") ?? undefined;
     const roleParam = searchParams.get("role");
     const role =
-      auth.role === "staff"
-        ? "user"
-        : roleParam && ROLES.includes(roleParam as (typeof ROLES)[number])
-          ? (roleParam as (typeof ROLES)[number])
-          : undefined;
+      roleParam && ROLES.includes(roleParam as (typeof ROLES)[number])
+        ? (roleParam as (typeof ROLES)[number])
+        : undefined;
 
     const result = await userService.list(page, limit, q, role);
 
