@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { galleryRepository } from "../repositories/gallery.repository";
+import { deleteProfileImage } from "../utils/imageUpload";
 import {
   albumInputSchema,
   makeAlbumSlug,
@@ -138,6 +139,8 @@ export const galleryService = {
   },
 
   async removeAlbum(id: string): Promise<void> {
+    const photos = await galleryRepository.findPhotosByAlbum(id);
+    await Promise.all(photos.map((p) => deleteProfileImage(p.url)));
     await galleryRepository.removeAlbum(id);
   },
 
@@ -158,6 +161,8 @@ export const galleryService = {
   },
 
   async removePhoto(id: string): Promise<void> {
+    const photo = await galleryRepository.findPhotoById(id);
+    if (photo) await deleteProfileImage(photo.url);
     await galleryRepository.removePhoto(id);
   },
 

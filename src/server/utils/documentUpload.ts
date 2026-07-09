@@ -50,3 +50,13 @@ export async function saveDocument(file: {
   await fs.writeFile(path.join(PUBLIC_DIR, storedName), buffer);
   return `${PUBLIC_URL_BASE}/${storedName}`;
 }
+
+/** Hapus dokumen berdasarkan URL publiknya. Aman dipanggil walau berkas sudah tak ada/kosong. */
+export async function deleteDocument(url: string | null | undefined): Promise<void> {
+  if (!url) return;
+  try {
+    await fs.unlink(path.join(PUBLIC_DIR, path.basename(url)));
+  } catch {
+    // sudah terhapus / tak ada — abaikan
+  }
+}

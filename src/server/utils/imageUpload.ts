@@ -47,3 +47,13 @@ export async function saveProfileImage(
   await fs.writeFile(path.join(PUBLIC_DIR, storedName), buffer);
   return `${PUBLIC_URL_BASE}/${storedName}`;
 }
+
+/** Hapus file gambar berdasarkan URL publiknya. Aman dipanggil walau berkas sudah tak ada/kosong. */
+export async function deleteProfileImage(url: string | null | undefined): Promise<void> {
+  if (!url) return;
+  try {
+    await fs.unlink(path.join(PUBLIC_DIR, path.basename(url)));
+  } catch {
+    // sudah terhapus / tak ada — abaikan
+  }
+}
