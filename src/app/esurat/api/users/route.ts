@@ -178,8 +178,8 @@ const ROLES = ["user", "staff", "admin"] as const;
 
 export async function GET(req: Request) {
   try {
-    // staff juga boleh membaca daftar (untuk mencari pemohon saat input pengajuan manual
-    // & kelola akun warga), tapi dibatasi hanya melihat akun ber-role warga
+    // staff juga boleh membaca daftar untuk mencari pemohon saat input pengajuan manual
+    // (bisa mencari semua user termasuk staff sendiri)
     const auth = await requireRole(req, ["staff", "admin"]);
 
     const { searchParams } = new URL(req.url);
@@ -188,11 +188,9 @@ export async function GET(req: Request) {
     const q = searchParams.get("q") ?? undefined;
     const roleParam = searchParams.get("role");
     const role =
-      auth.role === "staff"
-        ? "user"
-        : roleParam && ROLES.includes(roleParam as (typeof ROLES)[number])
-          ? (roleParam as (typeof ROLES)[number])
-          : undefined;
+      roleParam && ROLES.includes(roleParam as (typeof ROLES)[number])
+        ? (roleParam as (typeof ROLES)[number])
+        : undefined;
 
     const result = await userService.list(page, limit, q, role);
 
@@ -209,11 +207,40 @@ export async function GET(req: Request) {
   }
 }
 
+import { saveProfileImage } from "@/server/utils/imageUpload";
+
+async function parseUserBody(req: Request) {
+  const contentType = req.headers.get("content-type") ?? "";
+  if (!contentType.includes("multipart/form-data")) {
+    return await req.json();
+  }
+
+  const fd = await req.formData();
+  const body: Record<string, any> = {};
+  for (const [key, entry] of fd.entries()) {
+    if (key === "signatureImage" && entry instanceof File && entry.size > 0) {
+      const buffer = Buffer.from(await entry.arrayBuffer());
+      const url = await saveProfileImage(
+        { mime: entry.type, size: entry.size, buffer },
+        { variant: "graphic" }
+      );
+      body.signatureUrl = url;
+    } else if (typeof entry === "string") {
+      if (entry === "null" || entry === "") {
+        body[key] = null;
+      } else {
+        body[key] = entry;
+      }
+    }
+  }
+  return body;
+}
+
 export async function POST(req: Request) {
   try {
     const auth = await requireRole(req, ["staff", "admin"]);
 
-    const body = await req.json();
+    const body = await parseUserBody(req);
     // staff hanya boleh menambah akun warga, walaupun body memuat role lain
     if (auth.role === "staff") body.role = "user";
     const data = await userService.createByAdmin(body);

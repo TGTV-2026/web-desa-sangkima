@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSubmitAction } from "@/hooks/useSubmitAction";
 import type { LetterStatus } from "@/server/types/letter";
 import RejectionPanel from "./RejectionPanel";
+import SequencePanel from "./SequencePanel";
 
 // Kategori jabatan — sinkron dengan konstanta di letterRequest.service.ts
 const VERIFIER_CATEGORIES = ["Kepala Urusan"];
@@ -21,6 +22,7 @@ export default function PermohonanActions({ id, status, role, positionCategory }
   const router = useRouter();
   const { busy, submit } = useSubmitAction();
   const [showReject, setShowReject] = useState(false);
+  const [showSequence, setShowSequence] = useState(false);
 
   const isVerifier = role === "staff" && !!positionCategory && VERIFIER_CATEGORIES.includes(positionCategory);
   const isApprover = role === "staff" && !!positionCategory && APPROVER_CATEGORIES.includes(positionCategory);
@@ -49,7 +51,13 @@ export default function PermohonanActions({ id, status, role, positionCategory }
 
   return (
     <div className="mt-8 border-t border-line pt-6">
-      {showReject ? (
+      {showSequence ? (
+        <SequencePanel
+          busy={busy}
+          onConfirm={(sequence) => doAction({ action: "process", sequence }, "Permohonan mulai diproses.")}
+          onCancel={() => setShowSequence(false)}
+        />
+      ) : showReject ? (
         <RejectionPanel
           busy={busy}
           onConfirm={(reason) => doAction({ action: "reject", reason }, "Permohonan ditolak.")}
@@ -60,7 +68,7 @@ export default function PermohonanActions({ id, status, role, positionCategory }
           {/* DIAJUKAN: Kepala Urusan bisa proses & tolak */}
           {status === "DIAJUKAN" && isVerifier && (
             <button
-              onClick={() => doAction({ action: "process" }, "Permohonan mulai diproses.")}
+              onClick={() => setShowSequence(true)}
               disabled={busy}
               className="btn-primary flex-1"
             >

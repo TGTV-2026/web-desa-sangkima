@@ -105,10 +105,51 @@ export async function GET(req: Request) {
   }
 }
 
+import { saveProfileImage, deleteProfileImage } from "@/server/utils/imageUpload";
+
+async function parseUserBody(req: Request) {
+  const contentType = req.headers.get("content-type") ?? "";
+  if (!contentType.includes("multipart/form-data")) {
+    return await req.json();
+  }
+
+  const fd = await req.formData();
+  const body: Record<string, any> = {};
+  for (const [key, entry] of fd.entries()) {
+    if (key === "signatureImage" && entry instanceof File && entry.size > 0) {
+      const buffer = Buffer.from(await entry.arrayBuffer());
+      const url = await saveProfileImage(
+        { mime: entry.type, size: entry.size, buffer },
+        { variant: "graphic" }
+      );
+      body.signatureUrl = url;
+    } else if (typeof entry === "string") {
+      if (entry === "null" || entry === "") {
+        body[key] = null;
+      } else {
+        body[key] = entry;
+      }
+    }
+  }
+  return body;
+}
+
 export async function PUT(req: Request) {
   try {
     const auth = await requireRole(req, ["user", "staff", "admin"]);
-    const body = await req.json();
+    
+    const user = await userService.getById(auth.id);
+    const body = await parseUserBody(req);
+    
+    // cleanup old image if changed
+    if (
+      user?.signatureUrl &&
+      ("signatureUrl" in body) &&
+      body.signatureUrl !== user.signatureUrl
+    ) {
+      await deleteProfileImage(user.signatureUrl);
+    }
+
     const data = await userService.updateProfile(auth.id, body);
 
     return NextResponse.json(
