@@ -96,6 +96,7 @@ export type LetterPdfInput = {
   signatory?: {
     name: string;
     positionCategory: string;
+    signatureUrl?: string | null;
   } | null;
 };
 
@@ -210,11 +211,25 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
   
   sy -= 70; // ruang tanda tangan
 
-  // Gambar TTD dari pengaturan CMS (disimpan di public/<url>), fallback ke file lama.
+  // Gambar TTD: Prioritaskan dari profil penandatangan, lalu pengaturan CMS, lalu fallback.
   try {
     let ttdBytes: Buffer | null = null;
     let ext = ".png";
-    if (surat.signatureImage) {
+
+    if (input.signatory?.signatureUrl) {
+      const p = path.join(
+        process.cwd(),
+        "uploads",
+        "profil",
+        path.basename(input.signatory.signatureUrl)
+      );
+      if (fs.existsSync(p)) {
+        ttdBytes = fs.readFileSync(p);
+        ext = path.extname(p).toLowerCase();
+      }
+    }
+
+    if (!ttdBytes && surat.signatureImage) {
       const p = path.join(
         process.cwd(),
         "public",

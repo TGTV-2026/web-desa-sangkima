@@ -192,6 +192,35 @@ import {
   handleACLError,
 } from "@/server/middlewares/acl.middleware";
 
+import { saveProfileImage, deleteProfileImage } from "@/server/utils/imageUpload";
+
+async function parseUserBody(req: Request) {
+  const contentType = req.headers.get("content-type") ?? "";
+  if (!contentType.includes("multipart/form-data")) {
+    return await req.json();
+  }
+
+  const fd = await req.formData();
+  const body: Record<string, any> = {};
+  for (const [key, entry] of fd.entries()) {
+    if (key === "signatureImage" && entry instanceof File && entry.size > 0) {
+      const buffer = Buffer.from(await entry.arrayBuffer());
+      const url = await saveProfileImage(
+        { mime: entry.type, size: entry.size, buffer },
+        { variant: "graphic" }
+      );
+      body.signatureUrl = url;
+    } else if (typeof entry === "string") {
+      if (entry === "null" || entry === "") {
+        body[key] = null;
+      } else {
+        body[key] = entry;
+      }
+    }
+  }
+  return body;
+}
+
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(req: Request, { params }: RouteContext) {
@@ -223,15 +252,17 @@ export async function GET(req: Request, { params }: RouteContext) {
 }
 
 export async function PUT(req: Request, { params }: RouteContext) {
+  let uploadedUrl: string | null = null;
   try {
     const auth = await requireRole(req, ["staff", "admin"]);
 
     const { id } = await params;
-    const body = await req.json();
+    const body = await parseUserBody(req);
+    uploadedUrl = body.signatureUrl ?? null;
+    const target = await userService.getById(id).catch(() => null);
 
     if (auth.role === "staff") {
       // staff hanya boleh mengedit akun warga, dan tidak pernah boleh ubah role
-      const target = await userService.getById(id).catch(() => null);
       if (!target || target.role !== "user") {
         return NextResponse.json(
           { success: false, message: "Anda tidak berhak mengedit akun ini" },
@@ -242,7 +273,13 @@ export async function PUT(req: Request, { params }: RouteContext) {
     }
     // admin tidak boleh mengubah role akun sendiri (cegah self-demote/escalate tak sengaja)
     if (auth.id === id) delete body.role;
+    
     const data = await userService.update(id, body);
+
+    // Jika ada gambar tanda tangan baru atau user menghapus gambar (signatureUrl === null), hapus yang lama
+    if (target && target.signatureUrl && (body.signatureUrl !== undefined)) {
+       await deleteProfileImage(target.signatureUrl);
+    }
 
     return NextResponse.json(
       { success: true, message: "User berhasil diperbarui", data },

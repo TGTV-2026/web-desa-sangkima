@@ -120,6 +120,7 @@ async function renderPdf(
       signatory = {
         name: approver.user.name,
         positionCategory: approver.positionCategory ?? "Kepala Desa",
+        signatureUrl: approver.user.signatureUrl ?? null,
       };
     }
   }

@@ -30,6 +30,7 @@ export const createUserByAdminSchema = z
     citizenship: z.enum(["wni", "wna"]).optional().nullable(),
     status: z.enum(maritalStatus).optional().nullable(),
     education: z.enum(educations).optional().nullable(),
+    signatureUrl: z.string().optional().nullable(),
   })
   .refine((data) => data.role !== "staff" || !!data.positionId, {
     message: "Jabatan wajib diisi untuk role staff",
@@ -62,6 +63,7 @@ export const updateUserSchema = z
     citizenship: z.enum(["wni", "wna"]).optional().nullable(),
     status: z.enum(maritalStatus).optional().nullable(),
     education: z.enum(educations).optional().nullable(),
+    signatureUrl: z.string().optional().nullable(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "Minimal satu field harus diisi",
@@ -115,6 +117,7 @@ export type UserDTO = {
   citizenship: string | null;
   status: string | null;
   education: string | null;
+  signatureUrl: string | null;
   emailVerifiedAt: Date | null;
   createdAt: Date | null;
   updatedAt: Date | null;

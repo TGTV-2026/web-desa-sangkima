@@ -31,6 +31,7 @@ function toDTO(row: UserRow): UserDTO {
     citizenship: row.user.citizenship ?? null,
     status: row.user.status ?? null,
     education: row.user.education ?? null,
+    signatureUrl: row.user.signatureUrl ?? null,
     emailVerifiedAt: row.user.emailVerifiedAt ?? null,
     createdAt: row.user.createdAt ?? null,
     updatedAt: row.user.updatedAt ?? null,

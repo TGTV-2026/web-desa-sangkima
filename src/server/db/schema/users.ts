@@ -61,6 +61,7 @@ export const users = mysqlTable("users", {
   status: mysqlEnum(maritalStatus),
   education: mysqlEnum(educations),
   emailVerifiedAt: datetime("email_verified_at"),
+  signatureUrl: varchar("signature_url", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   deletedAt: datetime("deleted_at"),
