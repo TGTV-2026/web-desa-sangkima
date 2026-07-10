@@ -77,8 +77,34 @@ export default function ContactMap({
       const navHref = (lat: number, lng: number, label: string) => {
         if (isAndroid)
           return `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(label)})`;
+        // Href iOS = Apple Maps sebagai fallback bila JS mati; app dipilih via klik.
         if (isIOS) return `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
         return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+      };
+
+      // iOS tak punya menu "Buka dengan". Coba buka Google Maps app dulu; kalau
+      // tak terpasang (halaman tetap terlihat setelah jeda), jatuh ke Apple Maps.
+      const openIosNav = (lat: number, lng: number) => {
+        const googleApp = `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`;
+        const appleMaps = `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+        let done = false;
+        const timer = setTimeout(() => {
+          if (!done) window.location.href = appleMaps;
+        }, 1500);
+        // App terbuka → halaman tersembunyi/ditinggalkan → batalkan fallback.
+        const cancel = () => {
+          done = true;
+          clearTimeout(timer);
+        };
+        window.addEventListener("pagehide", cancel, { once: true });
+        document.addEventListener(
+          "visibilitychange",
+          () => {
+            if (document.hidden) cancel();
+          },
+          { once: true },
+        );
+        window.location.href = googleApp;
       };
 
       const bounds: [number, number][] = [];
@@ -139,9 +165,15 @@ export default function ContactMap({
         const navBtn = document.createElement("a");
         navBtn.className = "peta-nav-btn";
         navBtn.href = navHref(t.lat, t.lng, t.nama);
-        // Desktop buka tab baru (situs tetap terbuka); di HP biarkan navigasi
-        // langsung agar OS memunculkan app/menu tanpa tab kosong.
-        if (!isMobile) {
+        if (isIOS) {
+          // Klik iOS: coba Google Maps app dulu, fallback Apple Maps.
+          navBtn.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            openIosNav(t.lat, t.lng);
+          });
+        } else if (!isMobile) {
+          // Desktop buka tab baru (situs tetap terbuka). Android: navigasi
+          // langsung agar OS memunculkan menu "Buka dengan" tanpa tab kosong.
           navBtn.target = "_blank";
           navBtn.rel = "noopener noreferrer";
         }
