@@ -79,6 +79,9 @@ export default function LetterDetailCard({
                 issued={
                   request.status === "DISETUJUI" || request.status === "SELESAI"
                 }
+                canDownloadNoSig={
+                  request.status === "DIPROSES" || request.status === "DISETUJUI" || request.status === "SELESAI"
+                }
                 refreshKey={`${request.status}-${request.purpose}-${JSON.stringify(request.data)}`}
               />
             </div>

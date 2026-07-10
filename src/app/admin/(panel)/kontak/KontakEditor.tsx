@@ -7,7 +7,14 @@ import { saveSection } from "../actions";
 import ImageUploadField from "../ImageUploadField";
 
 // Kategori titik peta (selaras KATEGORI_WARNA di peta-data.ts) → warna marker.
-const KATEGORI = ["Wisata Alam", "Budaya", "UMKM", "Pemerintahan"];
+const KATEGORI = [
+  "Wisata Alam",
+  "Budaya",
+  "UMKM",
+  "Pemerintahan",
+  "Ibadah",
+  "Pendidikan",
+];
 
 // Bentuk titik untuk form: lat/lng string agar nyaman mengetik desimal.
 type TitikForm = {
@@ -31,6 +38,8 @@ export default function KontakEditor({
   const [email, setEmail] = useState(initial.email);
   const [whatsapp, setWhatsapp] = useState(initial.whatsapp);
   const [instagram, setInstagram] = useState(initial.instagram);
+  const [facebook, setFacebook] = useState(initial.facebook);
+  const [tiktok, setTiktok] = useState(initial.tiktok);
   const [centerLat, setCenterLat] = useState(String(initial.petaCenter[0]));
   const [centerLng, setCenterLng] = useState(String(initial.petaCenter[1]));
   const [titik, setTitik] = useState<TitikForm[]>(
@@ -52,6 +61,8 @@ export default function KontakEditor({
         email,
         whatsapp: whatsapp.trim(),
         instagram: instagram.trim(),
+        facebook: facebook.trim(),
+        tiktok: tiktok.trim(),
         petaCenter: [Number(centerLat), Number(centerLng)],
         titik: titik.map((t) => ({
           nama: t.nama,
@@ -99,6 +110,24 @@ export default function KontakEditor({
               value={instagram}
               onChange={(e) => setInstagram(e.target.value)}
               placeholder="https://instagram.com/..."
+            />
+          </div>
+          <div>
+            <label className="label-doc text-xs">Link Facebook</label>
+            <input
+              className="input-doc mt-1 w-full"
+              value={facebook}
+              onChange={(e) => setFacebook(e.target.value)}
+              placeholder="https://facebook.com/..."
+            />
+          </div>
+          <div>
+            <label className="label-doc text-xs">Link TikTok</label>
+            <input
+              className="input-doc mt-1 w-full"
+              value={tiktok}
+              onChange={(e) => setTiktok(e.target.value)}
+              placeholder="https://tiktok.com/@..."
             />
           </div>
         </div>

@@ -10,9 +10,10 @@ import type { UserDTO } from "@/server/types/user";
 // Re-declare agar tidak import langsung dari server types di client
 type ProfileUser = Pick<
   UserDTO,
-  | "id" | "name" | "nik" | "email"
+  | "id" | "name" | "nik" | "email" | "role"
   | "gender" | "placeOfBirth" | "birthday" | "religion"
   | "address" | "job" | "telp" | "citizenship" | "status" | "education"
+  | "positionName" | "signatureUrl"
 >;
 
 const GENDER_OPTIONS = [
@@ -105,6 +106,8 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
   const [citizenship, setCitizenship] = useState(user.citizenship ?? "");
   const [status, setStatus] = useState(user.status ?? "");
   const [education, setEducation] = useState(user.education ?? "");
+  const [signatureImage, setSignatureImage] = useState<File | null>(null);
+  const [signatureCleared, setSignatureCleared] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -145,25 +148,29 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
 
     if (!validateAll()) return;
 
-    const payload = {
-      gender,
-      placeOfBirth,
-      birthday,
-      religion,
-      address,
-      job,
-      telp,
-      citizenship,
-      status,
-      education,
-    };
+    const fd = new FormData();
+    fd.append("gender", gender);
+    fd.append("placeOfBirth", placeOfBirth);
+    fd.append("birthday", birthday);
+    fd.append("religion", religion);
+    fd.append("address", address);
+    fd.append("job", job);
+    fd.append("telp", telp);
+    fd.append("citizenship", citizenship);
+    fd.append("status", status);
+    fd.append("education", education);
+
+    if (signatureImage) {
+      fd.append("signatureImage", signatureImage);
+    } else if (signatureCleared) {
+      fd.append("signatureUrl", "null");
+    }
 
     await submit(
       () =>
         fetch("/esurat/api/users/profile", {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: fd,
         }),
       {
         successMessage:
@@ -452,6 +459,88 @@ export default function ProfileForm({ user }: { user: ProfileUser }) {
           </div>
         </div>
       </div>
+
+      {/* ─── SECTION 4: SCAN TANDA TANGAN (Khusus Penandatangan) ─── */}
+      {(user.positionName === "Kepala Desa" || user.positionName === "Sekretaris Desa") && (
+        <div className="border-t border-line/50 pt-5">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-1 h-3 bg-pine-600 rounded-full shrink-0" />
+            <h2 className="font-serif text-[18px] font-medium text-pine-900 uppercase">
+              Scan Tanda Tangan (Khusus Penandatangan Surat)
+            </h2>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="label-doc text-xs">Gambar tanda tangan (PNG transparan disarankan)</span>
+            <div className="flex items-center gap-3">
+              <div className="h-20 w-28 shrink-0 overflow-hidden border border-line bg-paper2/40">
+                {signatureImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={URL.createObjectURL(signatureImage)}
+                    alt="Pratinjau"
+                    className="h-full w-full object-contain p-2"
+                  />
+                ) : user.signatureUrl && !signatureCleared ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={user.signatureUrl}
+                    alt="Pratinjau"
+                    className="h-full w-full object-contain p-2"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-[10px] text-inkmut/50">
+                    Tanpa gambar
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <input
+                  id="signatureUpload"
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSignatureImage(file);
+                      setSignatureCleared(false);
+                    }
+                  }}
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("signatureUpload")?.click()}
+                    className="btn-outline text-xs"
+                  >
+                    {(signatureImage || (user.signatureUrl && !signatureCleared)) ? "Ganti gambar" : "Unggah gambar"}
+                  </button>
+                  {(signatureImage || (user.signatureUrl && !signatureCleared)) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSignatureImage(null);
+                        setSignatureCleared(true);
+                      }}
+                      className="btn-outline text-xs text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                    >
+                      Hapus
+                    </button>
+                  )}
+                </div>
+                {(signatureImage || (user.signatureUrl && !signatureCleared)) && (
+                  <span className="max-w-[200px] truncate font-mono text-[10px] text-inkmut mt-1">
+                    {signatureImage ? signatureImage.name : user.signatureUrl?.split("/").pop()}
+                  </span>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-inkmut mt-1">
+              Format: PNG/JPG (disarankan background transparan). Tanda tangan ini akan dicetak pada PDF surat yang disetujui.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ─── SUBMIT ─── */}
       <div className="pt-2">

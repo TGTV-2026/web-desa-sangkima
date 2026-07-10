@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "1912571b-90e7-4448-a28f-0cff9c9f3bf2",
+  "id": "bcd6b1b7-c526-4a22-bcbd-a447d64fee21",
   "prevId": "4eb38a3b-8c5f-4d5b-a72c-3a7e5d5e7b64",
   "tables": {
     "cms_users": {
@@ -86,94 +86,6 @@
           ]
         }
       },
-      "checkConstraint": {}
-    },
-    "cms_user_tokens": {
-      "name": "cms_user_tokens",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "cms_user_id": {
-          "name": "cms_user_id",
-          "type": "varchar(128)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "token": {
-          "name": "token",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "type": {
-          "name": "type",
-          "type": "enum('EmailChange','PasswordReset')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "meta": {
-          "name": "meta",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "used_at": {
-          "name": "used_at",
-          "type": "datetime",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "(now())"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "cms_user_tokens_cms_user_id_cms_users_id_fk": {
-          "name": "cms_user_tokens_cms_user_id_cms_users_id_fk",
-          "tableFrom": "cms_user_tokens",
-          "tableTo": "cms_users",
-          "columnsFrom": [
-            "cms_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "cms_user_tokens_id": {
-          "name": "cms_user_tokens_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
       "checkConstraint": {}
     },
     "gallery_albums": {
@@ -543,6 +455,13 @@
         "email_verified_at": {
           "name": "email_verified_at",
           "type": "datetime",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "signature_url": {
+          "name": "signature_url",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

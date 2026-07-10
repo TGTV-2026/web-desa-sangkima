@@ -311,6 +311,7 @@ export const userRepository = {
       citizenship: data.citizenship ?? null,
       status: data.status ?? null,
       education: data.education ?? null,
+      signatureUrl: data.signatureUrl ?? null,
     });
     return this.findByIdWithPosition(newId);
   },

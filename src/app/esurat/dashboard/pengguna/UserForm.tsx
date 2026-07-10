@@ -73,6 +73,8 @@ export default function UserForm(props: Props) {
   const [citizenship, setCitizenship] = useState(initial?.citizenship ?? "");
   const [status, setStatus] = useState(initial?.status ?? "");
   const [education, setEducation] = useState(initial?.education ?? "");
+  const [signatureImage, setSignatureImage] = useState<File | null>(null);
+  const [clearSignature, setClearSignature] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isWarga = role === "user";
@@ -103,32 +105,38 @@ export default function UserForm(props: Props) {
     setErrors(fieldErrors);
     if (Object.values(fieldErrors).some(Boolean)) return;
 
-    const payload: Record<string, string | null> = {
-      name,
-      email,
-      nik,
-      role,
-      positionId: isWarga ? null : positionId || null,
-      religion: religion || null,
-      address: address || null,
-      birthday: birthday || null,
-      placeOfBirth: placeOfBirth || null,
-      job: job || null,
-      gender: gender || null,
-      telp: telp || null,
-      citizenship: citizenship || null,
-      status: status || null,
-      education: education || null,
-    };
-    if (password) payload.password = password;
+    const fd = new FormData();
+    if (name) fd.append("name", name);
+    if (email) fd.append("email", email);
+    if (nik) fd.append("nik", nik);
+    if (role) fd.append("role", role);
+    if (!isWarga && positionId) fd.append("positionId", positionId);
+    else fd.append("positionId", "null");
+    
+    if (religion) fd.append("religion", religion); else fd.append("religion", "null");
+    if (address) fd.append("address", address); else fd.append("address", "null");
+    if (birthday) fd.append("birthday", birthday); else fd.append("birthday", "null");
+    if (placeOfBirth) fd.append("placeOfBirth", placeOfBirth); else fd.append("placeOfBirth", "null");
+    if (job) fd.append("job", job); else fd.append("job", "null");
+    if (gender) fd.append("gender", gender); else fd.append("gender", "null");
+    if (telp) fd.append("telp", telp); else fd.append("telp", "null");
+    if (citizenship) fd.append("citizenship", citizenship); else fd.append("citizenship", "null");
+    if (status) fd.append("status", status); else fd.append("status", "null");
+    if (education) fd.append("education", education); else fd.append("education", "null");
+    if (password) fd.append("password", password);
+
+    if (signatureImage) {
+      fd.append("signatureImage", signatureImage);
+    } else if (clearSignature) {
+      fd.append("signatureUrl", "null");
+    }
 
     const isEdit = props.mode === "edit";
     await submit(
       () =>
         fetch(isEdit ? `/esurat/api/users/${props.user.id}` : "/esurat/api/users", {
           method: isEdit ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: fd,
         }),
       {
         successMessage: isEdit ? "Pengguna berhasil diperbarui." : "Pengguna baru berhasil dibuat.",
@@ -272,6 +280,55 @@ export default function UserForm(props: Props) {
         id="address" label="Alamat" type="textarea" value={address}
         onChange={setAddress} optionalHint
       />
+
+      {(() => {
+        const selectedPosition = props.positions.find((p) => p.id === positionId);
+        const isSignatory = selectedPosition?.category === "Kepala Desa" || selectedPosition?.category === "Sekretaris Desa";
+        if (!isSignatory) return null;
+
+        const currentSignatureUrl = props.mode === "edit" ? props.user.signatureUrl : null;
+        const displayUrl = signatureImage ? URL.createObjectURL(signatureImage) : (!clearSignature ? currentSignatureUrl : null);
+
+        return (
+          <div className="flex flex-col gap-2 mt-2">
+            <label className="label-doc">Scan Tanda Tangan (Khusus Penandatangan Surat)</label>
+            <div className="flex items-start gap-4 flex-wrap">
+              {displayUrl && (
+                <div className="border border-line/50 p-2 rounded-sm bg-white shrink-0">
+                  <img src={displayUrl} alt="Tanda Tangan" className="h-16 object-contain" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSignatureImage(null);
+                      setClearSignature(true);
+                    }}
+                    className="text-xs text-danger font-semibold mt-2 block w-full text-center hover:underline"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              )}
+              <div className="flex-1 min-w-[200px]">
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg"
+                  className="input-doc w-full text-sm py-2 px-3"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSignatureImage(file);
+                      setClearSignature(false);
+                    }
+                  }}
+                />
+                <p className="text-[11px] text-inkmut mt-1">
+                  Format: PNG/JPG (disarankan background transparan). Tanda tangan ini akan dicetak pada PDF surat yang disetujui.
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="">
         <button type="submit" disabled={busy} className="btn-primary w-full disabled:opacity-60">

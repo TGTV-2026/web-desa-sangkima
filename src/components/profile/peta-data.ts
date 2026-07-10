@@ -1,7 +1,10 @@
 // Konfigurasi peta kontak — modul biasa (bukan "use client") agar bisa dipakai
 // Server Component (ContactSection) maupun Client Component (ContactMap).
 //
-// >>> EDIT DAFTAR PIN DI BAWAH (TITIK) untuk menambah/mengubah titik peta. <<<
+// CATATAN: sumber titik peta yang tampil di publik adalah konten CMS
+// (`content.titik`, default `defaultKontak` di src/server/types/content.ts),
+// BUKAN konstanta TITIK di bawah — TITIK/PETA_CENTER hanya cadangan/referensi.
+// Yang benar-benar dipakai lintas komponen dari file ini: KATEGORI_WARNA.
 
 export interface TitikPeta {
   nama: string;
@@ -12,58 +15,81 @@ export interface TitikPeta {
   kategori: string; // harus salah satu key KATEGORI_WARNA
 }
 
+// Warna fallback bila kategori titik tak terdaftar di KATEGORI_WARNA (pine-700).
+export const WARNA_DEFAULT = "#275138";
+
 // Warna marker per kategori (selaras palet desain). Tambah kategori baru di sini.
 export const KATEGORI_WARNA: Record<string, string> = {
   "Wisata Alam": "#275138", // pine-700
   Budaya: "#8f6a1e", // brass
   UMKM: "#9c3a28", // oxide
   Pemerintahan: "#14291f", // pine-900
+  Ibadah: "#2f7a63", // hijau-teal — rumah ibadah
+  Pendidikan: "#35618e", // biru arsip — sekolah
 };
 
-// Pusat & zoom awal peta — ganti dengan koordinat tengah area desa.
-export const PETA_CENTER: [number, number] = [0.4067, 117.539];
+// Pusat & zoom awal peta — cadangan; sumber publik ada di content.ts (petaCenter).
+export const PETA_CENTER: [number, number] = [0.3789, 117.5138];
 
-// Daftar pin. Koordinat di bawah masih PERKIRAAN area Sangkima — ganti dengan
-// lat/lng asli tiap lokasi. Hover marker memunculkan gambar + nama + deskripsi.
+// Cadangan/referensi titik (lihat catatan di atas). Titik = masjid/mushola &
+// sekolah di sekitar Sangkima, koordinat dari Google Maps (plus code). Foto
+// memakai placeholder karena belum ada foto asli lokasi.
 export const TITIK: TitikPeta[] = [
   {
-    nama: "Kantor Desa Sangkima",
+    nama: "Kantor Desa & BPD Sangkima",
     kategori: "Pemerintahan",
-    lat: 0.4035,
-    lng: 117.538,
-    gambar: "/profile/hero-sangkima.jpg",
-    deskripsi: "Pusat pelayanan administrasi dan pemerintahan Desa Sangkima.",
+    lat: 0.38081,
+    lng: 117.51381,
+    gambar: "/profile/peta/placeholder.svg",
+    deskripsi:
+      "Pusat pelayanan administrasi dan pemerintahan Desa Sangkima (kantor BPD).",
   },
   {
-    nama: "Hutan Lindung Sangkima",
-    kategori: "Wisata Alam",
-    lat: 0.4112,
-    lng: 117.529,
-    gambar: "/profile/galeri/hutan-lindung.jpg",
-    deskripsi: "Kawasan konservasi dengan kanopi hutan hujan tropis Borneo.",
+    nama: "Masjid Miftahul Khair",
+    kategori: "Ibadah",
+    lat: 0.37731,
+    lng: 117.51606,
+    gambar: "/profile/peta/placeholder.svg",
+    deskripsi: "Masjid warga di lingkungan Desa Sangkima.",
   },
   {
-    nama: "Sungai Sangkima",
-    kategori: "Wisata Alam",
-    lat: 0.398,
-    lng: 117.547,
-    gambar: "/profile/galeri/sungai-sangkima.jpg",
-    deskripsi: "Aliran sungai jernih untuk susur sungai dan ekowisata.",
+    nama: "Masjid Baitul Ma'mur Sangkima",
+    kategori: "Ibadah",
+    lat: 0.38106,
+    lng: 117.51581,
+    gambar: "/profile/peta/placeholder.svg",
+    deskripsi: "Masjid jamaah di kawasan Desa Sangkima.",
   },
   {
-    nama: "Sentra Kerajinan Rotan",
-    kategori: "UMKM",
-    lat: 0.406,
-    lng: 117.544,
-    gambar: "/profile/galeri/kerajinan-rotan.jpg",
-    deskripsi: "Pusat produksi anyaman rotan kelompok pengrajin lokal.",
+    nama: "Masjid Al Hikmah PT Pertamina",
+    kategori: "Ibadah",
+    lat: 0.37831,
+    lng: 117.51094,
+    gambar: "/profile/peta/placeholder.svg",
+    deskripsi: "Masjid di area PT Pertamina, Sangkima.",
   },
   {
-    nama: "Dek Ekowisata Terpadu",
-    kategori: "Wisata Alam",
-    lat: 0.415,
-    lng: 117.54,
-    gambar: "/profile/galeri/ekowisata.jpg",
-    deskripsi: "Dek pengamatan alam yang dikelola BUMDes.",
+    nama: "Mushola Ar Royyan",
+    kategori: "Ibadah",
+    lat: 0.379,
+    lng: 117.514,
+    gambar: "/profile/peta/placeholder.svg",
+    deskripsi: "Mushola warga RT 09, Desa Sangkima.",
+  },
+  {
+    nama: "SDN 005 Sangatta Selatan",
+    kategori: "Pendidikan",
+    lat: 0.37794,
+    lng: 117.51744,
+    gambar: "/profile/peta/placeholder.svg",
+    deskripsi: "Sekolah Dasar Negeri di Desa Sangkima.",
+  },
+  {
+    nama: "SMPN 2 Sangatta Selatan",
+    kategori: "Pendidikan",
+    lat: 0.37669,
+    lng: 117.51006,
+    gambar: "/profile/peta/placeholder.svg",
+    deskripsi: "Sekolah Menengah Pertama Negeri di Sangkima.",
   },
 ];

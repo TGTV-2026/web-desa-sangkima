@@ -82,6 +82,8 @@ export const kontakContentSchema = z.object({
   // URL/handle sosial (kosong = tombolnya disembunyikan). default("") agar data lama aman.
   whatsapp: z.string().default(""),
   instagram: z.string().default(""),
+  facebook: z.string().default(""),
+  tiktok: z.string().default(""),
   petaCenter: z.tuple([z.number(), z.number()]),
   titik: z.array(petaTitikSchema),
 });
@@ -93,48 +95,68 @@ const defaultKontak: KontakContent = {
   email: "pemdes@sangkima.desa.id",
   whatsapp: "https://wa.me/6281234567890",
   instagram: "https://instagram.com/desasangkima",
-  petaCenter: [0.4067, 117.539],
+  facebook: "https://facebook.com/desasangkima",
+  tiktok: "https://tiktok.com/@desasangkima",
+  // Titik = masjid/mushola & sekolah sekitar Sangkima; koordinat dari Google Maps
+  // (plus code). Foto placeholder karena belum ada foto asli lokasi.
+  petaCenter: [0.3789, 117.5138],
   titik: [
     {
-      nama: "Kantor Desa Sangkima",
+      nama: "Kantor Desa & BPD Sangkima",
       kategori: "Pemerintahan",
-      lat: 0.4035,
-      lng: 117.538,
-      gambar: "/profile/hero-sangkima.jpg",
+      lat: 0.38081,
+      lng: 117.51381,
+      gambar: "/profile/peta/placeholder.svg",
       deskripsi:
-        "Pusat pelayanan administrasi dan pemerintahan Desa Sangkima.",
+        "Pusat pelayanan administrasi dan pemerintahan Desa Sangkima (kantor BPD).",
     },
     {
-      nama: "Hutan Lindung Sangkima",
-      kategori: "Wisata Alam",
-      lat: 0.4112,
-      lng: 117.529,
-      gambar: "/profile/galeri/hutan-lindung.jpg",
-      deskripsi: "Kawasan konservasi dengan kanopi hutan hujan tropis Borneo.",
+      nama: "Masjid Miftahul Khair",
+      kategori: "Ibadah",
+      lat: 0.37731,
+      lng: 117.51606,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Masjid warga di lingkungan Desa Sangkima.",
     },
     {
-      nama: "Sungai Sangkima",
-      kategori: "Wisata Alam",
-      lat: 0.398,
-      lng: 117.547,
-      gambar: "/profile/galeri/sungai-sangkima.jpg",
-      deskripsi: "Aliran sungai jernih untuk susur sungai dan ekowisata.",
+      nama: "Masjid Baitul Ma'mur Sangkima",
+      kategori: "Ibadah",
+      lat: 0.38106,
+      lng: 117.51581,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Masjid jamaah di kawasan Desa Sangkima.",
     },
     {
-      nama: "Sentra Kerajinan Rotan",
-      kategori: "UMKM",
-      lat: 0.406,
-      lng: 117.544,
-      gambar: "/profile/galeri/kerajinan-rotan.jpg",
-      deskripsi: "Pusat produksi anyaman rotan kelompok pengrajin lokal.",
+      nama: "Masjid Al Hikmah PT Pertamina",
+      kategori: "Ibadah",
+      lat: 0.37831,
+      lng: 117.51094,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Masjid di area PT Pertamina, Sangkima.",
     },
     {
-      nama: "Dek Ekowisata Terpadu",
-      kategori: "Wisata Alam",
-      lat: 0.415,
-      lng: 117.54,
-      gambar: "/profile/galeri/ekowisata.jpg",
-      deskripsi: "Dek pengamatan alam yang dikelola BUMDes.",
+      nama: "Mushola Ar Royyan",
+      kategori: "Ibadah",
+      lat: 0.379,
+      lng: 117.514,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Mushola warga RT 09, Desa Sangkima.",
+    },
+    {
+      nama: "SDN 005 Sangatta Selatan",
+      kategori: "Pendidikan",
+      lat: 0.37794,
+      lng: 117.51744,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Sekolah Dasar Negeri di Desa Sangkima.",
+    },
+    {
+      nama: "SMPN 2 Sangatta Selatan",
+      kategori: "Pendidikan",
+      lat: 0.37669,
+      lng: 117.51006,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Sekolah Menengah Pertama Negeri di Sangkima.",
     },
   ],
 };
@@ -325,10 +347,6 @@ export const suratContentSchema = z.object({
   kopKecamatan: z.string(),
   kopDesa: z.string(),
   alamatKop: z.string(),
-  // Nama & jabatan penandatangan diambil otomatis dari akun yang menyetujui.
-  // Di sini hanya gambar TTD (dan opsional nama override kalau perlu).
-  signatureImage: z.string().default(""),
-  penandatanganNama: z.string().default(""),
 });
 export type SuratContent = z.infer<typeof suratContentSchema>;
 
@@ -337,8 +355,6 @@ const defaultSurat: SuratContent = {
   kopKecamatan: "KECAMATAN SANGATTA SELATAN",
   kopDesa: "DESA SANGKIMA",
   alamatKop: "Jl. Poros Sangatta - Bontang, Desa Sangkima, Kutai Timur",
-  signatureImage: "",
-  penandatanganNama: "",
 };
 
 /* ---------------------------------- PPID --------------------------------- */
