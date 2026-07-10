@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { galleryService } from "@/server/services/gallery.service";
-import { requireCmsUser } from "@/server/utils/cmsSession";
+import { requireVerifiedCmsUser } from "@/server/utils/cmsSession";
 
 export type AlbumResult =
   | { success: true }
@@ -18,9 +18,9 @@ function revalidateGaleri(slug?: string) {
 }
 
 export async function createAlbum(input: unknown): Promise<AlbumResult> {
-  const user = await requireCmsUser();
   let id: string;
   try {
+    const user = await requireVerifiedCmsUser();
     const album = await galleryService.createAlbum(input, {
       id: user.id,
       name: user.name,
@@ -44,8 +44,8 @@ export async function updateAlbum(
   id: string,
   input: unknown,
 ): Promise<AlbumResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await galleryService.updateAlbum(id, input);
     revalidateGaleri();
     revalidatePath(`/admin/album/${id}`);
@@ -62,8 +62,8 @@ export async function updateAlbum(
 }
 
 export async function deleteAlbum(id: string): Promise<AlbumResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await galleryService.removeAlbum(id);
     revalidateGaleri();
     return { success: true };
@@ -80,8 +80,8 @@ export async function addAlbumPhoto(
   url: string,
   caption?: string,
 ): Promise<AlbumResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await galleryService.addPhoto(albumId, url, caption);
     revalidateGaleri();
     revalidatePath(`/admin/album/${albumId}`);
@@ -98,8 +98,8 @@ export async function deleteAlbumPhoto(
   photoId: string,
   albumId: string,
 ): Promise<AlbumResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await galleryService.removePhoto(photoId);
     revalidateGaleri();
     revalidatePath(`/admin/album/${albumId}`);
@@ -116,8 +116,8 @@ export async function setAlbumCover(
   photoId: string,
   albumId: string,
 ): Promise<AlbumResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await galleryService.setCover(photoId);
     revalidateGaleri();
     revalidatePath(`/admin/album/${albumId}`);
@@ -135,8 +135,8 @@ export async function addAlbumVideo(
   url: string,
   caption?: string,
 ): Promise<AlbumResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await galleryService.addVideo(albumId, url, caption);
     revalidateGaleri();
     revalidatePath(`/admin/album/${albumId}`);
@@ -153,8 +153,8 @@ export async function deleteAlbumVideo(
   videoId: string,
   albumId: string,
 ): Promise<AlbumResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await galleryService.removeVideo(videoId);
     revalidateGaleri();
     revalidatePath(`/admin/album/${albumId}`);

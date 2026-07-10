@@ -42,6 +42,8 @@ export type CmsUserDTO = {
   email: string;
   role: CmsRole;
   active: boolean;
+  /** false = akun hanya bisa melihat isi CMS, semua aksi tulis ditolak. */
+  emailVerified: boolean;
   createdAt: Date | null;
 };
 
@@ -81,6 +83,10 @@ export const cmsVerifyEmailChangeSchema = z.object({ otp: otpSchema });
 export type CmsVerifyEmailChangeInput = z.infer<
   typeof cmsVerifyEmailChangeSchema
 >;
+
+// Verifikasi email akun (editor baru): OTP dikirim ke email akun itu sendiri.
+export const cmsVerifyEmailSchema = z.object({ otp: otpSchema });
+export type CmsVerifyEmailInput = z.infer<typeof cmsVerifyEmailSchema>;
 
 // Lupa kata sandi tahap 1: OTP dikirim ke email terdaftar.
 export const cmsRequestPasswordResetSchema = z.object({

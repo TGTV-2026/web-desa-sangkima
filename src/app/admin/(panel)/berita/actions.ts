@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { newsService } from "@/server/services/news.service";
-import { requireCmsUser } from "@/server/utils/cmsSession";
+import { requireVerifiedCmsUser } from "@/server/utils/cmsSession";
 
 export type NewsResult =
   | { success: true }
@@ -16,8 +16,8 @@ function revalidateBerita() {
 }
 
 export async function createNews(input: unknown): Promise<NewsResult> {
-  const user = await requireCmsUser();
   try {
+    const user = await requireVerifiedCmsUser();
     await newsService.create(input, { id: user.id, name: user.name });
     revalidateBerita();
   } catch (err) {
@@ -36,8 +36,8 @@ export async function updateNews(
   id: string,
   input: unknown,
 ): Promise<NewsResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await newsService.update(id, input);
     revalidateBerita();
     revalidatePath(`/admin/berita/${id}`);
@@ -54,8 +54,8 @@ export async function updateNews(
 }
 
 export async function deleteNews(id: string): Promise<NewsResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await newsService.remove(id);
     revalidateBerita();
     return { success: true };

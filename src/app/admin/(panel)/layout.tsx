@@ -41,6 +41,26 @@ export default async function AdminPanelLayout({
         </div>
       </header>
 
+      {/* Akun belum terverifikasi → semua aksi tulis ditolak di server. Beri tahu
+          alasannya di sini agar operator tak bingung saat tombol tak berfungsi. */}
+      {!user.emailVerified && (
+        <div className="border-b border-brass/40 bg-brass/10">
+          <div className="mx-auto flex max-w-[1100px] flex-wrap items-center justify-between gap-3 px-5 py-3">
+            <p className="text-sm text-ink">
+              <span className="font-semibold">Email belum diverifikasi.</span>{" "}
+              Anda hanya bisa melihat isi CMS — semua perubahan akan ditolak
+              sampai akun diaktifkan.
+            </p>
+            <Link
+              href="/admin/verifikasi-email"
+              className="btn-primary shrink-0 text-xs"
+            >
+              Verifikasi Sekarang
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col gap-8 px-5 py-8 md:flex-row">
         {/* Sidebar */}
         <aside className="md:w-60 md:shrink-0">

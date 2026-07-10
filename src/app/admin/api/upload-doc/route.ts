@@ -11,6 +11,16 @@ export async function POST(req: Request) {
       { status: 401 },
     );
   }
+  // Akun yang emailnya belum diverifikasi hanya boleh membaca isi CMS.
+  if (!user.emailVerified) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Verifikasi email Anda dulu sebelum mengunggah berkas.",
+      },
+      { status: 403 },
+    );
+  }
 
   const form = await req.formData();
   const file = form.get("file");

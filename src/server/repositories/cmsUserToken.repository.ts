@@ -2,7 +2,7 @@ import { and, eq, gt, isNull } from "drizzle-orm";
 import { db } from "../db";
 import { cmsUserTokens } from "../db/schema";
 
-type CmsTokenType = "EmailChange" | "PasswordReset";
+type CmsTokenType = "EmailVerify" | "EmailChange" | "PasswordReset";
 
 // Akses data token OTP akun CMS. Logika (hash, kirim email) ada di service.
 export const cmsUserTokenRepository = {

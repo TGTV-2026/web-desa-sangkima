@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { siteContentService } from "@/server/services/siteContent.service";
-import { requireCmsUser } from "@/server/utils/cmsSession";
+import { requireVerifiedCmsUser } from "@/server/utils/cmsSession";
 import { CONTENT_SECTIONS, type ContentKey } from "@/server/types/content";
 
 // Path publik yang perlu di-revalidate setelah satu seksi disimpan, agar
@@ -34,19 +34,19 @@ export async function saveSection(
   key: ContentKey,
   value: unknown,
 ): Promise<SaveResult> {
-  const user = await requireCmsUser();
   if (!(key in CONTENT_SECTIONS)) {
     return { success: false, message: "Seksi tidak dikenal" };
   }
-  // Tanda tangan surat bersifat sensitif — hanya super admin, bukan editor.
-  if (key === "surat" && user.role !== "super_admin") {
-    return {
-      success: false,
-      message: "Hanya Super Admin yang boleh mengubah tanda tangan surat.",
-    };
-  }
 
   try {
+    const user = await requireVerifiedCmsUser();
+    // Tanda tangan surat bersifat sensitif — hanya super admin, bukan editor.
+    if (key === "surat" && user.role !== "super_admin") {
+      return {
+        success: false,
+        message: "Hanya Super Admin yang boleh mengubah tanda tangan surat.",
+      };
+    }
     await siteContentService.update(key, value, user.id);
     for (const path of REVALIDATE[key]) revalidatePath(path);
     return { success: true };

@@ -13,6 +13,7 @@ import {
   cmsUserCreateSchema,
   cmsUserUpdateSchema,
   cmsVerifyEmailChangeSchema,
+  cmsVerifyEmailSchema,
   type CmsRole,
   type CmsUserDTO,
 } from "../types/cmsUser";
@@ -34,6 +35,7 @@ function toDTO(
     email: row.email,
     role: row.role as CmsRole,
     active: !row.deletedAt,
+    emailVerified: !!row.emailVerifiedAt,
     createdAt: row.createdAt,
   };
 }
@@ -156,6 +158,10 @@ export const cmsUserService = {
       email: input.email,
       role: "super_admin",
       password: await hashPassword(input.password),
+      // Super admin menentukan kredensialnya sendiri saat setup, jadi tak perlu
+      // membuktikan kepemilikan email lewat OTP (dan belum tentu email bisa
+      // dikirim saat setup pertama).
+      emailVerifiedAt: new Date(),
     });
     return { created: true };
   },
@@ -239,9 +245,57 @@ export const cmsUserService = {
       throw new Error("Email sudah dipakai akun lain");
     }
 
-    await cmsUserRepository.update(id, { email: newEmail });
+    // OTP tadi dikirim ke email baru dan berhasil dimasukkan → kepemilikan email
+    // itu terbukti, jadi sekalian tandai terverifikasi. Ini juga jalan keluar
+    // bagi editor yang emailnya salah ketik: ganti email = sekaligus verifikasi.
+    await cmsUserRepository.update(id, {
+      email: newEmail,
+      emailVerifiedAt: new Date(),
+    });
     await cmsUserTokenRepository.markUsed(token.id);
     return { newEmail };
+  },
+
+  /** Kirim OTP verifikasi ke email akun sendiri (editor yang baru dibuat). */
+  async requestEmailVerification(id: string): Promise<{ email: string }> {
+    const row = await cmsUserRepository.findById(id);
+    if (!row || row.deletedAt) throw new Error("Akun tidak ditemukan");
+    if (row.emailVerifiedAt) throw new Error("Email sudah terverifikasi");
+
+    const otp = generateOTP();
+    await cmsUserTokenRepository.deleteByUserAndType(id, "EmailVerify");
+    await cmsUserTokenRepository.insert({
+      cmsUserId: id,
+      token: otp,
+      type: "EmailVerify",
+      expiresAt: getOTPExpiration(),
+    });
+
+    try {
+      await sendOTPEmail(row.email, otp);
+    } catch (err) {
+      console.error("Gagal mengirim OTP verifikasi email CMS:", err);
+      throw new Error("Gagal mengirim kode OTP");
+    }
+    return { email: row.email };
+  },
+
+  /** Verifikasi email akun sendiri → akun boleh melakukan aksi tulis. */
+  async verifyEmail(id: string, input: unknown): Promise<void> {
+    const data = cmsVerifyEmailSchema.parse(input);
+    const row = await cmsUserRepository.findById(id);
+    if (!row || row.deletedAt) throw new Error("Akun tidak ditemukan");
+    if (row.emailVerifiedAt) return; // sudah terverifikasi, idempoten
+
+    const token = await cmsUserTokenRepository.findValid(
+      id,
+      data.otp,
+      "EmailVerify",
+    );
+    if (!token) throw new Error("Kode OTP tidak valid atau sudah kedaluwarsa");
+
+    await cmsUserRepository.update(id, { emailVerifiedAt: new Date() });
+    await cmsUserTokenRepository.markUsed(token.id);
   },
 
   /**

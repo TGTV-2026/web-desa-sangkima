@@ -20,6 +20,11 @@ export const cmsUsers = mysqlTable("cms_users", {
   email: varchar({ length: 255 }).notNull().unique(),
   password: varchar({ length: 255 }).notNull(),
   role: mysqlEnum(["super_admin", "editor"]).notNull().default("editor"),
+  // null = email belum diverifikasi lewat OTP → akun hanya bisa MELIHAT isi CMS,
+  // semua aksi tulis ditolak (lihat requireVerifiedCmsUser). Editor baru selalu
+  // mulai dari null; super_admin otomatis terverifikasi saat dibuat karena dia
+  // sendiri yang menentukan kredensialnya.
+  emailVerifiedAt: datetime("email_verified_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
   deletedAt: datetime("deleted_at"),

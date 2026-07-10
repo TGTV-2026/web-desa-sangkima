@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { ppidService } from "@/server/services/ppid.service";
-import { requireCmsUser } from "@/server/utils/cmsSession";
+import { requireVerifiedCmsUser } from "@/server/utils/cmsSession";
 
 export type PpidResult =
   | { success: true }
@@ -16,8 +16,8 @@ function revalidatePpid() {
 }
 
 export async function createPpidDoc(input: unknown): Promise<PpidResult> {
-  const user = await requireCmsUser();
   try {
+    const user = await requireVerifiedCmsUser();
     await ppidService.create(input, { id: user.id, name: user.name });
     revalidatePpid();
   } catch (err) {
@@ -36,8 +36,8 @@ export async function updatePpidDoc(
   id: string,
   input: unknown,
 ): Promise<PpidResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await ppidService.update(id, input);
     revalidatePpid();
     revalidatePath(`/admin/ppid/${id}`);
@@ -54,8 +54,8 @@ export async function updatePpidDoc(
 }
 
 export async function deletePpidDoc(id: string): Promise<PpidResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await ppidService.remove(id);
     revalidatePpid();
     return { success: true };

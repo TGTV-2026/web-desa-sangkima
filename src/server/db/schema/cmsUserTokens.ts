@@ -9,9 +9,10 @@ import {
 } from "drizzle-orm/mysql-core";
 import { cmsUsers } from "./cmsUsers";
 
-// Token OTP milik akun CMS: ganti email (OTP ke email baru) & lupa kata sandi
-// (OTP ke email terdaftar). Tabel TERPISAH dari `user_tokens` karena FK di sana
-// menunjuk `users` (akun warga e-surat), sedangkan akun CMS hidup di `cms_users`.
+// Token OTP milik akun CMS: verifikasi email akun baru, ganti email (OTP ke
+// email baru), & lupa kata sandi (OTP ke email terdaftar). Tabel TERPISAH dari
+// `user_tokens` karena FK di sana menunjuk `users` (akun warga e-surat),
+// sedangkan akun CMS hidup di `cms_users`.
 // meta = { newEmail } khusus untuk tipe EmailChange.
 export const cmsUserTokens = mysqlTable("cms_user_tokens", {
   id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
@@ -19,7 +20,7 @@ export const cmsUserTokens = mysqlTable("cms_user_tokens", {
     .references(() => cmsUsers.id)
     .notNull(),
   token: varchar({ length: 255 }).notNull(),
-  type: mysqlEnum(["EmailChange", "PasswordReset"]).notNull(),
+  type: mysqlEnum(["EmailVerify", "EmailChange", "PasswordReset"]).notNull(),
   meta: json("meta"),
   expiresAt: timestamp("expires_at").notNull(),
   usedAt: datetime("used_at"),
