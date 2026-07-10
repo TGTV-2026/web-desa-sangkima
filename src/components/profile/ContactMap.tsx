@@ -68,6 +68,19 @@ export default function ContactMap({
         },
       ).addTo(map);
 
+      // Tujuan navigasi menyesuaikan perangkat: Android buka menu "Buka dengan"
+      // (skema geo: → Maps/Waze/dll), iOS ke Apple Maps, desktop ke Google Maps.
+      const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+      const isAndroid = /Android/i.test(ua);
+      const isIOS = /iPhone|iPad|iPod/i.test(ua);
+      const isMobile = isAndroid || isIOS;
+      const navHref = (lat: number, lng: number, label: string) => {
+        if (isAndroid)
+          return `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(label)})`;
+        if (isIOS) return `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+        return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+      };
+
       const bounds: [number, number][] = [];
 
       titik.forEach((t) => {
@@ -123,27 +136,17 @@ export default function ContactMap({
         navLabel.className = "peta-nav-label";
         navLabel.textContent = "Navigasi ke lokasi ini";
 
-        const navActions = document.createElement("div");
-        navActions.className = "peta-nav-actions";
-
-        const mkNavBtn = (label: string, href: string, outline = false) => {
-          const a = document.createElement("a");
-          a.className = outline ? "peta-nav-btn is-outline" : "peta-nav-btn";
-          a.href = href;
-          a.target = "_blank";
-          a.rel = "noopener noreferrer";
-          a.textContent = label;
-          return a;
-        };
-
-        // URL universal: buka rute langsung ke koordinat tujuan di app/web masing2.
-        const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lng}`;
-        const amaps = `https://maps.apple.com/?daddr=${t.lat},${t.lng}&dirflg=d`;
-        navActions.append(
-          mkNavBtn("Google Maps", gmaps),
-          mkNavBtn("Apple Maps", amaps, true),
-        );
-        nav.append(navTitle, navLabel, navActions);
+        const navBtn = document.createElement("a");
+        navBtn.className = "peta-nav-btn";
+        navBtn.href = navHref(t.lat, t.lng, t.nama);
+        // Desktop buka tab baru (situs tetap terbuka); di HP biarkan navigasi
+        // langsung agar OS memunculkan app/menu tanpa tab kosong.
+        if (!isMobile) {
+          navBtn.target = "_blank";
+          navBtn.rel = "noopener noreferrer";
+        }
+        navBtn.textContent = "Petunjuk Arah";
+        nav.append(navTitle, navLabel, navBtn);
 
         const marker = L.marker([t.lat, t.lng], { icon, title: t.nama })
           .addTo(map)
