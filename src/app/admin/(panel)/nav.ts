@@ -129,4 +129,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
     ready: true,
     superAdminOnly: true,
   },
+  {
+    key: "akun",
+    href: "/admin/akun",
+    label: "Akun Saya",
+    desc: "Ganti email (dengan verifikasi OTP) & kata sandi akun Anda sendiri.",
+    group: "pengaturan",
+    ready: true,
+  },
 ];

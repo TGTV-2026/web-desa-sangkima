@@ -44,3 +44,62 @@ export type CmsUserDTO = {
   active: boolean;
   createdAt: Date | null;
 };
+
+// === Kelola akun sendiri (berlaku untuk super_admin maupun editor) ===
+
+const otpSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{4}$/, "Kode OTP terdiri dari 4 angka");
+
+// Ganti kata sandi: wajib kata sandi saat ini agar akun tak bisa dibajak lewat
+// perangkat admin yang ditinggal dalam keadaan masih login.
+export const cmsChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Kata sandi saat ini wajib diisi"),
+    newPassword: z.string().min(6, "Kata sandi baru minimal 6 karakter"),
+    confirmPassword: z.string().min(1, "Konfirmasi kata sandi wajib diisi"),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: "Konfirmasi kata sandi tidak cocok",
+    path: ["confirmPassword"],
+  });
+export type CmsChangePasswordInput = z.infer<typeof cmsChangePasswordSchema>;
+
+// Ganti email tahap 1: OTP dikirim ke email BARU (membuktikan email itu memang
+// bisa diakses pemiliknya sebelum ditukar).
+export const cmsRequestEmailChangeSchema = z.object({
+  currentPassword: z.string().min(1, "Kata sandi saat ini wajib diisi"),
+  newEmail: z.string().email("Email tidak valid").max(255),
+});
+export type CmsRequestEmailChangeInput = z.infer<
+  typeof cmsRequestEmailChangeSchema
+>;
+
+// Ganti email tahap 2: verifikasi OTP yang dikirim ke email baru.
+export const cmsVerifyEmailChangeSchema = z.object({ otp: otpSchema });
+export type CmsVerifyEmailChangeInput = z.infer<
+  typeof cmsVerifyEmailChangeSchema
+>;
+
+// Lupa kata sandi tahap 1: OTP dikirim ke email terdaftar.
+export const cmsRequestPasswordResetSchema = z.object({
+  email: z.string().email("Email tidak valid").max(255),
+});
+export type CmsRequestPasswordResetInput = z.infer<
+  typeof cmsRequestPasswordResetSchema
+>;
+
+// Lupa kata sandi tahap 2: OTP + kata sandi baru.
+export const cmsResetPasswordSchema = z
+  .object({
+    email: z.string().email("Email tidak valid").max(255),
+    otp: otpSchema,
+    newPassword: z.string().min(6, "Kata sandi baru minimal 6 karakter"),
+    confirmPassword: z.string().min(1, "Konfirmasi kata sandi wajib diisi"),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: "Konfirmasi kata sandi tidak cocok",
+    path: ["confirmPassword"],
+  });
+export type CmsResetPasswordInput = z.infer<typeof cmsResetPasswordSchema>;

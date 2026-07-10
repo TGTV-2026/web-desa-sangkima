@@ -1,13 +1,29 @@
 import { createId } from "@paralleldrive/cuid2";
 import { cmsUserRepository } from "../repositories/cmsUser.repository";
+import { cmsUserTokenRepository } from "../repositories/cmsUserToken.repository";
+import { sendOTPEmail } from "./email.service";
 import { comparePassword, hashPassword } from "../utils/hash";
+import { generateOTP, getOTPExpiration } from "../utils/otp";
 import {
+  cmsChangePasswordSchema,
   cmsLoginSchema,
+  cmsRequestEmailChangeSchema,
+  cmsRequestPasswordResetSchema,
+  cmsResetPasswordSchema,
   cmsUserCreateSchema,
   cmsUserUpdateSchema,
+  cmsVerifyEmailChangeSchema,
   type CmsRole,
   type CmsUserDTO,
 } from "../types/cmsUser";
+
+/** Ambil `newEmail` dari kolom json `meta` (bisa berupa string atau object). */
+function readNewEmail(meta: unknown): string | null {
+  if (!meta) return null;
+  const parsed = typeof meta === "string" ? JSON.parse(meta) : meta;
+  const value = (parsed as { newEmail?: unknown }).newEmail;
+  return typeof value === "string" ? value : null;
+}
 
 function toDTO(
   row: NonNullable<Awaited<ReturnType<typeof cmsUserRepository.findById>>>,
@@ -142,5 +158,137 @@ export const cmsUserService = {
       password: await hashPassword(input.password),
     });
     return { created: true };
+  },
+
+  // === Kelola akun sendiri (super_admin & editor) ===
+
+  /** Ganti kata sandi sendiri. Wajib tahu kata sandi lama. */
+  async changeOwnPassword(id: string, input: unknown): Promise<void> {
+    const data = cmsChangePasswordSchema.parse(input);
+    const row = await cmsUserRepository.findById(id);
+    if (!row || row.deletedAt) throw new Error("Akun tidak ditemukan");
+
+    const ok = await comparePassword(data.currentPassword, row.password);
+    if (!ok) throw new Error("Kata sandi saat ini salah");
+
+    await cmsUserRepository.update(id, {
+      password: await hashPassword(data.newPassword),
+    });
+  },
+
+  /**
+   * Ganti email tahap 1 — kirim OTP ke email BARU. Emailnya belum ditukar di
+   * sini; penukaran baru terjadi setelah OTP diverifikasi, supaya akun tidak
+   * pindah ke alamat yang ternyata salah ketik / tak bisa diakses.
+   */
+  async requestEmailChange(
+    id: string,
+    input: unknown,
+  ): Promise<{ newEmail: string }> {
+    const data = cmsRequestEmailChangeSchema.parse(input);
+    const row = await cmsUserRepository.findById(id);
+    if (!row || row.deletedAt) throw new Error("Akun tidak ditemukan");
+
+    const ok = await comparePassword(data.currentPassword, row.password);
+    if (!ok) throw new Error("Kata sandi saat ini salah");
+
+    if (data.newEmail === row.email) {
+      throw new Error("Email baru sama dengan email saat ini");
+    }
+    const taken = await cmsUserRepository.findByEmail(data.newEmail);
+    if (taken) throw new Error("Email sudah dipakai akun lain");
+
+    const otp = generateOTP();
+    await cmsUserTokenRepository.deleteByUserAndType(id, "EmailChange");
+    await cmsUserTokenRepository.insert({
+      cmsUserId: id,
+      token: otp,
+      type: "EmailChange",
+      meta: { newEmail: data.newEmail },
+      expiresAt: getOTPExpiration(),
+    });
+
+    try {
+      await sendOTPEmail(data.newEmail, otp);
+    } catch (err) {
+      console.error("Gagal mengirim OTP ganti email CMS:", err);
+      throw new Error("Gagal mengirim kode OTP ke email baru");
+    }
+    return { newEmail: data.newEmail };
+  },
+
+  /** Ganti email tahap 2 — verifikasi OTP lalu tukar emailnya. */
+  async verifyEmailChange(
+    id: string,
+    input: unknown,
+  ): Promise<{ newEmail: string }> {
+    const data = cmsVerifyEmailChangeSchema.parse(input);
+    const token = await cmsUserTokenRepository.findValid(
+      id,
+      data.otp,
+      "EmailChange",
+    );
+    if (!token) throw new Error("Kode OTP tidak valid atau sudah kedaluwarsa");
+
+    const newEmail = readNewEmail(token.meta);
+    if (!newEmail) throw new Error("Data email baru tidak ditemukan");
+
+    // Cek ulang: email bisa saja keburu dipakai akun lain sejak OTP dikirim.
+    const taken = await cmsUserRepository.findByEmail(newEmail);
+    if (taken && taken.id !== id) {
+      throw new Error("Email sudah dipakai akun lain");
+    }
+
+    await cmsUserRepository.update(id, { email: newEmail });
+    await cmsUserTokenRepository.markUsed(token.id);
+    return { newEmail };
+  },
+
+  /**
+   * Lupa kata sandi tahap 1 — kirim OTP ke email terdaftar. Selalu "berhasil"
+   * walau email tak terdaftar, agar tidak bisa dipakai menebak email admin
+   * mana yang ada (email enumeration).
+   */
+  async requestPasswordReset(input: unknown): Promise<void> {
+    const data = cmsRequestPasswordResetSchema.parse(input);
+    const row = await cmsUserRepository.findByEmail(data.email);
+    if (!row || row.deletedAt) return;
+
+    const otp = generateOTP();
+    await cmsUserTokenRepository.deleteByUserAndType(row.id, "PasswordReset");
+    await cmsUserTokenRepository.insert({
+      cmsUserId: row.id,
+      token: otp,
+      type: "PasswordReset",
+      expiresAt: getOTPExpiration(),
+    });
+
+    try {
+      await sendOTPEmail(row.email, otp);
+    } catch (err) {
+      console.error("Gagal mengirim OTP reset sandi CMS:", err);
+      throw new Error("Gagal mengirim kode OTP");
+    }
+  },
+
+  /** Lupa kata sandi tahap 2 — OTP valid → set kata sandi baru. */
+  async resetPassword(input: unknown): Promise<void> {
+    const data = cmsResetPasswordSchema.parse(input);
+    const row = await cmsUserRepository.findByEmail(data.email);
+    if (!row || row.deletedAt) {
+      throw new Error("Kode OTP tidak valid atau sudah kedaluwarsa");
+    }
+
+    const token = await cmsUserTokenRepository.findValid(
+      row.id,
+      data.otp,
+      "PasswordReset",
+    );
+    if (!token) throw new Error("Kode OTP tidak valid atau sudah kedaluwarsa");
+
+    await cmsUserRepository.update(row.id, {
+      password: await hashPassword(data.newPassword),
+    });
+    await cmsUserTokenRepository.markUsed(token.id);
   },
 };
