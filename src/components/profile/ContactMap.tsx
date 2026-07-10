@@ -127,6 +127,93 @@ export default function ContactMap({
         map.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
       }
 
+      // --- Lokasi pengguna (Geolocation browser via map.locate) ---
+      // Di balik tombol, bukan otomatis: prompt izin hanya muncul saat pengguna
+      // menekannya. Butuh HTTPS/localhost; kalau ditolak/gagal → pesan singkat.
+      let userMarker: import("leaflet").Marker | null = null;
+      let accuracyCircle: import("leaflet").Circle | null = null;
+      let msgTimer: ReturnType<typeof setTimeout> | undefined;
+
+      const clearLoading = () =>
+        el.querySelector(".peta-locate a")?.classList.remove("is-loading");
+
+      const showMsg = (text: string) => {
+        let box = el.querySelector<HTMLDivElement>(".peta-locate-msg");
+        if (!box) {
+          box = document.createElement("div");
+          box.className = "peta-locate-msg";
+          el.appendChild(box);
+        }
+        box.textContent = text;
+        box.classList.add("is-visible");
+        clearTimeout(msgTimer);
+        msgTimer = setTimeout(() => box?.classList.remove("is-visible"), 4000);
+      };
+
+      const userIcon = L.divIcon({
+        className: "peta-user",
+        html: `<span class="peta-user-dot"></span>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      });
+
+      map.on("locationfound", (e) => {
+        clearLoading();
+        const radius = Math.max(e.accuracy / 2, 8);
+        if (!userMarker) {
+          userMarker = L.marker(e.latlng, {
+            icon: userIcon,
+            title: "Lokasi Anda",
+          }).addTo(map);
+          accuracyCircle = L.circle(e.latlng, {
+            radius,
+            color: "#2563eb",
+            weight: 1,
+            fillColor: "#3b82f6",
+            fillOpacity: 0.15,
+          }).addTo(map);
+        } else {
+          userMarker.setLatLng(e.latlng);
+          accuracyCircle?.setLatLng(e.latlng).setRadius(radius);
+        }
+      });
+
+      map.on("locationerror", (err) => {
+        clearLoading();
+        showMsg(
+          err.code === 1
+            ? "Izin lokasi ditolak — aktifkan izin lokasi di browser."
+            : "Tidak bisa mendapatkan lokasi Anda saat ini.",
+        );
+      });
+
+      // Tombol kontrol "lokasi saya" (ikon crosshair).
+      const LocateControl = L.Control.extend({
+        options: { position: "topright" as const },
+        onAdd() {
+          const container = L.DomUtil.create("div", "leaflet-bar peta-locate");
+          const btn = L.DomUtil.create("a", "", container) as HTMLAnchorElement;
+          btn.href = "#";
+          btn.title = "Tampilkan lokasi saya";
+          btn.setAttribute("role", "button");
+          btn.setAttribute("aria-label", "Tampilkan lokasi saya");
+          btn.innerHTML =
+            '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+          L.DomEvent.on(btn, "click", (ev: Event) => {
+            L.DomEvent.stop(ev);
+            btn.classList.add("is-loading");
+            map.locate({
+              setView: true,
+              maxZoom: 16,
+              enableHighAccuracy: true,
+              timeout: 10000,
+            });
+          });
+          return container;
+        },
+      });
+      map.addControl(new LocateControl());
+
       // Perbaiki ukuran setelah panel selesai layout (hindari tile abu-abu).
       setTimeout(() => map.invalidateSize(), 0);
     })();
