@@ -77,6 +77,71 @@
   color: #6f695b;
 }
 
+/* Popup navigasi (klik marker) — selaras tema kertas */
+.leaflet-popup.peta-pop .leaflet-popup-content-wrapper {
+  border: 1px solid #ddd6c5;
+  border-radius: 6px;
+  background: #fdfcf8;
+  box-shadow: 0 10px 30px rgba(14, 31, 24, 0.22);
+}
+.leaflet-popup.peta-pop .leaflet-popup-content {
+  margin: 12px 14px;
+  min-width: 176px;
+}
+.leaflet-popup.peta-pop .leaflet-popup-tip {
+  background: #fdfcf8;
+  border: 1px solid #ddd6c5;
+}
+.peta-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.peta-nav-title {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #14291f;
+}
+.peta-nav-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #6f695b;
+}
+.peta-nav-actions {
+  display: flex;
+  gap: 8px;
+}
+.peta-nav-btn {
+  flex: 1 1 0;
+  padding: 7px 10px;
+  border: 1px solid #275138;
+  border-radius: 4px;
+  background: #275138;
+  color: #f5f2ea !important;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.peta-nav-btn:hover {
+  background: #1c3a2b;
+}
+.peta-nav-btn.is-outline {
+  background: transparent;
+  color: #275138 !important;
+}
+.peta-nav-btn.is-outline:hover {
+  background: rgba(39, 81, 56, 0.08);
+}
+
 /* Kontrol zoom & atribusi selaras tema */
 .leaflet-bar a {
   background: #fdfcf8;

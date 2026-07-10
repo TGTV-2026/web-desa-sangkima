@@ -110,14 +110,56 @@ export default function ContactMap({
         body.append(tag, title, desc);
         card.append(img, body);
 
-        L.marker([t.lat, t.lng], { icon, title: t.nama })
+        // Popup navigasi (muncul saat marker diklik) — tooltip hover tak bisa
+        // diklik, jadi tombol arah ditaruh di popup interaktif ini.
+        const nav = document.createElement("div");
+        nav.className = "peta-nav";
+
+        const navTitle = document.createElement("span");
+        navTitle.className = "peta-nav-title";
+        navTitle.textContent = t.nama;
+
+        const navLabel = document.createElement("span");
+        navLabel.className = "peta-nav-label";
+        navLabel.textContent = "Navigasi ke lokasi ini";
+
+        const navActions = document.createElement("div");
+        navActions.className = "peta-nav-actions";
+
+        const mkNavBtn = (label: string, href: string, outline = false) => {
+          const a = document.createElement("a");
+          a.className = outline ? "peta-nav-btn is-outline" : "peta-nav-btn";
+          a.href = href;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.textContent = label;
+          return a;
+        };
+
+        // URL universal: buka rute langsung ke koordinat tujuan di app/web masing2.
+        const gmaps = `https://www.google.com/maps/dir/?api=1&destination=${t.lat},${t.lng}`;
+        const amaps = `https://maps.apple.com/?daddr=${t.lat},${t.lng}&dirflg=d`;
+        navActions.append(
+          mkNavBtn("Google Maps", gmaps),
+          mkNavBtn("Apple Maps", amaps, true),
+        );
+        nav.append(navTitle, navLabel, navActions);
+
+        const marker = L.marker([t.lat, t.lng], { icon, title: t.nama })
           .addTo(map)
           .bindTooltip(card, {
             direction: "top",
             opacity: 1,
             className: "peta-tip",
             offset: [0, 0],
+          })
+          .bindPopup(nav, {
+            className: "peta-pop",
+            offset: [0, -6],
           });
+
+        // Saat popup dibuka, tutup tooltip hover agar tak menumpuk.
+        marker.on("click", () => marker.closeTooltip());
 
         bounds.push([t.lat, t.lng]);
       });
