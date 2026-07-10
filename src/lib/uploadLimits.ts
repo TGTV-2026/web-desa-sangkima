@@ -13,8 +13,8 @@ export const MAX_DOC_LABEL = "25 MB";
 // disk/RAM VPS — BUKAN target. Video ini tak dikompres di server (tidak ada
 // ffmpeg di build produksi), jadi apa pun yang diunggah akan diunduh apa adanya
 // oleh SETIAP pengunjung beranda lewat kuota mereka sendiri.
-export const MAX_VIDEO_BYTES = 200 * 1024 * 1024; // 200 MB
-export const MAX_VIDEO_LABEL = "200 MB";
+export const MAX_VIDEO_BYTES = 500 * 1024 * 1024; // 500 MB
+export const MAX_VIDEO_LABEL = "500 MB";
 // Di atas ini, CMS memperingatkan operator (tetap boleh diunggah). ~3 MB masih
 // wajar untuk klip 30 detik 720p yang sudah dikompres.
 export const WARN_VIDEO_BYTES = 5 * 1024 * 1024; // 5 MB

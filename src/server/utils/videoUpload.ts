@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { Readable } from "node:stream";
+import { Readable, Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type { ReadableStream as WebReadableStream } from "node:stream/web";
 import { promisify } from "node:util";
@@ -79,31 +79,60 @@ async function kompres(sumber: string, tujuan: string, lebar: number): Promise<v
 }
 
 /**
- * Simpan video latar hero. Ditulis ke disk dengan stream (bukan arrayBuffer)
- * supaya berkas besar tak menumpuk di memori, lalu dikompres dengan ffmpeg.
- * Bila ffmpeg tak terpasang, berkas disimpan apa adanya dan `compressed=false`
- * — pemanggil wajib memberitahu operator, jangan didiamkan.
+ * Batasi ukuran SAAT data mengalir. Header Content-Length tak bisa dipercaya —
+ * pengirim bisa berbohong — jadi hitung byte sungguhan dan putus bila lewat.
  */
-export async function saveHeroVideo(file: File): Promise<SaveHeroVideoResult> {
-  const ext = ALLOWED_VIDEO_TYPES[file.type];
+function pembatasUkuran(maks: number, hitung: { total: number }) {
+  return new Transform({
+    transform(chunk: Buffer, _enc, cb) {
+      hitung.total += chunk.length;
+      if (hitung.total > maks) {
+        cb(new Error(`Ukuran video melebihi ${MAX_VIDEO_LABEL}`));
+        return;
+      }
+      cb(null, chunk);
+    },
+  });
+}
+
+/**
+ * Simpan video latar hero dari stream permintaan HTTP.
+ *
+ * Sengaja menerima stream, bukan File hasil `req.formData()`: parsing FormData
+ * menumpuk SELURUH berkas di memori proses Node, sehingga unggahan 500 MB akan
+ * memakan ~500 MB RAM. Dengan stream, pemakaian memori tetap konstan.
+ *
+ * Setelah tersimpan, video dikompres dengan ffmpeg. Bila ffmpeg tak terpasang,
+ * berkas disimpan apa adanya dan `compressed=false` — pemanggil WAJIB
+ * memberitahu operator, jangan didiamkan.
+ */
+export async function saveHeroVideo(input: {
+  mime: string;
+  body: ReadableStream<Uint8Array>;
+}): Promise<SaveHeroVideoResult> {
+  const ext = ALLOWED_VIDEO_TYPES[input.mime];
   if (!ext) throw new Error("Video harus berformat MP4 atau WEBM");
-  if (file.size > MAX_VIDEO_BYTES) {
-    throw new Error(`Ukuran video melebihi ${MAX_VIDEO_LABEL}`);
-  }
 
   await fsp.mkdir(VIDEO_DIR, { recursive: true });
   const id = createId();
   const tmp = path.join(VIDEO_DIR, `${id}.tmp.${ext}`);
+  const hitung = { total: 0 };
 
   try {
     await pipeline(
-      Readable.fromWeb(file.stream() as WebReadableStream),
+      Readable.fromWeb(input.body as WebReadableStream),
+      pembatasUkuran(MAX_VIDEO_BYTES, hitung),
       fs.createWriteStream(tmp),
     );
   } catch (err) {
     await fsp.unlink(tmp).catch(() => {});
     throw err;
   }
+  if (hitung.total === 0) {
+    await fsp.unlink(tmp).catch(() => {});
+    throw new Error("Berkas video kosong");
+  }
+  const ukuranAsli = hitung.total;
 
   try {
     const { durasi, lebar } = await probe(tmp);
@@ -118,7 +147,7 @@ export async function saveHeroVideo(file: File): Promise<SaveHeroVideoResult> {
     return {
       url: `${VIDEO_URL_BASE}/${id}.mp4`,
       compressed: true,
-      originalBytes: file.size,
+      originalBytes: ukuranAsli,
       finalBytes: (await fsp.stat(akhir)).size,
     };
   } catch (err) {
@@ -133,8 +162,8 @@ export async function saveHeroVideo(file: File): Promise<SaveHeroVideoResult> {
       return {
         url: `${VIDEO_URL_BASE}/${id}.${ext}`,
         compressed: false,
-        originalBytes: file.size,
-        finalBytes: file.size,
+        originalBytes: ukuranAsli,
+        finalBytes: ukuranAsli,
       };
     }
     await fsp.unlink(tmp).catch(() => {});

@@ -12,6 +12,20 @@ import {
 
 const ACCEPTED = ["video/mp4", "video/webm"];
 
+type HasilUnggah = {
+  url: string;
+  compressed: boolean;
+  originalBytes: number;
+  finalBytes: number;
+};
+
+type Fase =
+  | { nama: "diam" }
+  | { nama: "unggah"; persen: number }
+  | { nama: "kompres" };
+
+const mb = (n: number) => (n / 1024 / 1024).toFixed(1);
+
 /** Baca durasi video di browser. null bila metadata gagal dibaca. */
 function bacaDurasi(file: File): Promise<number | null> {
   return new Promise((resolve) => {
@@ -30,8 +44,41 @@ function bacaDurasi(file: File): Promise<number | null> {
   });
 }
 
-// Field upload satu video latar. Durasi hanya bisa dicek di sini (server tak
-// punya ffprobe), jadi server hanya menjaga tipe & ukuran berkas.
+/**
+ * Unggah lewat XMLHttpRequest, bukan fetch(): hanya XHR yang bisa melaporkan
+ * progres unggah. Berkas dikirim sebagai raw body agar server bisa
+ * mengalirkannya ke disk tanpa menumpuk 500 MB di memori.
+ */
+function unggahDenganProgres(
+  file: File,
+  onProgres: (persen: number) => void,
+): Promise<HasilUnggah> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/admin/api/upload-video");
+    xhr.setRequestHeader("Content-Type", file.type);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgres((e.loaded / e.total) * 100);
+    };
+    xhr.onerror = () => reject(new Error("Koneksi terputus saat mengunggah"));
+    xhr.onload = () => {
+      let json: { success?: boolean; message?: string; data?: HasilUnggah };
+      try {
+        json = JSON.parse(xhr.responseText);
+      } catch {
+        reject(new Error("Respons server tidak dikenali"));
+        return;
+      }
+      if (json.success && json.data) resolve(json.data);
+      else reject(new Error(json.message ?? "Gagal mengunggah"));
+    };
+    xhr.send(file);
+  });
+}
+
+// Field upload satu video latar. Server mengompres via ffmpeg, jadi operator
+// boleh mengunggah rekaman mentahan.
 export default function VideoUploadField({
   value,
   onChange,
@@ -43,7 +90,8 @@ export default function VideoUploadField({
 }) {
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
+  const [fase, setFase] = useState<Fase>({ nama: "diam" });
+  const sibuk = fase.nama !== "diam";
 
   async function upload(file: File | undefined) {
     if (!file) return;
@@ -52,11 +100,7 @@ export default function VideoUploadField({
       return;
     }
     if (file.size > MAX_VIDEO_BYTES) {
-      toast(
-        `Ukuran video melebihi ${MAX_VIDEO_LABEL}. Kompres dulu — idealnya 2–3 MB.`,
-        "Terlalu besar",
-        "error",
-      );
+      toast(`Ukuran video melebihi ${MAX_VIDEO_LABEL}.`, "Terlalu besar", "error");
       return;
     }
     const durasi = await bacaDurasi(file);
@@ -68,45 +112,27 @@ export default function VideoUploadField({
       );
       return;
     }
-    setBusy(true);
+
+    setFase({ nama: "unggah", persen: 0 });
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/admin/api/upload-video", {
-        method: "POST",
-        body: fd,
+      const hasil = await unggahDenganProgres(file, (persen) => {
+        // 100% terkirim ≠ selesai: server masih mengompres, dan lamanya tak
+        // bisa dipantau dari sini.
+        setFase(persen >= 100 ? { nama: "kompres" } : { nama: "unggah", persen });
       });
-      const json = (await res.json()) as {
-        success: boolean;
-        message?: string;
-        data?: {
-          url: string;
-          compressed: boolean;
-          originalBytes: number;
-          finalBytes: number;
-        };
-      };
-      if (!json.success || !json.data) {
-        toast(json.message ?? "Gagal mengunggah.", "Gagal", "error");
-        return;
-      }
 
-      const { url, compressed, originalBytes, finalBytes } = json.data;
-      onChange(url);
-      const mb = (n: number) => (n / 1024 / 1024).toFixed(1);
-
-      if (compressed) {
+      onChange(hasil.url);
+      if (hasil.compressed) {
         toast(
-          `Dikompres otomatis: ${mb(originalBytes)} MB → ${mb(finalBytes)} MB.`,
+          `Dikompres otomatis: ${mb(hasil.originalBytes)} MB → ${mb(hasil.finalBytes)} MB.`,
           "Berhasil",
           "success",
         );
-      } else if (finalBytes > WARN_VIDEO_BYTES) {
-        // Server tak punya ffmpeg; berkas disajikan apa adanya ke pengunjung.
+      } else if (hasil.finalBytes > WARN_VIDEO_BYTES) {
         toast(
           `Kompresi otomatis tidak tersedia di server, video disimpan apa adanya ` +
-            `(${mb(finalBytes)} MB). Setiap pengunjung beranda mengunduh sebesar ini — ` +
-            `sebaiknya kompres manual ke bawah ${WARN_VIDEO_LABEL}.`,
+            `(${mb(hasil.finalBytes)} MB). Setiap pengunjung beranda mengunduh sebesar ` +
+            `ini — sebaiknya kompres manual ke bawah ${WARN_VIDEO_LABEL}.`,
           "Tanpa kompresi",
           "error",
         );
@@ -117,10 +143,14 @@ export default function VideoUploadField({
           "success",
         );
       }
-    } catch {
-      toast("Gagal mengunggah video.", "Gagal", "error");
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : "Gagal mengunggah video.",
+        "Gagal",
+        "error",
+      );
     } finally {
-      setBusy(false);
+      setFase({ nama: "diam" });
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -134,6 +164,7 @@ export default function VideoUploadField({
         ke 720p tanpa suara (biasanya jadi 2–3 MB), jadi Anda boleh mengunggah
         rekaman drone mentahan. Bila kosong, hero memakai gambar di atas.
       </p>
+
       <div className="flex items-center gap-3">
         <div className="h-20 w-28 shrink-0 overflow-hidden border border-line bg-paper2/40">
           {value ? (
@@ -162,29 +193,56 @@ export default function VideoUploadField({
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              disabled={busy}
+              disabled={sibuk}
               className="btn-outline text-xs disabled:opacity-50"
             >
-              {busy ? "Mengunggah…" : value ? "Ganti video" : "Unggah video"}
+              {sibuk ? "Memproses…" : value ? "Ganti video" : "Unggah video"}
             </button>
-            {value && (
+            {value && !sibuk && (
               <button
                 type="button"
                 onClick={() => onChange("")}
-                disabled={busy}
-                className="btn-danger text-xs disabled:opacity-50"
+                className="btn-danger text-xs"
               >
                 Hapus
               </button>
             )}
           </div>
-          {value && (
+          {value && !sibuk && (
             <span className="max-w-[200px] truncate font-mono text-[10px] text-inkmut">
               {value}
             </span>
           )}
         </div>
       </div>
+
+      {fase.nama === "unggah" && (
+        <div className="flex flex-col gap-1">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-paper2 border border-line">
+            <div
+              className="h-full bg-pine-800 transition-[width] duration-150"
+              style={{ width: `${fase.persen}%` }}
+            />
+          </div>
+          <span className="text-[11px] text-inkmut">
+            Mengunggah… {Math.round(fase.persen)}%
+          </span>
+        </div>
+      )}
+
+      {fase.nama === "kompres" && (
+        <div className="flex flex-col gap-1">
+          {/* Progres kompresi tak bisa dipantau dari browser — jangan berpura-pura
+              tahu persentasenya. Bar sengaja dibuat animasi tak tentu. */}
+          <div className="h-2 w-full overflow-hidden rounded-full border border-line bg-paper2">
+            <div className="h-full w-1/3 animate-pulse bg-brass" />
+          </div>
+          <span className="text-[11px] text-inkmut">
+            Terunggah. Server sedang mengompres video — bisa memakan 1–2 menit
+            untuk berkas besar. Jangan tutup halaman ini.
+          </span>
+        </div>
+      )}
     </div>
   );
 }
