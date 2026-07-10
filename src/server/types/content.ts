@@ -172,6 +172,10 @@ export const heroContentSchema = z.object({
   secondaryLabel: z.string(),
   secondaryHref: z.string(),
   backgroundImage: z.string(),
+  // Video latar opsional (MP4/WEBM, di-host sendiri). Kosong = pakai gambar saja.
+  // backgroundImage tetap wajib: dipakai sebagai poster video dan sebagai
+  // tampilan untuk pengunjung yang memilih hemat data / kurangi animasi.
+  backgroundVideo: z.string().optional().default(""),
 });
 export type HeroContent = z.infer<typeof heroContentSchema>;
 
@@ -185,6 +189,7 @@ const defaultHero: HeroContent = {
   secondaryLabel: "Layanan Digital",
   secondaryHref: "#layanan",
   backgroundImage: "/profile/hero-sangkima.jpg",
+  backgroundVideo: "",
 };
 
 /* -------------------------------- Layanan -------------------------------- */

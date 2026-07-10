@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/useToast";
 import type { HeroContent } from "@/server/types/content";
 import { saveSection } from "../actions";
 import ImageUploadField from "../ImageUploadField";
+import VideoUploadField from "../VideoUploadField";
 
 export default function HeroEditor({ initial }: { initial: HeroContent }) {
   const { toast } = useToast();
@@ -127,11 +128,17 @@ export default function HeroEditor({ initial }: { initial: HeroContent }) {
         </div>
       </section>
 
-      <section className="card-doc p-6">
+      <section className="card-doc flex flex-col gap-6 p-6">
         <ImageUploadField
           label="Gambar latar hero"
           value={v.backgroundImage}
           onChange={(url) => set("backgroundImage", url)}
+        />
+        <div className="h-px w-full bg-line" />
+        <VideoUploadField
+          label="Video latar hero (opsional)"
+          value={v.backgroundVideo}
+          onChange={(url) => set("backgroundVideo", url)}
         />
       </section>
 

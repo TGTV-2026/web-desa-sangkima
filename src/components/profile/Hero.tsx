@@ -4,8 +4,29 @@ import { useEffect, useRef } from "react";
 import { ArrowRight } from "./icons";
 import type { HeroContent } from "@/server/types/content";
 
+// Tipe minimal untuk Network Information API (belum ada di lib.dom).
+type ConnectionInfo = { saveData?: boolean };
+
 export default function Hero({ content }: { content: HeroContent }) {
   const bgRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // `src` sengaja dipasang lewat ref, bukan atribut JSX: selama belum di-set,
+  // browser tidak mengunduh apa pun. Video dilewati bila pengunjung sendiri
+  // minta hemat data atau kurangi animasi — dua sinyal eksplisit dari mereka.
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || !content.backgroundVideo) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const conn = (navigator as Navigator & { connection?: ConnectionInfo })
+      .connection;
+    if (conn?.saveData) return;
+
+    el.src = content.backgroundVideo;
+    // Autoplay bisa ditolak (mis. mode hemat baterai) — abaikan, gambar latar
+    // tetap tampil di belakangnya.
+    void el.play().catch(() => {});
+  }, [content.backgroundVideo]);
 
   // Parallax halus: latar bergerak lebih lambat dari konten saat scroll.
   useEffect(() => {
@@ -40,7 +61,22 @@ export default function Hero({ content }: { content: HeroContent }) {
           ref={bgRef}
           className="relative -top-[10%] h-[120%] w-full bg-cover bg-center"
           style={{ backgroundImage: `url('${content.backgroundImage}')` }}
-        />
+        >
+          {/* Video latar menimpa gambar. Gambar di belakangnya tetap jadi
+              fallback, jadi hero langsung tampil walau video belum/gagal
+              termuat. muted wajib agar autoplay diizinkan browser. */}
+          {content.backgroundVideo && (
+            <video
+              ref={videoRef}
+              loop
+              muted
+              playsInline
+              preload="none"
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+        </div>
         {/* Overlay hijau pinus + gradien ke kertas agar teks terbaca */}
         <div className="absolute inset-0 bg-pine-800/70 mix-blend-multiply" />
         <div className="absolute inset-0 bg-gradient-to-t from-paper via-paper/20 to-transparent" />
