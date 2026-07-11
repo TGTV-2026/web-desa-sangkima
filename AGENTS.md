@@ -8,7 +8,7 @@ Proyek ini **sudah berjalan di produksi** (staging: https://desasangkima.cloud, 
 - **Perluas, jangan gantikan.** Tambah fitur sebagai *pendamping* dari yang sudah ada — contoh nyata: `galleryVideos` dibuat sebagai tabel terpisah di samping `galleryPhotos`, BUKAN merombak `galleryPhotos` jadi media polymorphic. Hindari refactor besar sistem yang sudah bekerja hanya demi "lebih rapi".
 - **Jangan hapus/ubah perilaku yang sudah jalan** tanpa alasan kuat dan konfirmasi. Kalau sesuatu terlihat "aneh", cari tahu **kenapa** dulu — sering kali itu keputusan sengaja (biasanya ada komentar Indonesia yang menjelaskan invariannya).
 - **Konsistensi > preferensi pribadi.** Pakai konvensi, styling (`globals.css`), util, dan struktur yang ditetapkan di dokumen ini, walau kamu terbiasa cara lain.
-- **Verifikasi sebelum menyebut selesai.** `npx tsc --noEmit` dan `npm run lint` wajib bersih. Tidak ada test runner otomatis — untuk perubahan berdampak runtime, uji manual (`npm run dev`).
+- **Verifikasi sebelum menyebut selesai.** `npx tsc --noEmit` wajib bersih (dan saat ini memang bersih). `npm run lint` **belum** sepenuhnya bersih: tersisa baseline ~13 error yang diwarisi (kebanyakan `react-hooks/set-state-in-effect` pada pola mounted-guard komponen, plus beberapa `no-explicit-any` di parsing body form) — semuanya tak berkaitan dengan penanganan error dan berisiko bila diutak-atik sembarangan. Jangan menambah error baru, dan jangan menganggap lint hijau sebagai syarat yang sudah terpenuhi — bandingkan jumlahnya sebelum & sesudah perubahan Anda. Tidak ada test runner otomatis — untuk perubahan berdampak runtime, uji manual (`npm run dev`).
 
 ## Tentang Proyek
 
@@ -97,6 +97,14 @@ Bagian Web Profil publik dan CMS Admin memakai layering identik dengan E-Surat (
 - **Domain**: `news` (berita), galeri = `galleryAlbums`/`galleryPhotos`/`galleryVideos`, `ppidDocuments`, `products`, plus konten teks generik lewat registry `siteContent`. Semua mengikuti pola yang sama — cari domain terdekat sebagai contoh sebelum menambah yang baru.
 - **Upload berkas**: gambar via `saveProfileImage()` (`imageUpload.ts`), dokumen via `saveDocument()` (`documentUpload.ts`). Berkas disimpan **DI LUAR `public/`** (folder `uploads/` di root) dan disajikan lewat route handler `src/app/uploads/**/route.ts`, **bukan** static file Next.js (alasan: lihat "Realitas Deployment"). Saat menghapus konten, **hapus juga file fisiknya** (`deleteProfileImage`/`deleteDocument`) — jangan hanya hapus baris DB.
 - **Video galeri** = referensi eksternal YouTube/Instagram (tabel `galleryVideos`), tidak diunggah ke server — URL di-parse via `parseVideoUrl()`, playback via embed.
+- **Video latar hero** = pengecualian yang disengaja: klip pendek (≤30 dtk) **di-host sendiri** di `uploads/video/`, karena iframe YouTube tak bisa dipakai sebagai latar autoplay-loop yang mulus (ada branding, kontrol, dan ratusan KB JS). Bedakan dari video galeri: itu tontonan sengaja & panjang → embed eksternal; ini dekorasi pendek → self-host kecil.
+  - Disajikan lewat `src/app/uploads/video/[filename]/route.ts` yang **mendukung HTTP Range** — wajib, karena Safari/iOS menolak memutar `<video>` dari sumber tanpa Range. Jangan pakai `serveUpload.ts` (membaca berkas utuh ke memori, tanpa Range).
+  - **Dikompres otomatis di server** oleh `ffmpeg` (720p, tanpa audio, CRF 30, `+faststart`) — operator boleh mengunggah rekaman drone mentahan hingga 500 MB, yang disajikan ke pengunjung ~2–3 MB. `ffmpeg` dipasang lewat `nixpacks.toml` (`aptPkgs`).
+  - Bila `ffmpeg` **tidak terpasang**, `saveHeroVideo()` tidak gagal — berkas disimpan apa adanya dan mengembalikan `compressed: false`. **Wajib diberitahukan ke operator** (CMS menampilkan peringatan), jangan didiamkan: video besar akan diunduh utuh oleh setiap pengunjung beranda.
+  - **Durasi ditegakkan di server** lewat `ffprobe` (>30 dtk ditolak), dengan `-t 30` sebagai pengaman. Cek `video.duration` di browser hanya untuk umpan balik cepat, bukan penjaga sesungguhnya.
+  - Berkas dikirim sebagai **raw body**, bukan `FormData`: `req.formData()` menumpuk SELURUH berkas di memori (500 MB unggahan = 500 MB RAM). `saveHeroVideo()` mengalirkan `req.body` langsung ke disk, dengan batas ukuran ditegakkan saat data mengalir (header `Content-Length` bisa dipalsukan). Terukur: unggah 300 MB hanya menaikkan RSS ~60 MB.
+  - Klien memakai **`XMLHttpRequest`**, bukan `fetch()` — hanya XHR yang bisa melaporkan progres unggah. Setelah 100% terkirim, kompresi ffmpeg berjalan tanpa progres yang bisa dipantau; UI menampilkan bar tak-tentu, jangan berpura-pura tahu persentasenya.
+  - Autoplay wajib `muted`; `preload="none"` dan `src` dipasang lewat ref agar tak ada unduhan bila pengunjung mengaktifkan hemat data (`navigator.connection.saveData`) atau `prefers-reduced-motion`.
 
 ## Realitas Deployment & Operasional (jangan diabaikan — sudah menyebabkan bug nyata)
 
@@ -144,7 +152,19 @@ src/
 
 Folder `uploads/` (root proyek, di-gitignore) = tempat berkas terunggah disimpan di runtime; **wajib** dipetakan ke persistent volume di produksi (lihat "Realitas Deployment").
 
-`src/controllers/` ada tapi kosong — sisa struktur lama, jangan dipakai untuk kode baru.
+## Penanganan error — pakai `AppError`, jangan teruskan `error.message` mentah
+
+**Masalah yang dulu ada** (sudah diperbaiki, jangan diulang): service melempar `new Error("pesan untuk warga")` — TAPI Drizzle/bcrypt/jose juga melempar `Error`, berisi teks query SQL. Karena keduanya `Error` polos, route tak bisa membedakannya dan meneruskan `error.message` apa adanya. Query SQL beserta NIK warga pernah tampil di form login CMS dan form register.
+
+**Konvensi sekarang** (`src/server/utils/appError.ts`):
+
+- **Service melempar `AppError`**, bukan `new Error`, untuk setiap pesan yang MEMANG boleh dibaca pengguna. Bawa `field`/`code`/`userId` lewat opsi konstruktor (mis. `throw new AppError("Email sudah terdaftar", { field: "email" })`), jangan `Object.assign`. `error: unknown` di `catch` lalu `error instanceof AppError` untuk membaca properti itu — **tak perlu `catch (error: any)` lagi**.
+- **Route API E-Surat**: `catch (error)` → `pesanAman(error, "pesan fallback")`. `AppError` diteruskan; error lain dicatat ke `console.error` dan diganti fallback.
+- **Server Action CMS**: `catch (err)` → `pesanAksi(err, "pesan fallback")`. Sama seperti `pesanAman` TAPI melempar ulang error kontrol Next (`redirect()`/`notFound()`) — kalau ditelan, guard sesi yang `redirect` di dalam `try` batal dan operator malah melihat toast "NEXT_REDIRECT".
+- **ACL** dikenali lewat `isACLError(error)` (bukan `error.name === "ACLError"`), lalu `handleACLError(error)`.
+- **Pengecualian**: `email.service.ts` sengaja melempar `Error` biasa (pesan internal "Email send failed: …") — memang TIDAK boleh sampai ke pengguna, jadi `pesanAman`/`pesanAksi` menggeneralkannya. Jangan ubah jadi `AppError`.
+
+Aturan singkat: **jangan pernah menaruh `error.message` mentah ke response/return** — selalu lewat `pesanAman`/`pesanAksi`.
 
 ## Aturan Penulisan Kode
 

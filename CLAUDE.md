@@ -110,8 +110,6 @@ src/
     └── utils/                    # session.ts, jwt.ts, hash.ts, otp.ts, letter-number.ts, upload.ts
 ```
 
-`src/controllers/` ada tapi kosong — sisa struktur lama, jangan dipakai untuk kode baru.
-
 ## Aturan Penulisan Kode
 
 - **TypeScript strict, hindari `any`.** ESLint (`@typescript-eslint/no-explicit-any`) menandainya sebagai error. Untuk `catch`, pakai `catch (err)` lalu narrow dengan `err instanceof Error`, atau definisikan tipe response API (lihat pola `ApiResponseJson` di `useSubmitAction.ts`) daripada `any`.
