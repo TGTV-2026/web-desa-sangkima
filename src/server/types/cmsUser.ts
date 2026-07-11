@@ -1,12 +1,13 @@
 import { z } from "zod";
 
-// Zod + tipe untuk akun CMS (super_admin / editor). Dipakai di service & form.
+// Zod + tipe untuk akun CMS (super_admin / editor / rt). Dipakai di service & form.
 
-export type CmsRole = "super_admin" | "editor";
+export type CmsRole = "super_admin" | "editor" | "rt";
 
 export const CMS_ROLE_LABELS: Record<CmsRole, string> = {
   super_admin: "Super Admin",
   editor: "Editor",
+  rt: "Ketua RT",
 };
 
 export const cmsLoginSchema = z.object({
@@ -44,7 +45,29 @@ export type CmsUserDTO = {
   active: boolean;
   /** false = akun hanya bisa melihat isi CMS, semua aksi tulis ditolak. */
   emailVerified: boolean;
+  /** hanya terisi untuk role "rt" */
+  dusun: string | null;
+  rt: string | null;
   createdAt: Date | null;
+};
+
+// === Bulk-create akun Ketua RT lewat CSV (super_admin) ===
+
+// Satu baris CSV: nama,email,dusun,rt,sandi. Sandi bersifat SEMENTARA — akun
+// dibuat dengan mustChangePassword=true sehingga wajib ganti saat login pertama.
+export const rtCsvRowSchema = z.object({
+  nama: z.string().trim().min(2, "Nama minimal 2 karakter").max(255),
+  email: z.string().trim().email("Email tidak valid").max(255),
+  dusun: z.string().trim().min(1, "Dusun wajib diisi").max(100),
+  rt: z.string().trim().min(1, "Nomor RT wajib diisi").max(10),
+  sandi: z.string().min(6, "Sandi minimal 6 karakter"),
+});
+export type RtCsvRow = z.infer<typeof rtCsvRowSchema>;
+
+/** Hasil bulk-create: baris sukses & gagal dilaporkan per-baris ke super_admin. */
+export type BulkRtResult = {
+  dibuat: { nama: string; email: string; dusun: string; rt: string }[];
+  gagal: { baris: number; alasan: string }[];
 };
 
 // === Kelola akun sendiri (berlaku untuk super_admin maupun editor) ===

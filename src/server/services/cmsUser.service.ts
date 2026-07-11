@@ -15,6 +15,8 @@ import {
   cmsUserUpdateSchema,
   cmsVerifyEmailChangeSchema,
   cmsVerifyEmailSchema,
+  rtCsvRowSchema,
+  type BulkRtResult,
   type CmsRole,
   type CmsUserDTO,
 } from "../types/cmsUser";
@@ -27,6 +29,19 @@ function readNewEmail(meta: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
+/**
+ * Cocokkan nama dusun dari CSV ke nama kanonik di statistik publik.
+ * Toleran terhadap beda kapital & awalan "Dusun " ("lestari jaya" cocok dengan
+ * "Dusun Lestari Jaya") — kalau tak cocok persis, rekap laporan takkan pernah
+ * masuk statistik. Return nama kanonik, atau null bila tidak dikenal.
+ */
+function cocokkanDusun(input: string, kanonik: string[]): string | null {
+  const norm = (s: string) =>
+    s.toLowerCase().replace(/^dusun\s+/i, "").trim();
+  const target = norm(input);
+  return kanonik.find((k) => norm(k) === target) ?? null;
+}
+
 function toDTO(
   row: NonNullable<Awaited<ReturnType<typeof cmsUserRepository.findById>>>,
 ): CmsUserDTO {
@@ -37,6 +52,8 @@ function toDTO(
     role: row.role as CmsRole,
     active: !row.deletedAt,
     emailVerified: !!row.emailVerifiedAt,
+    dusun: row.dusun,
+    rt: row.rt,
     createdAt: row.createdAt,
   };
 }
@@ -180,7 +197,106 @@ export const cmsUserService = {
 
     await cmsUserRepository.update(id, {
       password: await hashPassword(data.newPassword),
+      // Sandi sudah milik pengguna sendiri — kewajiban ganti sandi sementara
+      // (akun bulk-CSV) selesai di sini.
+      mustChangePassword: false,
     });
+  },
+
+  /**
+   * Buat akun Ketua RT secara massal dari CSV (nama,email,dusun,rt,sandi).
+   * Tiap akun: role "rt", sandi SEMENTARA (wajib ganti saat login pertama),
+   * dan langsung terverifikasi — super_admin yang mengunggah CSV-lah penjamin
+   * identitasnya, gerbang keamanannya dipindah ke wajib-ganti-sandi.
+   * Baris yang gagal dilaporkan satu-satu, baris yang valid tetap dibuat.
+   */
+  async bulkCreateRt(
+    rows: unknown[],
+    opts: { dusunValid: string[] },
+  ): Promise<BulkRtResult> {
+    const hasil: BulkRtResult = { dibuat: [], gagal: [] };
+    // nomor RT per dusun & email tak boleh kembar — cek juga antar-baris CSV,
+    // bukan hanya terhadap DB
+    const emailDipakai = new Set<string>();
+    const rtDipakai = new Set<string>();
+    for (const akun of await cmsUserRepository.findAll()) {
+      if (akun.deletedAt) continue;
+      emailDipakai.add(akun.email.toLowerCase());
+      if (akun.role === "rt" && akun.dusun && akun.rt) {
+        rtDipakai.add(`${akun.dusun}|${akun.rt}`);
+      }
+    }
+
+    for (let i = 0; i < rows.length; i++) {
+      const nomorBaris = i + 2; // +2: baris 1 = header CSV
+      const parsed = rtCsvRowSchema.safeParse(rows[i]);
+      if (!parsed.success) {
+        hasil.gagal.push({
+          baris: nomorBaris,
+          alasan: parsed.error.issues[0]?.message ?? "Data tidak valid",
+        });
+        continue;
+      }
+      const d = parsed.data;
+
+      // Dusun dinormalkan ke nama kanonik statistik publik — kalau tidak cocok
+      // persis, rekap laporan RT tak akan pernah masuk ke statistik dusun.
+      const dusunKanonik = cocokkanDusun(d.dusun, opts.dusunValid);
+      if (!dusunKanonik) {
+        hasil.gagal.push({
+          baris: nomorBaris,
+          alasan: `Dusun "${d.dusun}" tidak dikenal. Pilihan: ${opts.dusunValid.join(", ")}`,
+        });
+        continue;
+      }
+
+      const emailKey = d.email.toLowerCase();
+      if (emailDipakai.has(emailKey)) {
+        hasil.gagal.push({
+          baris: nomorBaris,
+          alasan: `Email ${d.email} sudah dipakai akun lain`,
+        });
+        continue;
+      }
+      const existing = await cmsUserRepository.findByEmail(d.email);
+      if (existing) {
+        hasil.gagal.push({
+          baris: nomorBaris,
+          alasan: `Email ${d.email} sudah dipakai akun lain`,
+        });
+        continue;
+      }
+
+      const rtKey = `${dusunKanonik}|${d.rt}`;
+      if (rtDipakai.has(rtKey)) {
+        hasil.gagal.push({
+          baris: nomorBaris,
+          alasan: `RT ${d.rt} di ${dusunKanonik} sudah punya akun`,
+        });
+        continue;
+      }
+
+      await cmsUserRepository.insert({
+        name: d.nama,
+        email: d.email,
+        role: "rt",
+        dusun: dusunKanonik,
+        rt: d.rt,
+        password: await hashPassword(d.sandi),
+        mustChangePassword: true,
+        emailVerifiedAt: new Date(),
+      });
+      emailDipakai.add(emailKey);
+      rtDipakai.add(rtKey);
+      hasil.dibuat.push({
+        nama: d.nama,
+        email: d.email,
+        dusun: dusunKanonik,
+        rt: d.rt,
+      });
+    }
+
+    return hasil;
   },
 
   /**

@@ -3,15 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { CmsRole } from "@/server/types/cmsUser";
-import { ADMIN_NAV } from "./nav";
+import { navUntukRole } from "./nav";
 
 // Sidebar navigasi CMS; menyorot menu aktif berdasarkan path.
-// Menu superAdminOnly hanya tampil untuk super_admin.
+// Menu difilter per peran (akun rt hanya melihat Laporan RT & Akun Saya).
 export default function AdminNav({ role }: { role: CmsRole }) {
   const pathname = usePathname();
-  const items = ADMIN_NAV.filter(
-    (item) => !item.superAdminOnly || role === "super_admin",
-  );
+  const items = navUntukRole(role);
   return (
     <nav className="flex flex-col gap-1" data-tour="nav">
       {items.map((item) => {

@@ -3,8 +3,8 @@ const MONTHS_ID = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
 
-/** "2026-06-10T..." -> "10 Juni 2026" */
-export function formatTanggal(iso: string | null | undefined): string {
+/** "2026-06-10T..." (atau objek Date) -> "10 Juni 2026" */
+export function formatTanggal(iso: string | Date | null | undefined): string {
   if (!iso) return "-";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "-";
@@ -21,8 +21,8 @@ export function formatRupiah(value: number | null | undefined): string {
   }).format(value);
 }
 
-/** "2026-06-10T08:30:00Z" -> "10 Juni 2026, 16.30" (waktu lokal) */
-export function formatTanggalWaktu(iso: string | null | undefined): string {
+/** "2026-06-10T08:30:00Z" (atau objek Date) -> "10 Juni 2026, 16.30" (waktu lokal) */
+export function formatTanggalWaktu(iso: string | Date | null | undefined): string {
   if (!iso) return "-";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "-";

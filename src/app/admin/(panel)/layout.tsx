@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireCmsUser } from "@/server/utils/cmsSession";
 import { CMS_ROLE_LABELS } from "@/server/types/cmsUser";
 import AdminNav from "./AdminNav";
@@ -14,6 +15,10 @@ export default async function AdminPanelLayout({
   children: React.ReactNode;
 }) {
   const user = await requireCmsUser();
+
+  // Sandi masih sandi sementara dari super_admin (akun hasil bulk-CSV) —
+  // wajib diganti dulu sebelum boleh menyentuh apa pun di CMS.
+  if (user.mustChangePassword) redirect("/admin/ganti-sandi");
 
   return (
     <div className="flex min-h-screen flex-col bg-paper">

@@ -17,6 +17,11 @@ export type CmsSessionUser = {
   email: string;
   role: CmsRole;
   emailVerified: boolean;
+  /** hanya terisi untuk role "rt" */
+  dusun: string | null;
+  rt: string | null;
+  /** true = sandi masih sandi sementara dari super_admin, wajib diganti dulu */
+  mustChangePassword: boolean;
 };
 
 function secret() {
@@ -68,6 +73,9 @@ export async function getCmsUser(): Promise<CmsSessionUser | null> {
       email: row.email,
       role: row.role as CmsRole,
       emailVerified: !!row.emailVerifiedAt,
+      dusun: row.dusun,
+      rt: row.rt,
+      mustChangePassword: row.mustChangePassword,
     };
   } catch {
     return null;
@@ -85,6 +93,16 @@ export async function requireCmsUser(): Promise<CmsSessionUser> {
 export async function requireSuperAdmin(): Promise<CmsSessionUser> {
   const user = await requireCmsUser();
   if (user.role !== "super_admin") redirect("/admin");
+  return user;
+}
+
+/** Guard khusus ketua RT (modul Laporan RT — mengisi laporan sendiri). */
+export async function requireRtUser(): Promise<CmsSessionUser> {
+  const user = await requireCmsUser();
+  if (user.role !== "rt") redirect("/admin");
+  // Sandi sementara belum diganti → paksa ke halaman ganti sandi. Ditegakkan
+  // di guard (bukan cuma layout) supaya server action pun ikut terkunci.
+  if (user.mustChangePassword) redirect("/admin/ganti-sandi");
   return user;
 }
 
