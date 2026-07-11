@@ -6,6 +6,9 @@ import AdminNav from "./AdminNav";
 import AdminLogout from "./AdminLogout";
 import TourButton from "./TourButton";
 import CmsTour from "./CmsTour";
+import SidebarProvider from "./SidebarProvider";
+import SidebarToggle from "./SidebarToggle";
+import CmsSidebar from "./CmsSidebar";
 
 // Shell + guard untuk seluruh halaman CMS. Belum login → requireCmsUser
 // mengalihkan ke /admin/login.
@@ -21,11 +24,13 @@ export default async function AdminPanelLayout({
   if (user.mustChangePassword) redirect("/admin/ganti-sandi");
 
   return (
-    <div className="flex min-h-screen flex-col bg-paper">
+    <SidebarProvider>
+      <div className="flex min-h-screen flex-col bg-paper">
       {/* Bar atas */}
       <header className="sticky top-0 z-20 border-b border-line bg-paper/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1100px] items-center justify-between px-5 py-3">
           <div className="flex items-center gap-3">
+            <SidebarToggle />
             <span className="font-serif text-lg font-medium text-pine-900">
               CMS Desa Sangkima
             </span>
@@ -67,8 +72,8 @@ export default async function AdminPanelLayout({
       )}
 
       <div className="mx-auto flex w-full max-w-[1100px] flex-1 flex-col gap-8 px-5 py-8 md:flex-row">
-        {/* Sidebar */}
-        <aside className="md:w-60 md:shrink-0">
+        {/* Sidebar — kolom bisa dilipat (desktop) / drawer (mobile) */}
+        <CmsSidebar>
           <Link
             href="/admin"
             className="mb-4 block text-[11px] font-bold uppercase tracking-[0.18em] text-inkmut hover:text-pine-900"
@@ -84,7 +89,7 @@ export default async function AdminPanelLayout({
           >
             Lihat situs publik ↗
           </Link>
-        </aside>
+        </CmsSidebar>
 
         {/* Konten */}
         <main className="min-w-0 flex-1">{children}</main>
@@ -92,6 +97,7 @@ export default async function AdminPanelLayout({
 
       {/* Tur berpandu untuk operator (auto saat pertama, ulang via tombol Panduan) */}
       <CmsTour />
-    </div>
+      </div>
+    </SidebarProvider>
   );
 }
