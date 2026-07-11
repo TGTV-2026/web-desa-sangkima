@@ -9,7 +9,6 @@ import { Close, Menu } from "./icons";
 // menavigasi ke beranda lalu scroll ke anchor-nya.
 const LINKS = [
   { label: "Beranda", href: "/#beranda" },
-  { label: "Layanan", href: "/#layanan" },
   { label: "Profil", href: "/profil" },
   { label: "Berita", href: "/berita" },
   { label: "Produk", href: "/produk" },
