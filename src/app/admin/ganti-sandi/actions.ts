@@ -1,13 +1,14 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { cmsUserService } from "@/server/services/cmsUser.service";
 import { requireCmsUser } from "@/server/utils/cmsSession";
 import { pesanAksi } from "@/server/utils/appError";
 
-export type GantiSandiResult =
-  | { success: true }
-  | { success: false; message: string };
+// Sukses → server action langsung redirect ke /admin (seperti loginCms), jadi
+// void. Hanya kegagalan yang dikembalikan ke form.
+export type GantiSandiResult = { success: false; message: string } | void;
 
 /**
  * Ganti sandi sementara (akun hasil bulk-CSV, mustChangePassword=true).
@@ -17,7 +18,6 @@ export async function gantiSandiWajib(input: unknown): Promise<GantiSandiResult>
   const me = await requireCmsUser();
   try {
     await cmsUserService.changeOwnPassword(me.id, input);
-    return { success: true };
   } catch (err) {
     if (err instanceof z.ZodError) {
       return {
@@ -27,4 +27,7 @@ export async function gantiSandiWajib(input: unknown): Promise<GantiSandiResult>
     }
     return { success: false, message: pesanAksi(err, "Gagal mengganti kata sandi.") };
   }
+  // Di luar try agar redirect (yang melempar NEXT_REDIRECT) tak tertangkap
+  // sebagai error. Flag mustChangePassword sudah bersih → /admin tak memantul.
+  redirect("/admin");
 }

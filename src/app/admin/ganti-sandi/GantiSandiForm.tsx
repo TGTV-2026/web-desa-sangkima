@@ -1,14 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import FormField from "@/components/esurat/FormField";
 import { useToast } from "@/hooks/useToast";
 import { gantiSandiWajib } from "./actions";
 
 export default function GantiSandiForm() {
   const { toast } = useToast();
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   const [currentPassword, setCurrentPassword] = useState("");
@@ -23,14 +21,8 @@ export default function GantiSandiForm() {
         newPassword,
         confirmPassword,
       });
-      if (res.success) {
-        toast("Kata sandi berhasil diganti.", "Tersimpan", "success");
-        // Flag mustChangePassword sudah bersih — masuk ke CMS.
-        router.push("/admin");
-        router.refresh();
-      } else {
-        toast(res.message, "Gagal", "error");
-      }
+      // Sukses → server action me-redirect ke /admin; hanya error yang balik ke sini.
+      if (res && !res.success) toast(res.message, "Gagal", "error");
     });
   }
 
