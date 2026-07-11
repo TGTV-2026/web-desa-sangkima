@@ -1,3 +1,4 @@
+import { AppError } from "./appError";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createId } from "@paralleldrive/cuid2";
@@ -31,10 +32,10 @@ export async function saveProfileImage(
   opts?: { variant?: ImageVariant },
 ): Promise<string> {
   if (!ALLOWED_IMAGE_TYPES[file.mime]) {
-    throw new Error("Format gambar harus JPG, PNG, atau WEBP");
+    throw new AppError("Format gambar harus JPG, PNG, atau WEBP");
   }
   if (file.size > MAX_IMAGE_SIZE) {
-    throw new Error(`Ukuran gambar melebihi ${MAX_IMAGE_LABEL}`);
+    throw new AppError(`Ukuran gambar melebihi ${MAX_IMAGE_LABEL}`);
   }
 
   const { buffer, ext } = await compressImage(

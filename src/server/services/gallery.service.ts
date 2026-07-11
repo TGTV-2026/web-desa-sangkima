@@ -1,3 +1,4 @@
+import { AppError } from "../utils/appError";
 import { createId } from "@paralleldrive/cuid2";
 import { galleryRepository } from "../repositories/gallery.repository";
 import { deleteProfileImage } from "../utils/imageUpload";
@@ -150,7 +151,7 @@ export const galleryService = {
     url: string,
     caption?: string,
   ): Promise<void> {
-    if (!url) throw new Error("URL foto kosong");
+    if (!url) throw new AppError("URL foto kosong");
     await galleryRepository.insertPhoto({
       id: createId(),
       albumId,
@@ -183,7 +184,7 @@ export const galleryService = {
   ): Promise<void> {
     const parsed = parseVideoUrl(url);
     if (!parsed) {
-      throw new Error("Link tidak dikenali. Gunakan link YouTube atau Instagram.");
+      throw new AppError("Link tidak dikenali. Gunakan link YouTube atau Instagram.");
     }
     // YouTube punya thumbnail publik tanpa API key; Instagram bawa preview
     // sendiri lewat embed, jadi dibiarkan null.

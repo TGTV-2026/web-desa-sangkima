@@ -1,4 +1,5 @@
 "use server";
+import { pesanAksi } from "@/server/utils/appError";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -33,7 +34,7 @@ export async function createAlbum(input: unknown): Promise<AlbumResult> {
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
   // Langsung ke halaman kelola foto album baru.
@@ -56,7 +57,7 @@ export async function updateAlbum(
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
 }
@@ -70,7 +71,7 @@ export async function deleteAlbum(id: string): Promise<AlbumResult> {
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menghapus.",
+      message: pesanAksi(err, "Gagal menghapus."),
     };
   }
 }
@@ -89,7 +90,7 @@ export async function addAlbumPhoto(
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menambah foto.",
+      message: pesanAksi(err, "Gagal menambah foto."),
     };
   }
 }
@@ -107,7 +108,7 @@ export async function deleteAlbumPhoto(
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menghapus foto.",
+      message: pesanAksi(err, "Gagal menghapus foto."),
     };
   }
 }
@@ -125,7 +126,7 @@ export async function setAlbumCover(
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal mengatur sampul.",
+      message: pesanAksi(err, "Gagal mengatur sampul."),
     };
   }
 }
@@ -144,7 +145,7 @@ export async function addAlbumVideo(
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menambah video.",
+      message: pesanAksi(err, "Gagal menambah video."),
     };
   }
 }
@@ -162,7 +163,7 @@ export async function deleteAlbumVideo(
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menghapus video.",
+      message: pesanAksi(err, "Gagal menghapus video."),
     };
   }
 }

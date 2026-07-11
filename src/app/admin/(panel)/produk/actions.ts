@@ -1,4 +1,5 @@
 "use server";
+import { pesanAksi } from "@/server/utils/appError";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -26,7 +27,7 @@ export async function createProduct(input: unknown): Promise<ProductResult> {
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
   redirect("/admin/produk");
@@ -47,7 +48,7 @@ export async function updateProduct(
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
   redirect("/admin/produk");
@@ -62,7 +63,7 @@ export async function deleteProduct(id: string): Promise<ProductResult> {
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menghapus.",
+      message: pesanAksi(err, "Gagal menghapus."),
     };
   }
 }

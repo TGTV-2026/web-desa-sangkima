@@ -1,3 +1,4 @@
+import { AppError } from "../utils/appError";
 import { positionRepository } from "../repositories/position.repository";
 import {
   createPositionSchema,
@@ -55,7 +56,7 @@ export const positionService = {
 
   async getById(id: string): Promise<PositionDTO> {
     const row = await positionRepository.findById(id);
-    if (!row) throw new Error("Jabatan tidak ditemukan");
+    if (!row) throw new AppError("Jabatan tidak ditemukan");
     return toDTO(row);
   },
 
@@ -63,10 +64,10 @@ export const positionService = {
     const data = createPositionSchema.parse(input);
 
     const existing = await positionRepository.findByName(data.name);
-    if (existing) throw new Error("Nama jabatan sudah digunakan");
+    if (existing) throw new AppError("Nama jabatan sudah digunakan");
 
     const created = await positionRepository.create(data);
-    if (!created) throw new Error("Gagal membuat jabatan");
+    if (!created) throw new AppError("Gagal membuat jabatan");
     return toDTO(created);
   },
 
@@ -74,19 +75,19 @@ export const positionService = {
     const data = updatePositionSchema.parse(input);
 
     const current = await positionRepository.findById(id);
-    if (!current) throw new Error("Jabatan tidak ditemukan");
+    if (!current) throw new AppError("Jabatan tidak ditemukan");
 
     // jika nama diubah, pastikan tidak bentrok dengan jabatan lain
     if (data.name && data.name !== current.name) {
       const duplicate = await positionRepository.findByName(data.name);
-      if (duplicate) throw new Error("Nama jabatan sudah digunakan");
+      if (duplicate) throw new AppError("Nama jabatan sudah digunakan");
     }
 
     // tidak ada field yang diubah -> kembalikan data saat ini
     if (Object.keys(data).length === 0) return toDTO(current);
 
     const updated = await positionRepository.update(id, data);
-    if (!updated) throw new Error("Gagal memperbarui jabatan");
+    if (!updated) throw new AppError("Gagal memperbarui jabatan");
     return toDTO(updated);
   },
 

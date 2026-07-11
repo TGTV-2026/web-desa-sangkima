@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { cmsUserService } from "@/server/services/cmsUser.service";
 import { requireCmsUser } from "@/server/utils/cmsSession";
+import { pesanAksi } from "@/server/utils/appError";
 
 export type VerifikasiResult =
   | { success: true; message: string }
@@ -13,7 +14,7 @@ function toMessage(err: unknown, fallback: string): string {
   if (err instanceof z.ZodError) {
     return err.issues[0]?.message ?? "Periksa isian — ada yang belum valid.";
   }
-  return err instanceof Error ? err.message : fallback;
+  return pesanAksi(err, fallback);
 }
 
 // Sengaja pakai requireCmsUser (bukan requireVerifiedCmsUser) — justru akun yang

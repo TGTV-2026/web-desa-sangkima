@@ -1,3 +1,4 @@
+import { AppError, pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/letter-requests/{id}/preview:
@@ -33,6 +34,7 @@ import { letterRequestService } from "@/server/services/letterRequest.service";
 import {
   requireRole,
   handleACLError,
+  isACLError,
 } from "@/server/middlewares/acl.middleware";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -53,13 +55,14 @@ export async function GET(req: Request, { params }: RouteContext) {
         "Cache-Control": "no-store",
       },
     });
-  } catch (error: any) {
-    if (error.name === "ACLError") return handleACLError(error);
-    const isForbidden = /berhak/i.test(error.message || "");
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
+    const isForbidden =
+      error instanceof AppError && /berhak/i.test(error.message);
     return Response.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: isForbidden ? 403 : 400 },
     );

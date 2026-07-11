@@ -1,3 +1,4 @@
+import { pesanAman } from "@/server/utils/appError";
 import { NextResponse } from "next/server";
 import { pool } from "@/server/db";
 
@@ -46,7 +47,7 @@ export async function GET(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: err instanceof Error ? err.message : "Gagal menjalankan migrasi.",
+        message: pesanAman(err, "Gagal menjalankan migrasi."),
       },
       { status: 500 },
     );

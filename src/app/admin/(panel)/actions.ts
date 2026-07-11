@@ -1,4 +1,5 @@
 "use server";
+import { pesanAksi } from "@/server/utils/appError";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -76,7 +77,7 @@ export async function saveSection(
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
 }

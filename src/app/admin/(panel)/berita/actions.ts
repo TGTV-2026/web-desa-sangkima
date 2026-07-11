@@ -1,4 +1,5 @@
 "use server";
+import { pesanAksi } from "@/server/utils/appError";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -26,7 +27,7 @@ export async function createNews(input: unknown): Promise<NewsResult> {
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
   redirect("/admin/berita");
@@ -47,7 +48,7 @@ export async function updateNews(
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
   redirect("/admin/berita");
@@ -62,7 +63,7 @@ export async function deleteNews(id: string): Promise<NewsResult> {
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menghapus.",
+      message: pesanAksi(err, "Gagal menghapus."),
     };
   }
 }

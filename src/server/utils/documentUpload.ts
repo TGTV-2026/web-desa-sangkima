@@ -1,3 +1,4 @@
+import { AppError } from "./appError";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createId } from "@paralleldrive/cuid2";
@@ -29,10 +30,10 @@ export async function saveDocument(file: {
   buffer: Buffer;
 }): Promise<string> {
   if (!ALLOWED_DOC_TYPES[file.mime]) {
-    throw new Error("Berkas harus PDF, JPG, atau PNG");
+    throw new AppError("Berkas harus PDF, JPG, atau PNG");
   }
   if (file.size > MAX_DOC_SIZE) {
-    throw new Error(`Ukuran berkas melebihi ${MAX_DOC_LABEL}`);
+    throw new AppError(`Ukuran berkas melebihi ${MAX_DOC_LABEL}`);
   }
 
   await fs.mkdir(PUBLIC_DIR, { recursive: true });

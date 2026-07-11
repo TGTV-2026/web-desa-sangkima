@@ -1,3 +1,4 @@
+import { pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/auth/me:
@@ -115,11 +116,11 @@ export async function GET(req: Request) {
       },
       { status: 200 },
     );
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 500 },
     );

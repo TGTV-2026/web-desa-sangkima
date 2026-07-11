@@ -1,3 +1,4 @@
+import { AppError, pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/users/profile:
@@ -82,6 +83,7 @@ import { userService } from "@/server/services/user.service";
 import {
   requireRole,
   handleACLError,
+  isACLError,
 } from "@/server/middlewares/acl.middleware";
 
 export async function GET(req: Request) {
@@ -93,13 +95,13 @@ export async function GET(req: Request) {
       { success: true, message: "Profil berhasil diambil", data },
       { status: 200 },
     );
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === "ACLError")
-      return handleACLError(error);
-    const message =
-      error instanceof Error ? error.message : "Terjadi kesalahan internal server";
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     return NextResponse.json(
-      { success: false, message },
+      {
+        success: false,
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
+      },
       { status: 500 },
     );
   }
@@ -156,9 +158,8 @@ export async function PUT(req: Request) {
       { success: true, message: "Profil berhasil diperbarui", data },
       { status: 200 },
     );
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === "ACLError")
-      return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -169,11 +170,13 @@ export async function PUT(req: Request) {
         { status: 400 },
       );
     }
-    const message =
-      error instanceof Error ? error.message : "Terjadi kesalahan internal server";
-    const isNotFound = message.includes("tidak ditemukan");
+    const isNotFound =
+      error instanceof AppError && error.message.includes("tidak ditemukan");
     return NextResponse.json(
-      { success: false, message },
+      {
+        success: false,
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
+      },
       { status: isNotFound ? 404 : 400 },
     );
   }

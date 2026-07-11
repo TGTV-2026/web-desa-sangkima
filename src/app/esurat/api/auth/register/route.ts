@@ -1,3 +1,4 @@
+import { AppError, pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/auth/register:
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
       },
       { status: 201 },
     );
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -113,7 +114,7 @@ export async function POST(req: Request) {
     // Email/NIK sudah terdaftar: petakan ke struktur errors per-field yang
     // sama dengan output Zod, agar frontend bisa menampilkan border merah
     // pada input yang tepat tanpa logika tambahan.
-    if (error?.field) {
+    if (error instanceof AppError && error.field) {
       return NextResponse.json(
         {
           success: false,
@@ -127,7 +128,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 400 },
     );

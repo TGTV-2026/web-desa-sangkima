@@ -1,3 +1,4 @@
+import { AppError, pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/letter-requests/{id}:
@@ -75,6 +76,7 @@ import { letterRequestService } from "@/server/services/letterRequest.service";
 import {
   requireRole,
   handleACLError,
+  isACLError,
 } from "@/server/middlewares/acl.middleware";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -89,12 +91,12 @@ export async function GET(req: Request, { params }: RouteContext) {
       { success: true, message: "Detail pengajuan berhasil diambil", data },
       { status: 200 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 404 },
     );
@@ -115,8 +117,8 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       { success: true, message: "Status pengajuan diperbarui", data },
       { status: 200 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -128,11 +130,12 @@ export async function PATCH(req: Request, { params }: RouteContext) {
       );
     }
     // pesan aturan role dari service (mis. approve hanya admin) -> 403
-    const isForbidden = /berhak|Hanya/i.test(error.message || "");
+    const isForbidden =
+      error instanceof AppError && /berhak|Hanya/i.test(error.message);
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: isForbidden ? 403 : 400 },
     );

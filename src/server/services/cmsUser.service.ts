@@ -1,3 +1,4 @@
+import { AppError } from "../utils/appError";
 import { createId } from "@paralleldrive/cuid2";
 import { cmsUserRepository } from "../repositories/cmsUser.repository";
 import { cmsUserTokenRepository } from "../repositories/cmsUserToken.repository";
@@ -59,17 +60,17 @@ export const cmsUserService = {
     const { email, password } = cmsLoginSchema.parse(input);
     const row = await cmsUserRepository.findByEmail(email);
     if (!row || row.deletedAt) {
-      throw new Error("Email atau kata sandi salah");
+      throw new AppError("Email atau kata sandi salah");
     }
     const ok = await comparePassword(password, row.password);
-    if (!ok) throw new Error("Email atau kata sandi salah");
+    if (!ok) throw new AppError("Email atau kata sandi salah");
     return { id: row.id };
   },
 
   async create(input: unknown): Promise<CmsUserDTO> {
     const data = cmsUserCreateSchema.parse(input);
     const existing = await cmsUserRepository.findByEmail(data.email);
-    if (existing) throw new Error("Email sudah dipakai akun lain");
+    if (existing) throw new AppError("Email sudah dipakai akun lain");
     const id = createId();
     await cmsUserRepository.insert({
       id,
@@ -86,12 +87,12 @@ export const cmsUserService = {
   async update(id: string, input: unknown): Promise<void> {
     const data = cmsUserUpdateSchema.parse(input);
     const target = await cmsUserRepository.findById(id);
-    if (!target) throw new Error("Akun tidak ditemukan");
+    if (!target) throw new AppError("Akun tidak ditemukan");
 
     // Email boleh sama dengan miliknya sendiri, tapi tak boleh bentrok akun lain.
     const other = await cmsUserRepository.findByEmail(data.email);
     if (other && other.id !== id) {
-      throw new Error("Email sudah dipakai akun lain");
+      throw new AppError("Email sudah dipakai akun lain");
     }
 
     // Peran tidak diubah lewat UI (tetap seperti semula).
@@ -110,7 +111,7 @@ export const cmsUserService = {
     if (target.role === "super_admin") {
       const count = await cmsUserRepository.countActiveSuperAdmins();
       if (count <= 1) {
-        throw new Error("Minimal harus ada satu Super Admin aktif");
+        throw new AppError("Minimal harus ada satu Super Admin aktif");
       }
     }
     await cmsUserRepository.update(id, { deletedAt: new Date() });
@@ -129,7 +130,7 @@ export const cmsUserService = {
     const target = await cmsUserRepository.findById(id);
     if (!target) return;
     if (target.role === "super_admin") {
-      throw new Error("Akun Super Admin tidak bisa dihapus permanen.");
+      throw new AppError("Akun Super Admin tidak bisa dihapus permanen.");
     }
     await cmsUserRepository.hardDelete(id);
   },
@@ -172,10 +173,10 @@ export const cmsUserService = {
   async changeOwnPassword(id: string, input: unknown): Promise<void> {
     const data = cmsChangePasswordSchema.parse(input);
     const row = await cmsUserRepository.findById(id);
-    if (!row || row.deletedAt) throw new Error("Akun tidak ditemukan");
+    if (!row || row.deletedAt) throw new AppError("Akun tidak ditemukan");
 
     const ok = await comparePassword(data.currentPassword, row.password);
-    if (!ok) throw new Error("Kata sandi saat ini salah");
+    if (!ok) throw new AppError("Kata sandi saat ini salah");
 
     await cmsUserRepository.update(id, {
       password: await hashPassword(data.newPassword),
@@ -193,16 +194,16 @@ export const cmsUserService = {
   ): Promise<{ newEmail: string }> {
     const data = cmsRequestEmailChangeSchema.parse(input);
     const row = await cmsUserRepository.findById(id);
-    if (!row || row.deletedAt) throw new Error("Akun tidak ditemukan");
+    if (!row || row.deletedAt) throw new AppError("Akun tidak ditemukan");
 
     const ok = await comparePassword(data.currentPassword, row.password);
-    if (!ok) throw new Error("Kata sandi saat ini salah");
+    if (!ok) throw new AppError("Kata sandi saat ini salah");
 
     if (data.newEmail === row.email) {
-      throw new Error("Email baru sama dengan email saat ini");
+      throw new AppError("Email baru sama dengan email saat ini");
     }
     const taken = await cmsUserRepository.findByEmail(data.newEmail);
-    if (taken) throw new Error("Email sudah dipakai akun lain");
+    if (taken) throw new AppError("Email sudah dipakai akun lain");
 
     const otp = generateOTP();
     await cmsUserTokenRepository.deleteByUserAndType(id, "EmailChange");
@@ -218,7 +219,7 @@ export const cmsUserService = {
       await sendOTPEmail(data.newEmail, otp);
     } catch (err) {
       console.error("Gagal mengirim OTP ganti email CMS:", err);
-      throw new Error("Gagal mengirim kode OTP ke email baru");
+      throw new AppError("Gagal mengirim kode OTP ke email baru");
     }
     return { newEmail: data.newEmail };
   },
@@ -234,15 +235,15 @@ export const cmsUserService = {
       data.otp,
       "EmailChange",
     );
-    if (!token) throw new Error("Kode OTP tidak valid atau sudah kedaluwarsa");
+    if (!token) throw new AppError("Kode OTP tidak valid atau sudah kedaluwarsa");
 
     const newEmail = readNewEmail(token.meta);
-    if (!newEmail) throw new Error("Data email baru tidak ditemukan");
+    if (!newEmail) throw new AppError("Data email baru tidak ditemukan");
 
     // Cek ulang: email bisa saja keburu dipakai akun lain sejak OTP dikirim.
     const taken = await cmsUserRepository.findByEmail(newEmail);
     if (taken && taken.id !== id) {
-      throw new Error("Email sudah dipakai akun lain");
+      throw new AppError("Email sudah dipakai akun lain");
     }
 
     // OTP tadi dikirim ke email baru dan berhasil dimasukkan → kepemilikan email
@@ -259,8 +260,8 @@ export const cmsUserService = {
   /** Kirim OTP verifikasi ke email akun sendiri (editor yang baru dibuat). */
   async requestEmailVerification(id: string): Promise<{ email: string }> {
     const row = await cmsUserRepository.findById(id);
-    if (!row || row.deletedAt) throw new Error("Akun tidak ditemukan");
-    if (row.emailVerifiedAt) throw new Error("Email sudah terverifikasi");
+    if (!row || row.deletedAt) throw new AppError("Akun tidak ditemukan");
+    if (row.emailVerifiedAt) throw new AppError("Email sudah terverifikasi");
 
     const otp = generateOTP();
     await cmsUserTokenRepository.deleteByUserAndType(id, "EmailVerify");
@@ -275,7 +276,7 @@ export const cmsUserService = {
       await sendOTPEmail(row.email, otp);
     } catch (err) {
       console.error("Gagal mengirim OTP verifikasi email CMS:", err);
-      throw new Error("Gagal mengirim kode OTP");
+      throw new AppError("Gagal mengirim kode OTP");
     }
     return { email: row.email };
   },
@@ -284,7 +285,7 @@ export const cmsUserService = {
   async verifyEmail(id: string, input: unknown): Promise<void> {
     const data = cmsVerifyEmailSchema.parse(input);
     const row = await cmsUserRepository.findById(id);
-    if (!row || row.deletedAt) throw new Error("Akun tidak ditemukan");
+    if (!row || row.deletedAt) throw new AppError("Akun tidak ditemukan");
     if (row.emailVerifiedAt) return; // sudah terverifikasi, idempoten
 
     const token = await cmsUserTokenRepository.findValid(
@@ -292,7 +293,7 @@ export const cmsUserService = {
       data.otp,
       "EmailVerify",
     );
-    if (!token) throw new Error("Kode OTP tidak valid atau sudah kedaluwarsa");
+    if (!token) throw new AppError("Kode OTP tidak valid atau sudah kedaluwarsa");
 
     await cmsUserRepository.update(id, { emailVerifiedAt: new Date() });
     await cmsUserTokenRepository.markUsed(token.id);
@@ -321,7 +322,7 @@ export const cmsUserService = {
       await sendOTPEmail(row.email, otp);
     } catch (err) {
       console.error("Gagal mengirim OTP reset sandi CMS:", err);
-      throw new Error("Gagal mengirim kode OTP");
+      throw new AppError("Gagal mengirim kode OTP");
     }
   },
 
@@ -330,7 +331,7 @@ export const cmsUserService = {
     const data = cmsResetPasswordSchema.parse(input);
     const row = await cmsUserRepository.findByEmail(data.email);
     if (!row || row.deletedAt) {
-      throw new Error("Kode OTP tidak valid atau sudah kedaluwarsa");
+      throw new AppError("Kode OTP tidak valid atau sudah kedaluwarsa");
     }
 
     const token = await cmsUserTokenRepository.findValid(
@@ -338,7 +339,7 @@ export const cmsUserService = {
       data.otp,
       "PasswordReset",
     );
-    if (!token) throw new Error("Kode OTP tidak valid atau sudah kedaluwarsa");
+    if (!token) throw new AppError("Kode OTP tidak valid atau sudah kedaluwarsa");
 
     await cmsUserRepository.update(row.id, {
       password: await hashPassword(data.newPassword),

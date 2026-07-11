@@ -1,3 +1,4 @@
+import { pesanAman } from "@/server/utils/appError";
 import { NextResponse } from "next/server";
 import { MAX_VIDEO_BYTES, MAX_VIDEO_LABEL } from "@/lib/uploadLimits";
 import { getCmsUser } from "@/server/utils/cmsSession";
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: err instanceof Error ? err.message : "Gagal mengunggah",
+        message: pesanAman(err, "Gagal mengunggah"),
       },
       { status: 400 },
     );

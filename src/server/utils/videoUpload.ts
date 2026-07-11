@@ -1,3 +1,4 @@
+import { AppError } from "./appError";
 import { execFile } from "node:child_process";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
@@ -53,7 +54,7 @@ async function probe(file: string): Promise<{ durasi: number; lebar: number }> {
   const baris = stdout.trim().split(/\s+/);
   const lebar = Number(baris[0]);
   const durasi = Number(baris[1]);
-  if (!Number.isFinite(durasi)) throw new Error("Video tidak dapat dibaca");
+  if (!Number.isFinite(durasi)) throw new AppError("Video tidak dapat dibaca");
   return { durasi, lebar: Number.isFinite(lebar) ? lebar : 0 };
 }
 
@@ -87,7 +88,7 @@ function pembatasUkuran(maks: number, hitung: { total: number }) {
     transform(chunk: Buffer, _enc, cb) {
       hitung.total += chunk.length;
       if (hitung.total > maks) {
-        cb(new Error(`Ukuran video melebihi ${MAX_VIDEO_LABEL}`));
+        cb(new AppError(`Ukuran video melebihi ${MAX_VIDEO_LABEL}`));
         return;
       }
       cb(null, chunk);
@@ -111,7 +112,7 @@ export async function saveHeroVideo(input: {
   body: ReadableStream<Uint8Array>;
 }): Promise<SaveHeroVideoResult> {
   const ext = ALLOWED_VIDEO_TYPES[input.mime];
-  if (!ext) throw new Error("Video harus berformat MP4 atau WEBM");
+  if (!ext) throw new AppError("Video harus berformat MP4 atau WEBM");
 
   await fsp.mkdir(VIDEO_DIR, { recursive: true });
   const id = createId();
@@ -130,14 +131,14 @@ export async function saveHeroVideo(input: {
   }
   if (hitung.total === 0) {
     await fsp.unlink(tmp).catch(() => {});
-    throw new Error("Berkas video kosong");
+    throw new AppError("Berkas video kosong");
   }
   const ukuranAsli = hitung.total;
 
   try {
     const { durasi, lebar } = await probe(tmp);
     if (durasi > MAX_VIDEO_SECONDS + 0.5) {
-      throw new Error(
+      throw new AppError(
         `Durasi ${Math.round(durasi)} detik, maksimal ${MAX_VIDEO_SECONDS} detik`,
       );
     }

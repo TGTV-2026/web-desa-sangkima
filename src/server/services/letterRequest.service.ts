@@ -1,3 +1,4 @@
+import { AppError } from "../utils/appError";
 import { createId } from "@paralleldrive/cuid2";
 import { z } from "zod";
 import { letterTypeRepository } from "../repositories/letterType.repository";
@@ -64,7 +65,7 @@ const APPROVER_CATEGORIES = ["Kepala Desa", "Sekretaris Desa"];
 
 function requireStaff(actor: AuthUser) {
   if (actor.role !== "staff" && actor.role !== "admin") {
-    throw new Error("Hanya petugas desa yang boleh melakukan aksi ini");
+    throw new AppError("Hanya petugas desa yang boleh melakukan aksi ini");
   }
 }
 
@@ -74,10 +75,10 @@ function requireStaff(actor: AuthUser) {
  */
 function requirePosition(actor: AuthUser, categories: string[], actionLabel: string) {
   if (actor.role !== "staff") {
-    throw new Error(`Hanya petugas dengan jabatan ${categories.join(" / ")} yang boleh ${actionLabel}`);
+    throw new AppError(`Hanya petugas dengan jabatan ${categories.join(" / ")} yang boleh ${actionLabel}`);
   }
   if (!actor.positionCategory || !categories.includes(actor.positionCategory)) {
-    throw new Error(`Hanya jabatan ${categories.join(" / ")} yang boleh ${actionLabel}`);
+    throw new AppError(`Hanya jabatan ${categories.join(" / ")} yang boleh ${actionLabel}`);
   }
 }
 
@@ -98,7 +99,7 @@ function parseLetterData(
 // Ambil baris mentah + pastikan ada
 async function getRowOrThrow(id: string) {
   const row = await letterRequestRepository.findById(id);
-  if (!row) throw new Error("Pengajuan surat tidak ditemukan");
+  if (!row) throw new AppError("Pengajuan surat tidak ditemukan");
   return row;
 }
 
@@ -164,10 +165,10 @@ export const letterRequestService = {
     if (actor.role !== "user" && data.userId) {
       const requester = await userRepository.findById(data.userId);
       if (!requester || requester.deletedAt) {
-        throw new Error("Pengguna pemohon tidak ditemukan");
+        throw new AppError("Pengguna pemohon tidak ditemukan");
       }
       if (!isProfileComplete(requester)) {
-        throw new Error(
+        throw new AppError(
           `Data profil pemohon belum lengkap: ${getMissingProfileFields(requester).join(", ")}. Lengkapi dulu lewat menu Kelola Pengguna.`,
         );
       }
@@ -175,12 +176,12 @@ export const letterRequestService = {
     }
 
     const type = await letterTypeRepository.findById(data.letterTypeId);
-    if (!type) throw new Error("Jenis surat tidak ditemukan");
-    if (!type.active) throw new Error("Jenis surat sedang tidak aktif");
+    if (!type) throw new AppError("Jenis surat tidak ditemukan");
+    if (!type.active) throw new AppError("Jenis surat sedang tidak aktif");
 
     // tidak boleh ada 2 pengajuan jenis surat sama yang masih berjalan (DIAJUKAN/DIPROSES) sekaligus
     if (await letterRequestRepository.hasPending(requesterId, data.letterTypeId)) {
-      throw new Error(
+      throw new AppError(
         `Masih ada pengajuan ${type.name} yang belum disetujui. Tunggu sampai disetujui sebelum mengajukan lagi.`,
       );
     }
@@ -192,7 +193,7 @@ export const letterRequestService = {
     const uploadedDocIndexes = new Set(attachments.map((a) => a.docIndex));
     docs.forEach((doc, i) => {
       if (doc.required && !uploadedDocIndexes.has(i)) {
-        throw new Error(`Dokumen wajib "${doc.label}" belum diunggah`);
+        throw new AppError(`Dokumen wajib "${doc.label}" belum diunggah`);
       }
     });
 
@@ -259,7 +260,7 @@ export const letterRequestService = {
   async getForActor(id: string, actor: AuthUser): Promise<LetterRequestDTO> {
     const row = await getRowOrThrow(id);
     if (actor.role === "user" && row.request.userId !== actor.id) {
-      throw new Error("Anda tidak berhak melihat pengajuan ini");
+      throw new AppError("Anda tidak berhak melihat pengajuan ini");
     }
     return toDTO(row);
   },
@@ -288,7 +289,7 @@ export const letterRequestService = {
     const { note, sequence } = processLetterRequestSchema.parse(input ?? {});
     const row = await getRowOrThrow(id);
     if (row.request.status !== "DIAJUKAN") {
-      throw new Error("Surat hanya bisa diproses dari status Diajukan");
+      throw new AppError("Surat hanya bisa diproses dari status Diajukan");
     }
     
     const now = new Date();
@@ -329,7 +330,7 @@ export const letterRequestService = {
     const { note } = approveLetterRequestSchema.parse(input ?? {});
     const row = await getRowOrThrow(id);
     if (row.request.status !== "DIPROSES") {
-      throw new Error("Surat harus berstatus Diproses sebelum disetujui");
+      throw new AppError("Surat harus berstatus Diproses sebelum disetujui");
     }
 
     const now = new Date();
@@ -369,7 +370,7 @@ export const letterRequestService = {
     } else if (row.request.status === "DIPROSES") {
       requirePosition(actor, APPROVER_CATEGORIES, "menolak surat pada tahap ini");
     } else {
-      throw new Error("Hanya surat Diajukan/Diproses yang bisa ditolak");
+      throw new AppError("Hanya surat Diajukan/Diproses yang bisa ditolak");
     }
     await letterRequestRepository.update(id, {
       status: "DITOLAK",
@@ -389,7 +390,7 @@ export const letterRequestService = {
     requireStaff(actor);
     const row = await getRowOrThrow(id);
     if (row.request.status !== "DISETUJUI") {
-      throw new Error("Hanya surat Disetujui yang bisa ditandai selesai");
+      throw new AppError("Hanya surat Disetujui yang bisa ditandai selesai");
     }
     await letterRequestRepository.update(id, {
       status: "SELESAI",
@@ -436,14 +437,14 @@ export const letterRequestService = {
   ): Promise<Uint8Array> {
     const row = await getRowOrThrow(id);
     if (actor.role === "user" && row.request.userId !== actor.id) {
-      throw new Error("Anda tidak berhak mengunduh surat ini");
+      throw new AppError("Anda tidak berhak mengunduh surat ini");
     }
     if (
       row.request.status !== "DISETUJUI" &&
       row.request.status !== "SELESAI" &&
       !(row.request.status === "DIPROSES" && noSignature)
     ) {
-      throw new Error("Surat belum disetujui, PDF belum bisa diunduh");
+      throw new AppError("Surat belum disetujui, PDF belum bisa diunduh");
     }
 
     // surat normalnya sudah punya PDF tersimpan sejak di-approve (snapshot data
@@ -466,7 +467,7 @@ export const letterRequestService = {
   async previewPdf(id: string, actor: AuthUser, appUrl: string): Promise<Uint8Array> {
     const row = await getRowOrThrow(id);
     if (actor.role === "user" && row.request.userId !== actor.id) {
-      throw new Error("Anda tidak berhak melihat pratinjau surat ini");
+      throw new AppError("Anda tidak berhak melihat pratinjau surat ini");
     }
     if (row.request.status === "DISETUJUI" || row.request.status === "SELESAI") {
       return this.generatePdf(id, actor, appUrl);
@@ -483,7 +484,7 @@ export const letterRequestService = {
     const { purpose, data } = updateLetterRequestDataSchema.parse(input);
     const row = await getRowOrThrow(id);
     if (row.request.status !== "DIAJUKAN") {
-      throw new Error("Data hanya bisa diedit sebelum surat diproses");
+      throw new AppError("Data hanya bisa diedit sebelum surat diproses");
     }
     const type = await letterTypeRepository.findById(row.request.letterTypeId);
     const cleanData = parseLetterData(type?.requiredFields, data);

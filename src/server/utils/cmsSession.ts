@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import { cmsUserRepository } from "../repositories/cmsUser.repository";
 import type { CmsRole } from "../types/cmsUser";
+import { AppError } from "./appError";
 
 // Sesi CMS TERPISAH dari e-surat: cookie sendiri (cms_session), tabel cms_users
 // sendiri. Menandai token dengan scope "cms" agar tak tertukar dengan token
@@ -88,7 +89,7 @@ export async function requireSuperAdmin(): Promise<CmsSessionUser> {
 }
 
 /** Dilempar oleh requireVerifiedCmsUser; ditangkap action → pesan ke operator. */
-export class CmsEmailNotVerifiedError extends Error {
+export class CmsEmailNotVerifiedError extends AppError {
   constructor() {
     super(
       "Email Anda belum diverifikasi. Buka menu “Verifikasi Email” untuk mengaktifkan akun sebelum mengubah konten.",

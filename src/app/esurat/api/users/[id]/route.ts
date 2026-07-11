@@ -1,3 +1,4 @@
+import { AppError, pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/users/{id}:
@@ -190,6 +191,7 @@ import { userService } from "@/server/services/user.service";
 import {
   requireRole,
   handleACLError,
+  isACLError,
 } from "@/server/middlewares/acl.middleware";
 
 import { saveProfileImage, deleteProfileImage } from "@/server/utils/imageUpload";
@@ -242,10 +244,10 @@ export async function GET(req: Request, { params }: RouteContext) {
       { success: true, message: "Detail user berhasil diambil", data },
       { status: 200 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     return NextResponse.json(
-      { success: false, message: error.message || "User tidak ditemukan" },
+      { success: false, message: pesanAman(error, "User tidak ditemukan") },
       { status: 404 },
     );
   }
@@ -285,17 +287,18 @@ export async function PUT(req: Request, { params }: RouteContext) {
       { success: true, message: "User berhasil diperbarui", data },
       { status: 200 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, message: "Validasi gagal", errors: error.flatten().fieldErrors },
         { status: 400 },
       );
     }
-    const isNotFound = error.message?.includes("tidak ditemukan");
+    const isNotFound =
+      error instanceof AppError && error.message.includes("tidak ditemukan");
     return NextResponse.json(
-      { success: false, message: error.message || "Terjadi kesalahan internal server" },
+      { success: false, message: pesanAman(error, "Terjadi kesalahan internal server") },
       { status: isNotFound ? 404 : 400 },
     );
   }
@@ -320,10 +323,10 @@ export async function DELETE(req: Request, { params }: RouteContext) {
       { success: true, message: "User berhasil dihapus" },
       { status: 200 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     return NextResponse.json(
-      { success: false, message: error.message || "User tidak ditemukan" },
+      { success: false, message: pesanAman(error, "User tidak ditemukan") },
       { status: 404 },
     );
   }

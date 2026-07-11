@@ -1,4 +1,5 @@
 "use server";
+import { pesanAksi } from "@/server/utils/appError";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -21,7 +22,7 @@ export async function createCmsUser(input: unknown): Promise<CmsUserResult> {
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
   redirect("/admin/pengguna");
@@ -42,7 +43,7 @@ export async function updateCmsUser(
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
   redirect("/admin/pengguna");
@@ -65,7 +66,7 @@ export async function setCmsUserActive(
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal memperbarui.",
+      message: pesanAksi(err, "Gagal memperbarui."),
     };
   }
 }
@@ -82,7 +83,7 @@ export async function deleteCmsUser(id: string): Promise<CmsUserResult> {
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menghapus.",
+      message: pesanAksi(err, "Gagal menghapus."),
     };
   }
 }
