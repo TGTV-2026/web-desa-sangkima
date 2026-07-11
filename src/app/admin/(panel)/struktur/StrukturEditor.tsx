@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/useToast";
-import type { StrukturContent } from "@/server/types/content";
+import type { StrukturContent, StrukturGroup } from "@/server/types/content";
 import { saveSection } from "../actions";
 import ImageUploadField from "../ImageUploadField";
 
-type Aparat = StrukturContent["aparatur"][number];
+type Member = StrukturGroup["members"][number];
 
 export default function StrukturEditor({
   initial,
@@ -15,141 +15,181 @@ export default function StrukturEditor({
 }) {
   const { toast } = useToast();
   const [pending, startTransition] = useTransition();
+  const [groups, setGroups] = useState<StrukturGroup[]>(initial.groups);
+  const [active, setActive] = useState(0);
 
-  const [kepalaNama, setKepalaNama] = useState(initial.kepalaDesa.nama);
-  const [kepalaNip, setKepalaNip] = useState(initial.kepalaDesa.nip);
-  const [kepalaFoto, setKepalaFoto] = useState(initial.kepalaDesa.foto);
-  const [aparatur, setAparatur] = useState<Aparat[]>(initial.aparatur);
+  const ai = groups.length ? Math.min(active, groups.length - 1) : 0;
+  const current = groups[ai];
 
-  function updateAparatur(i: number, patch: Partial<Aparat>) {
-    setAparatur((prev) =>
-      prev.map((a, idx) => (idx === i ? { ...a, ...patch } : a)),
+  function updateGroup(i: number, patch: Partial<StrukturGroup>) {
+    setGroups((prev) => prev.map((g, idx) => (idx === i ? { ...g, ...patch } : g)));
+  }
+  function updateMember(gi: number, mi: number, patch: Partial<Member>) {
+    setGroups((prev) =>
+      prev.map((g, idx) =>
+        idx === gi
+          ? {
+              ...g,
+              members: g.members.map((mem, j) =>
+                j === mi ? { ...mem, ...patch } : mem,
+              ),
+            }
+          : g,
+      ),
     );
+  }
+  function addGroup() {
+    setActive(groups.length);
+    setGroups((prev) => [...prev, { label: "Grup Baru", members: [] }]);
+  }
+  function removeGroup(i: number) {
+    setGroups((prev) => prev.filter((_, idx) => idx !== i));
+    setActive((a) => Math.max(0, a >= i ? a - 1 : a));
+  }
+  function addMember(gi: number) {
+    updateGroup(gi, {
+      members: [...groups[gi].members, { jabatan: "", nama: "", foto: "" }],
+    });
+  }
+  function removeMember(gi: number, mi: number) {
+    updateGroup(gi, {
+      members: groups[gi].members.filter((_, j) => j !== mi),
+    });
   }
 
   function save() {
     startTransition(async () => {
-      const res = await saveSection("struktur", {
-        kepalaDesa: {
-          nama: kepalaNama.trim(),
-          nip: kepalaNip.trim(),
-          foto: kepalaFoto,
-        },
-        aparatur: aparatur
-          .map((a) => ({
-            jabatan: a.jabatan.trim(),
-            nama: a.nama.trim(),
-            foto: a.foto,
+      const payload = {
+        groups: groups
+          .map((g) => ({
+            label: g.label.trim(),
+            members: g.members
+              .map((mem) => ({
+                jabatan: mem.jabatan.trim(),
+                nama: mem.nama.trim(),
+                foto: mem.foto,
+              }))
+              .filter((mem) => mem.jabatan && mem.nama),
           }))
-          .filter((a) => a.jabatan && a.nama),
-      });
-      if (res.success) {
-        toast("Struktur organisasi disimpan.", "Tersimpan", "success");
-      } else {
-        toast(res.message, "Gagal", "error");
-      }
+          .filter((g) => g.label),
+      };
+      const res = await saveSection("struktur", payload);
+      toast(
+        res.success ? "Struktur organisasi disimpan." : res.message,
+        res.success ? "Tersimpan" : "Gagal",
+        res.success ? "success" : "error",
+      );
     });
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      {/* Kepala Desa */}
-      <section className="card-doc p-6">
-        <span className="label-doc">Kepala Desa</span>
-        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="label-doc text-xs" htmlFor="kdnama">
-              Nama
-            </label>
-            <input
-              id="kdnama"
-              value={kepalaNama}
-              onChange={(e) => setKepalaNama(e.target.value)}
-              className="input-doc mt-1 w-full"
-              placeholder="Nama kepala desa"
-            />
-          </div>
-          <div>
-            <label className="label-doc text-xs" htmlFor="kdnip">
-              NIP / Keterangan
-            </label>
-            <input
-              id="kdnip"
-              value={kepalaNip}
-              onChange={(e) => setKepalaNip(e.target.value)}
-              className="input-doc mt-1 w-full"
-              placeholder="NIP. ……"
-            />
-          </div>
-        </div>
-        <div className="mt-4">
-          <ImageUploadField
-            label="Foto kepala desa"
-            value={kepalaFoto}
-            onChange={setKepalaFoto}
-          />
-        </div>
-      </section>
-
-      {/* Aparatur */}
-      <section className="card-doc p-6">
-        <div className="mb-1 flex items-baseline justify-between">
-          <span className="label-doc">Aparatur Desa</span>
-          <span className="text-[11px] text-inkmut">Jabatan &amp; nama.</span>
-        </div>
-        <div className="mt-3 flex flex-col gap-3">
-          {aparatur.map((a, i) => (
-            <div
+    <div className="flex flex-col gap-6">
+      {/* Filter grup + tambah grup */}
+      <div className="flex flex-wrap items-center gap-2">
+        {groups.map((g, i) => {
+          const on = i === ai;
+          return (
+            <button
               key={i}
-              className="flex flex-col gap-3 border border-line bg-paper2/20 p-4 sm:flex-row sm:items-start"
+              type="button"
+              onClick={() => setActive(i)}
+              className={`rounded-sm border px-4 py-2 text-[11px] font-bold uppercase tracking-[0.14em] transition-colors ${
+                on
+                  ? "border-pine-900 bg-pine-900 text-paper"
+                  : "border-line bg-card text-inkmut hover:border-pine-900/40 hover:text-pine-900"
+              }`}
             >
-              <ImageUploadField
-                label="Foto"
-                value={a.foto}
-                onChange={(url) => updateAparatur(i, { foto: url })}
-              />
-              <div className="flex flex-1 flex-col gap-2">
-                <input
-                  value={a.jabatan}
-                  onChange={(e) => updateAparatur(i, { jabatan: e.target.value })}
-                  className="input-doc w-full"
-                  placeholder="Jabatan"
-                />
-                <input
-                  value={a.nama}
-                  onChange={(e) => updateAparatur(i, { nama: e.target.value })}
-                  className="input-doc w-full"
-                  placeholder="Nama"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setAparatur((prev) => prev.filter((_, idx) => idx !== i))
-                }
-                className="btn-danger shrink-0 px-3 py-2 text-xs"
-              >
-                Hapus
-              </button>
-            </div>
-          ))}
-          {aparatur.length === 0 && (
-            <p className="text-sm text-inkmut">Belum ada aparatur.</p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() =>
-            setAparatur((prev) => [
-              ...prev,
-              { jabatan: "", nama: "", foto: "" },
-            ])
-          }
-          className="btn-outline mt-4 text-xs"
-        >
-          + Tambah aparatur
+              {g.label.trim() || "(tanpa nama)"}
+            </button>
+          );
+        })}
+        <button type="button" onClick={addGroup} className="btn-outline text-xs">
+          + Grup
         </button>
-      </section>
+      </div>
+
+      {!current ? (
+        <p className="text-sm text-inkmut">
+          Belum ada grup. Klik “+ Grup” untuk menambah.
+        </p>
+      ) : (
+        <section className="card-doc flex flex-col gap-4 p-6">
+          {/* Header grup: ganti nama + hapus grup */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label className="label-doc text-xs">Nama grup</label>
+              <input
+                value={current.label}
+                onChange={(e) => updateGroup(ai, { label: e.target.value })}
+                className="input-doc mt-1 w-full"
+                placeholder="mis. Aparatur Desa, BPD, LPM…"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => removeGroup(ai)}
+              className="btn-danger shrink-0 px-4 py-2 text-xs"
+            >
+              Hapus grup ini
+            </button>
+          </div>
+
+          {/* Anggota grup */}
+          <div className="flex items-baseline justify-between border-t border-line pt-4">
+            <span className="label-doc">Anggota</span>
+            <span className="text-[11px] text-inkmut">
+              Jabatan, nama &amp; foto (opsional).
+            </span>
+          </div>
+          <div className="flex flex-col gap-3">
+            {current.members.map((mem, i) => (
+              <div
+                key={i}
+                className="flex flex-col gap-3 border border-line bg-paper2/20 p-4 sm:flex-row sm:items-start"
+              >
+                <ImageUploadField
+                  label="Foto"
+                  value={mem.foto}
+                  onChange={(url) => updateMember(ai, i, { foto: url })}
+                />
+                <div className="flex flex-1 flex-col gap-2">
+                  <input
+                    value={mem.jabatan}
+                    onChange={(e) =>
+                      updateMember(ai, i, { jabatan: e.target.value })
+                    }
+                    className="input-doc w-full"
+                    placeholder="Jabatan (mis. Ketua BPD, RT 1)"
+                  />
+                  <input
+                    value={mem.nama}
+                    onChange={(e) => updateMember(ai, i, { nama: e.target.value })}
+                    className="input-doc w-full"
+                    placeholder="Nama"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeMember(ai, i)}
+                  className="btn-danger shrink-0 px-3 py-2 text-xs"
+                >
+                  Hapus
+                </button>
+              </div>
+            ))}
+            {current.members.length === 0 && (
+              <p className="text-sm text-inkmut">Belum ada anggota.</p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => addMember(ai)}
+            className="btn-outline self-start text-xs"
+          >
+            + Tambah anggota
+          </button>
+        </section>
+      )}
 
       <div className="sticky bottom-0 flex justify-end border-t border-line bg-paper/95 py-4 backdrop-blur">
         <button

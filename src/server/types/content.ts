@@ -34,34 +34,116 @@ const defaultProfil: ProfilContent = {
 
 /* --------------------------- Struktur Organisasi ------------------------- */
 
+const strukturMemberSchema = z.object({
+  jabatan: z.string().min(1, "Jabatan wajib diisi"),
+  nama: z.string().min(1, "Nama wajib diisi"),
+  // URL foto; kosong = pakai placeholder ikon. default("") agar data lama aman.
+  foto: z.string().default(""),
+});
+
+const strukturGroupSchema = z.object({
+  label: z.string().min(1, "Nama grup wajib diisi"),
+  members: z.array(strukturMemberSchema),
+});
+
 export const strukturContentSchema = z.object({
-  kepalaDesa: z.object({
-    nama: z.string().min(1, "Nama kepala desa wajib diisi"),
-    nip: z.string(),
-    // URL foto; kosong = pakai placeholder ikon. default("") agar data lama aman.
-    foto: z.string().default(""),
-  }),
-  aparatur: z.array(
-    z.object({
-      jabatan: z.string().min(1, "Jabatan wajib diisi"),
-      nama: z.string().min(1, "Nama wajib diisi"),
-      foto: z.string().default(""),
-    }),
-  ),
+  // Struktur dikelompokkan (Aparatur, BPD, LPM, dst.); publik & CMS memakai
+  // filter grup. Data lama berbentuk {kepalaDesa, aparatur} akan gagal parse →
+  // otomatis fallback ke default di bawah (lihat siteContentService.get).
+  groups: z.array(strukturGroupSchema),
 });
 export type StrukturContent = z.infer<typeof strukturContentSchema>;
+export type StrukturGroup = StrukturContent["groups"][number];
+export type StrukturMember = StrukturGroup["members"][number];
+
+// Helper ringkas untuk data awal (foto diisi belakangan lewat CMS).
+const m = (jabatan: string, nama: string) => ({ jabatan, nama, foto: "" });
+
+// Ketua RT 1..26 (urut sesuai dokumen Profil Desa 2026).
+const KETUA_RT = [
+  "Amir Syarifudin", "Suwarsono", "Rasna", "Mega Astuti", "Suryono",
+  "Sumariono", "Rusliyanto", "Erni Wati", "Sentot Anjar", "Taufik H",
+  "Ratna Sari", "Diana", "Rina Handayani", "Ali. R", "Imam Mahmudi",
+  "Suherdianto", "Sahabudin", "Abdurahman", "Suardi", "Santi", "Kusnadi",
+  "Sukirno", "Jerian Ugah", "Supiani", "Michael Irang", "Agang Bilung",
+];
 
 const defaultStruktur: StrukturContent = {
-  kepalaDesa: {
-    nama: "H. Ahmad Hidayat",
-    nip: "NIP. 19700512 199803 1 004",
-    foto: "",
-  },
-  aparatur: [
-    { jabatan: "Sekretaris Desa", nama: "Siti Aminah, S.A.P", foto: "" },
-    { jabatan: "Kaur Keuangan", nama: "Budi Santoso", foto: "" },
-    { jabatan: "Kasi Pemerintahan", nama: "M. Rahmat", foto: "" },
-    { jabatan: "Kasi Kesejahteraan", nama: "Nurhayati", foto: "" },
+  groups: [
+    {
+      label: "Aparatur Desa",
+      members: [
+        m("Kepala Desa", "Muhammad Alwi, S.Pd"),
+        m("Sekretaris Desa", "Larasati Ciptia Ningrum, S.Pd"),
+        m("Kaur Keuangan", "Harsita Jahseini, S.Pd"),
+        m("Kaur Umum", "Lisna Rajani Sari"),
+        m("Kasi Pemerintahan", "Yari Januar Oscar, S.Tr.T"),
+        m("Kaur Perencanaan", "Muhammad Aldi"),
+        m("Kasi Kesejahteraan", "Muhammadong"),
+        m("Kasi Pelayanan", "Astri Thamrin"),
+        m("Cleaning Service", "Karmin"),
+        m("Cleaning Service", "Lappuk Efendi"),
+        m("Staff Umum", "Sadrina"),
+        m("Staf Kesejahteraan", "Julian Agung Prathomo"),
+        m("Staf Pemerintahan", "Falentino Usat Bang, S.Hut"),
+        m("Staf Pelayanan", "Puspita Anggraini, Amd.Kep"),
+        m("Staf Perencanaan", "Chiesa Bisma Mahendra"),
+        m("Staf Kesejahteraan", "Desty Afryani, S.M"),
+        m("Staf Keuangan", "Suci"),
+      ],
+    },
+    {
+      label: "BPD",
+      members: [
+        m("Ketua BPD", "Moch. Ridwan, ST"),
+        m("Wakil Ketua BPD", "Natanael Yusron"),
+        m("Sekretaris BPD", "Sumarto"),
+        m("Anggota BPD", "Usman K"),
+        m("Anggota BPD", "M. Arpai"),
+        m("Anggota BPD", "Ahmad Rosdin"),
+        m("Anggota BPD", "Bonifasius Bang"),
+        m("Anggota BPD", "Haryanti Lestari"),
+        m("Anggota BPD", "Nursiah"),
+      ],
+    },
+    {
+      label: "LPM",
+      members: [
+        m("Ketua LPM", "Alamsyah"),
+        m("Sekretaris LPM", "Sugianto"),
+        m("Anggota LPM", "Jusriani"),
+        m("Anggota LPM", "Jufriadi"),
+        m("Anggota LPM", "Suparman"),
+      ],
+    },
+    {
+      label: "Lembaga Adat",
+      members: [
+        m("Ketua", "Rofain"),
+        m("Sekretaris", "Lenjau Usat"),
+        m("Anggota", "Heldi Bachtiar"),
+        m("Anggota", "M. Mukhlisin"),
+        m("Anggota", "Dahlan Yahya"),
+      ],
+    },
+    {
+      label: "Kepala Dusun",
+      members: [
+        m("Dusun Patra", "Irawan"),
+        m("Dusun Lestari Jaya", "M. Purnomo"),
+        m("Dusun Makmur Jaya", "Laster Sitanggang"),
+        m("Dusun Mekar Jaya", "Susilowati"),
+        m("Dusun Airport", "Syarifuddin"),
+        m("Dusun Sungai Tabuan", "Aziz"),
+        m("Dusun Teluk Lombok", "Muhammad Akbar B"),
+        m("Dusun Mekar Baru", "Sunarti"),
+        m("Dusun Mari Bangun", "Luther Ului"),
+      ],
+    },
+    {
+      label: "Ketua RT",
+      members: KETUA_RT.map((nama, i) => m(`RT ${i + 1}`, nama)),
+    },
   ],
 };
 

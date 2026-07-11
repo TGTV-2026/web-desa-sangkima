@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Reveal from "@/components/profile/Reveal";
 import Seal from "@/components/profile/Seal";
-import { Eye, Person } from "@/components/profile/icons";
+import { Eye } from "@/components/profile/icons";
 import MisiAssemble from "@/components/profile/MisiAssemble";
+import StrukturOrg from "@/components/profile/StrukturOrg";
 import StatistikDusunSection from "@/components/profile/StatistikDusunSection";
 import { siteContentService } from "@/server/services/siteContent.service";
 
@@ -18,7 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function ProfilPage() {
   // Konten dikelola lewat CMS /admin (fallback ke default bila belum disunting).
   const { sejarah, visi, misi } = await siteContentService.get("profil");
-  const { kepalaDesa, aparatur } = await siteContentService.get("struktur");
+  const { groups } = await siteContentService.get("struktur");
   const statistikDusun = await siteContentService.get("statistikDusun");
 
   return (
@@ -100,75 +101,14 @@ export default async function ProfilPage() {
             Struktur Organisasi
           </h2>
           <p className="max-w-2xl text-sm leading-6 text-inkmut">
-            Jajaran aparatur yang bertugas menyelenggarakan roda pemerintahan dan
-            memberikan pelayanan administratif kepada warga.
+            Jajaran lembaga desa yang menyelenggarakan roda pemerintahan dan
+            pelayanan warga. Pilih grup untuk melihat susunannya.
           </p>
         </Reveal>
 
-        {/* Kepala Desa */}
-        <Reveal className="w-full md:w-2/3 lg:w-1/2">
-          <Seal className="bg-card">
-            <div className="flex flex-col items-center gap-6 bg-paper2/30 p-6 sm:flex-row sm:items-start">
-              <div className="flex h-40 w-32 shrink-0 items-center justify-center overflow-hidden border border-line bg-card text-inkmut/40">
-                {kepalaDesa.foto ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={kepalaDesa.foto}
-                    alt={`Foto ${kepalaDesa.nama}`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <Person className="h-16 w-16" />
-                )}
-              </div>
-              <div className="flex flex-col gap-4 pt-2 text-center sm:text-left">
-                <div className="inline-flex self-center border border-pine-900/20 bg-pine-900/5 px-2 py-1 sm:self-start">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-pine-900">
-                    Kepala Desa
-                  </span>
-                </div>
-                <div>
-                  <h3 className="font-serif text-[24px] leading-tight text-pine-900">
-                    {kepalaDesa.nama}
-                  </h3>
-                  {kepalaDesa.nip && (
-                    <p className="mt-1 font-mono text-xs text-inkmut">
-                      {kepalaDesa.nip}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </Seal>
+        <Reveal>
+          <StrukturOrg groups={groups} />
         </Reveal>
-
-        {/* Aparatur */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {aparatur.map((a, i) => (
-            <Reveal key={`${a.jabatan}-${i}`} delay={i * 90}>
-              <div className="flex h-full flex-col items-center gap-4 border border-line bg-card p-4 transition-shadow hover:shadow-md">
-                <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-line bg-paper2/40 text-inkmut/40">
-                  {a.foto ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={a.foto}
-                      alt={`Foto ${a.nama}`}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <Person className="h-10 w-10" />
-                  )}
-                </div>
-                <div className="flex flex-col items-center gap-1 text-center">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-brass">
-                    {a.jabatan}
-                  </span>
-                  <h4 className="font-bold text-ink">{a.nama}</h4>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
       </section>
 
       <div className="h-px w-full bg-line" />

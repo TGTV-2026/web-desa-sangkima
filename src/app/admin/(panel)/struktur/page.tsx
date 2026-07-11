@@ -12,8 +12,9 @@ export default async function AdminStrukturPage() {
           Struktur Organisasi
         </h1>
         <p className="mt-2 max-w-xl text-sm leading-6 text-inkmut">
-          Kepala desa &amp; aparatur yang tampil di halaman{" "}
-          <span className="font-mono text-xs">/profil</span>.
+          Susunan lembaga desa per grup (Aparatur, BPD, LPM, dst.) yang tampil di
+          halaman <span className="font-mono text-xs">/profil</span>. Pilih grup
+          di atas untuk menyuntingnya.
         </p>
       </div>
       <StrukturEditor initial={struktur} />
