@@ -28,6 +28,7 @@ import {
   getResetTokenExpiration,
 } from "../utils/reset-token";
 import { sendOTPEmail, sendPasswordResetEmail } from "./email.service";
+import { activityLogService } from "./activityLog.service";
 import { db } from "../db";
 import { userTokens } from "../db/schema";
 import { eq, and } from "drizzle-orm";
@@ -294,11 +295,18 @@ export const authService = {
     };
   },
 
-  async login(input: TLoginInput) {
+  async login(input: TLoginInput, ctx?: { ip?: string | null }) {
     const validatedData = loginSchema.parse(input);
 
     const user = await userRepository.findByEmail(validatedData.email);
     if (!user) {
+      void activityLogService.record({
+        actorType: "warga",
+        actorName: validatedData.email,
+        action: "auth.warga.login.failed",
+        summary: `Login warga gagal — email tak dikenal: ${validatedData.email}`,
+        ipAddress: ctx?.ip ?? null,
+      });
       throw new AppError("Email atau password salah");
     }
 
@@ -309,6 +317,14 @@ export const authService = {
       user.password,
     );
     if (!isPasswordValid) {
+      void activityLogService.record({
+        actorType: "warga",
+        actorId: user.id,
+        actorName: user.name,
+        action: "auth.warga.login.failed",
+        summary: `Login warga gagal — sandi salah: ${user.name}`,
+        ipAddress: ctx?.ip ?? null,
+      });
       throw new AppError("Email atau password salah");
     }
 
@@ -329,6 +345,15 @@ export const authService = {
       id: user.id,
       email: user.email,
       nik: user.nik,
+    });
+
+    void activityLogService.record({
+      actorType: "warga",
+      actorId: user.id,
+      actorName: user.name,
+      action: "auth.warga.login.success",
+      summary: `Login warga berhasil: ${user.name}`,
+      ipAddress: ctx?.ip ?? null,
     });
 
     return {

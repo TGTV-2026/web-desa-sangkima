@@ -153,6 +153,15 @@ export const ADMIN_NAV: AdminNavItem[] = [
     superAdminOnly: true,
   },
   {
+    key: "audit",
+    href: "/admin/audit",
+    label: "Audit Log",
+    desc: "Jejak aktivitas akun & konten (login, ubah data, tutup sesi RT).",
+    group: "pengaturan",
+    ready: true,
+    superAdminOnly: true,
+  },
+  {
     key: "akun",
     href: "/admin/akun",
     label: "Akun Saya",

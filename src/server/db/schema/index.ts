@@ -12,3 +12,4 @@ export * from "./cmsUsers";
 export * from "./cmsUserTokens";
 export * from "./gallery";
 export * from "./rtReports";
+export * from "./activityLogs";
