@@ -1,39 +1,60 @@
-# Web Desa Sangkima API
+# Web Desa Sangkima
 
-Sistem API backend untuk Aplikasi Web Desa Sangkima dengan fitur autentikasi lengkap, manajemen email, dan dokumentasi API interaktif menggunakan Swagger.
+Aplikasi web terpadu untuk Desa Sangkima yang berisi Web Profil publik, layanan E-Surat, dan CMS Admin dalam satu codebase Next.js.
 
 ## 📋 Daftar Isi
 
+- [Tentang Proyek](#tentang-proyek)
 - [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Setup](#setup)
+- [Fitur Utama](#fitur-utama)
+- [Setup Lokal](#setup-lokal)
 - [Environment Variables](#environment-variables)
-- [Database Setup](#database-setup)
+- [Database & Drizzle](#database--drizzle)
+- [Seed & Bootstrap](#seed--bootstrap)
 - [Project Structure](#project-structure)
 - [Development Commands](#development-commands)
+- [Dokumentasi API](#dokumentasi-api)
+- [Troubleshooting](#troubleshooting)
+
+## 🏡 Tentang Proyek
+
+Repo ini memuat tiga bagian utama yang berbagi database dan design system yang sama:
+
+1. **Web Profil publik** di route group `(profile)` untuk beranda, berita, galeri, PPID, produk, profil, statistik, struktur, kontak, dan layanan desa.
+2. **E-Surat** di `/esurat/*` untuk login/register/OTP, pengajuan surat, approval staff → admin, PDF surat, dan verifikasi QR.
+3. **CMS Admin** di `/admin/*` untuk mengelola konten web profil, pengguna CMS, galeri, layanan, produk, dan data terkait desa.
 
 ## 🛠 Tech Stack
 
 - **Framework**: [Next.js 16.2](https://nextjs.org) dengan App Router
-- **Language**: [TypeScript](https://www.typescriptlang.org)
-- **Database**: MySQL dengan [Drizzle ORM](https://orm.drizzle.team)
-- **Authentication**: JWT (Jose)
-- **Password Hashing**: Bcrypt
-- **Email Service**: Nodemailer
-- **API Documentation**: Swagger/OpenAPI dengan swagger-jsdoc
-- **Validation**: Zod
-- **Styling**: Tailwind CSS v4
-- **ID Generation**: CUID2
+- **UI**: [React 19](https://react.dev) + Tailwind CSS v4
+- **Bahasa**: [TypeScript](https://www.typescriptlang.org)
+- **Database**: MySQL dengan [Drizzle ORM](https://orm.drizzle.team) + `mysql2`
+- **Authentication**: JWT (`jose`) + cookie httpOnly
+- **Password Hashing**: `bcrypt`
+- **Validasi**: `zod`
+- **Email**: `resend` dengan mode console untuk development
+- **PDF & QR**: `pdf-lib` dan `qrcode`
+- **API Docs**: Swagger/OpenAPI via `swagger-jsdoc` + `swagger-ui-react`
+- **ID Generator**: `@paralleldrive/cuid2`
 
+## ✨ Fitur Utama
 
+- Web profil desa dengan berita, galeri foto/video, PPID, produk, profil, dan statistik.
+- E-Surat dengan form pengajuan surat dinamis sesuai jenis surat.
+- Alur approval surat dua tingkat untuk staf dan admin.
+- Cetak surat PDF dan verifikasi melalui QR.
+- CMS Admin untuk CRUD konten publik dan manajemen akun CMS.
+- Upload file dokumen dan gambar dengan penyimpanan runtime di folder `uploads/`.
+- Dokumentasi API interaktif untuk endpoint E-Surat.
 
-## 🚀 Setup
+## 🚀 Setup Lokal
 
 ### 1. Clone Repository
 
 ```bash
 git clone <repository-url>
-cd web_desa_sangkima
+cd web-desa-sangkima
 ```
 
 ### 2. Install Dependencies
@@ -42,23 +63,23 @@ cd web_desa_sangkima
 npm install
 ```
 
-### 3. Setup Database
+### 3. Siapkan Database MySQL
 
-Buat database baru di MySQL:
+Buat database baru, misalnya:
 
 ```sql
-CREATE DATABASE desa_sangkima;
+CREATE DATABASE db_websangkima;
 ```
 
-### 4. Konfigurasi Environment Variables
+### 4. Siapkan File Environment
 
-Copy `.env.example` ke `.env.local`:
+Salin file environment lalu sesuaikan nilainya:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Lihat [Environment Variables](#environment-variables) untuk detail.
+Kalau belum ada `.env.example`, buat `.env.local` manual mengikuti bagian [Environment Variables](#environment-variables).
 
 ### 5. Jalankan Migration
 
@@ -66,411 +87,294 @@ Lihat [Environment Variables](#environment-variables) untuk detail.
 npx drizzle-kit migrate
 ```
 
-atau dengan 
+Kalau butuh sinkron cepat saat development, bisa pakai:
 
 ```bash
 npx drizzle-kit push
 ```
 
-### 6. Jalankan Development Server
+### 6. Jalankan Server Development
 
 ```bash
 npm run dev
 ```
 
-Server akan berjalan di `http://localhost:3000`
+Server akan berjalan di `http://localhost:3000`.
 
 ## 🔧 Environment Variables
 
-Buat file `.env.local` di root project dengan copy dari `.env.example`:
+Berikut env yang dipakai oleh codebase saat ini.
 
-```bash
-cp .env.example .env.local
-```
+### Database Runtime
 
-### Database Configuration
+Dipakai oleh koneksi aplikasi di `src/server/db/index.ts`:
 
 ```env
-# Database (MySQL)
 DB_HOST=localhost
-DB_PORT=3306
 DB_USER=root
-DB_PASSWORD=your_mysql_password_here
+DB_PASSWORD=your_mysql_password
 DB_NAME=db_websangkima
 ```
 
-### Email Configuration
+### Database Drizzle
 
-Project ini menggunakan **Nodemailer dengan 2 mode**:
-
-#### Mode 1: Console Mode (Development/Testing) - DEFAULT ✅
-
-Email **TIDAK** terkirim, hanya ditampilkan di console:
+Dipakai oleh `drizzle.config.ts` saat generate/migrate:
 
 ```env
-# Email Mode
-EMAIL_MODE=console
-
-# SMTP credentials tidak perlu diisi
-# Atau bisa dikosongkan jika ingin mode console
+DATABASE_URL=mysql://root:password@localhost:3306/db_websangkima
 ```
 
-**Kelebihan**:
+Kalau `DATABASE_URL` tidak diisi, Drizzle akan memakai fallback lokal bawaan config.
 
-- Tidak butuh setup SMTP
-- OTP terlihat langsung di console
-- Cocok untuk development & testing
-
-**Console output contoh:**
-
-```
-📧 OTP EMAIL (Console Mode - email TIDAK terkirim)
-   To: user@example.com
-   Code: 1234
-   Valid for: 15 minutes
-   💡 Set EMAIL_MODE=smtp di .env untuk kirim email sungguhan
-```
-
-#### Mode 2: SMTP Mode (Production) - Kirim Email Sungguhan
+### Auth & App
 
 ```env
-# Email Mode
-EMAIL_MODE=smtp
-
-# SMTP Configuration (Gmail example)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM_EMAIL=noreply@desasangkima.com
-```
-
-### Gmail Setup (untuk SMTP mode)
-
-1. Aktifkan **2-Step Verification** di Google Account
-2. Buat **App Password** di [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
-3. Copy app password ke `SMTP_PASSWORD`
-4. Set `EMAIL_MODE=smtp` di `.env.local`
-
-### Other Configuration
-
-```env
-# JWT
 JWT_SECRET=your_jwt_secret_key_min_32_chars
 JWT_EXPIRES_IN=1h
-
-# App URL (untuk development & production)
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NODE_ENV=development
+NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
-### Example `.env.local`
+### Email / OTP
+
+Project ini memakai Resend, dengan mode console saat development.
 
 ```env
-# Database
+# mode development: email tidak benar-benar terkirim
+EMAIL_MODE=console
+
+# mode production / email sungguhan
+RESEND_API_KEY=your_resend_api_key
+RESEND_FROM_EMAIL=noreply@desasangkima.com
+```
+
+Catatan:
+
+- Kalau `EMAIL_MODE=console`, OTP dan reset link akan dicetak ke terminal.
+- Kalau `RESEND_API_KEY` tidak diisi, aplikasi otomatis jatuh ke mode console.
+- `RESEND_FROM_EMAIL` opsional, default-nya `onboarding@resend.dev`.
+
+### Turnstile
+
+Dipakai untuk proteksi form tertentu:
+
+```env
+TURNSTILE_SECRET_KEY=your_turnstile_secret_key
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
+```
+
+### CMS Bootstrap & Maintenance
+
+Dipakai untuk setup awal super admin dan endpoint migrasi manual:
+
+```env
+CMS_SETUP_TOKEN=some-secret-token
+CMS_ADMIN_NAME=Administrator
+CMS_ADMIN_EMAIL=admin@desasangkima.cloud
+CMS_ADMIN_PASSWORD=StrongPassword123
+MIGRATE_TOKEN=some-other-secret-token
+```
+
+### Contoh `.env.local`
+
+```env
 DB_HOST=localhost
-DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=password123
 DB_NAME=db_websangkima
 
-# Application
-NODE_ENV=development
+DATABASE_URL=mysql://root:password123@localhost:3306/db_websangkima
+
 JWT_SECRET=my_super_secret_jwt_key_min_32_chars_long
 JWT_EXPIRES_IN=1h
-
-# Email (Console Mode - Development)
-EMAIL_MODE=console
-
-# atau untuk SMTP Mode:
-# EMAIL_MODE=smtp
-# SMTP_HOST=smtp.gmail.com
-# SMTP_PORT=587
-# SMTP_SECURE=false
-# SMTP_USER=yourname@gmail.com
-# SMTP_PASSWORD=your_google_app_password
-# SMTP_FROM_EMAIL=noreply@desasangkima.com
-
-# App URL
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_API_URL=http://localhost:3000
+
+EMAIL_MODE=console
+# RESEND_API_KEY=...
+# RESEND_FROM_EMAIL=noreply@desasangkima.com
+
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA
+# TURNSTILE_SECRET_KEY=...
+
+# CMS bootstrap
+# CMS_SETUP_TOKEN=...
+# CMS_ADMIN_NAME=Administrator
+# CMS_ADMIN_EMAIL=admin@desasangkima.cloud
+# CMS_ADMIN_PASSWORD=StrongPassword123
+
+# Manual migration endpoint
+# MIGRATE_TOKEN=...
 ```
 
-## 💾 Database Setup
+## 💾 Database & Drizzle
 
-### Schema yang dibuat:
+Schema database ada di `src/server/db/schema/` dan diekspor melalui `src/server/db/schema/index.ts`.
 
-**users** - Tabel user
+Tabel utama yang tersedia saat ini mencakup:
 
-- id, name, email, nik, password (hashed)
-- emailVerifiedAt, createdAt, updatedAt
-- Plus fields lainnya: positionId, address, birthday, dll
+- `users`, `positions`, `user_tokens`
+- `letter_types`, `letter_requests`, `letter_request_logs`
+- `news`, `ppid`, `products`, `site_content`
+- `cms_users`, `cms_user_tokens`
+- `gallery` untuk album foto/video
+- `rt_reports`
 
-**user_tokens** - Token untuk OTP, password reset, email change
+### Command Drizzle
 
-- id, userId, token, type (OTP, PasswordChange, EmailChange)
-- meta (JSON untuk menyimpan data tambahan seperti newEmail)
-- expiresAt, usedAt, createdAt
+```bash
+# Generate migration dari perubahan schema
+npx drizzle-kit generate
 
-**positions** - Posisi/jabatan user (optional)
+# Jalankan migration
+npx drizzle-kit migrate
 
-## � Email Mode - Console vs SMTP
+# Push schema langsung ke database
+npx drizzle-kit push
 
-Project ini menggunakan **Nodemailer dengan 2 mode fleksibel**:
-
-### Bagaimana Cara Kerjanya?
-
-```typescript
-// Logic di email.service.ts
-if (EMAIL_MODE === "console") {
-  // Mode 1: Console only
-  console.log(`📧 OTP EMAIL: ${otp}`); // Tampil di terminal
-
-} else if (SMTP credentials lengkap) {
-  // Mode 2: Kirim via SMTP
-  await nodemailer.send(...); // Email terkirim ke inbox
-
-} else {
-  // Fallback: Console (jika SMTP credentials kurang)
-  console.log(`📧 OTP EMAIL: ${otp}`);
-}
+# Buka Drizzle Studio
+npx drizzle-kit studio
 ```
 
-### Mode 1: Console Mode (DEFAULT) ✅
+### Catatan Penting
 
-**Setup**: Cukup set `EMAIL_MODE=console`
+- Aplikasi runtime membaca koneksi MySQL dari `DB_HOST`, `DB_USER`, `DB_PASSWORD`, dan `DB_NAME`.
+- `drizzle-kit` membaca `DATABASE_URL` dari `drizzle.config.ts`.
+- Karena itu, lokal development biasanya butuh dua set env tersebut sama-sama tersedia.
 
-**Output di terminal**:
+## 🌱 Seed & Bootstrap
 
-```
-📧 OTP EMAIL (Console Mode - email TIDAK terkirim)
-   To: user@example.com
-   Code: 1234
-   Valid for: 15 minutes
-```
+### Seed jenis surat E-Surat
 
-**Cocok untuk**: Development, testing, sandbox
+File `src/server/db/seed.ts` mengisi data awal jenis surat sesuai skema yang dipakai aplikasi.
 
-**Keuntungan**:
+Jalankan dengan:
 
-- ✅ Tidak perlu setup SMTP
-- ✅ OTP langsung terlihat di console
-- ✅ Tidak kirim email ke email real
-- ✅ Cepat untuk development
-
-### Mode 2: SMTP Mode (Production) 📧
-
-**Setup**: Konfigurasi SMTP + set `EMAIL_MODE=smtp`
-
-**Email benar-benar terkirim** ke inbox penerima
-
-**Cocok untuk**: Production, testing dengan email real
-
-**Example dengan Gmail**:
-
-```env
-EMAIL_MODE=smtp
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=yourname@gmail.com
-SMTP_PASSWORD=your_google_app_password
-SMTP_FROM_EMAIL=noreply@desasangkima.com
+```bash
+npx tsx src/server/db/seed.ts
 ```
 
-### Development Workflow Recommendation
+### Bootstrap Super Admin CMS
 
-```
-1️⃣ Development Lokal
-   EMAIL_MODE=console
-   → OTP di console, cepat & simple
+File `src/server/db/seedCms.ts` dipakai untuk membuat akun `super_admin` CMS pertama.
 
-2️⃣ Testing Email Integration
-   EMAIL_MODE=smtp (dengan Gmail)
-   → Email benar terkirim, bisa test end-to-end
+Contoh:
 
-3️⃣ Production
-   EMAIL_MODE=smtp (dengan mail server)
-   → Email terkirim ke users real
+```bash
+CMS_ADMIN_EMAIL=admin@desasangkima.cloud CMS_ADMIN_PASSWORD='rahasiaKuat123' npx tsx src/server/db/seedCms.ts
 ```
 
-## �📖 API Documentation
-
-### Akses Swagger UI
-
-Buka browser dan pergi ke:
-
-```
-http://localhost:3000/api-docs
-```
-
-Di sini Anda bisa:
-
-- ✅ Lihat semua endpoints
-- ✅ Test API langsung dari browser
-- ✅ Lihat request/response examples
-- ✅ Download OpenAPI spec
-
+Kalau diperlukan, ada juga endpoint bootstrap sekali pakai di `/admin/api/setup` yang diamankan dengan `CMS_SETUP_TOKEN`.
 
 ## 📁 Project Structure
 
-```
+```text
 src/
 ├── app/
-│   ├── api/
-│   │   └── auth/
-│   │       ├── login/route.ts
-│   │       ├── register/route.ts
-│   │       ├── verify-otp/route.ts
-│   │       ├── resend-otp/route.ts
-│   │       ├── forgot-password/route.ts
-│   │       ├── reset-password/route.ts
-│   │       ├── change-email/route.ts
-│   │       ├── verify-email-change/route.ts
-│   │       ├── me/route.ts
-│   │       └── test-email/route.ts
-│   ├── layout.tsx
-│   └── page.tsx
-├── server/
-│   ├── db/
-│   │   ├── index.ts (Database connection)
-│   │   └── schema/
-│   │       ├── users.ts
-│   │       ├── userTokens.ts
-│   │       └── positions.ts
-│   ├── services/
-│   │   ├── auth.service.ts (Business logic)
-│   │   └── email.service.ts
-│   ├── repositories/
-│   │   └── user.repository.ts (Data access)
-│   ├── middlewares/
-│   │   ├── role.middleware.ts (getAuthUser: verifikasi JWT + ambil user/role dari DB)
-│   │   └── acl.middleware.ts (requireRole: gerbang role-based access)
-│   ├── types/
-│   │   └── auth.ts (Zod schemas & types)
-│   ├── utils/
-│   │   ├── hash.ts (Password hashing)
-│   │   ├── jwt.ts (Token generation)
-│   │   ├── otp.ts (OTP generation)
-│   │   └── reset-token.ts (Reset token)
-│   └── validations/
-└── lib/
-    └── swagger.ts (Swagger config)
+│   ├── (profile)/              # Web profil publik
+│   │   ├── berita/
+│   │   ├── galeri/
+│   │   ├── ppid/
+│   │   ├── produk/
+│   │   └── profil/
+│   ├── admin/                  # CMS admin + setup API
+│   │   ├── (panel)/
+│   │   ├── api/
+│   │   ├── login/
+│   │   └── lupa-sandi/
+│   ├── esurat/                 # E-Surat + API docs
+│   │   ├── api/
+│   │   ├── api-docs/
+│   │   ├── dashboard/
+│   │   ├── register/
+│   │   ├── reset-password/
+│   │   └── verify-otp/
+│   ├── uploads/                # Route handler penyaji file upload
+│   ├── globals.css
+│   └── layout.tsx
+├── components/
+│   ├── Toast.tsx
+│   ├── ToastProvider.tsx
+│   ├── esurat/
+│   └── profile/
+├── hooks/
+├── lib/
+└── server/
+    ├── db/
+    │   ├── index.ts
+    │   ├── schema/
+    │   ├── seed.ts
+    │   └── seedCms.ts
+    ├── middlewares/
+    ├── repositories/
+    ├── services/
+    ├── types/
+    └── utils/
 ```
-
-### Layering Architecture
-
-```
-API Routes (route.ts)
-    ↓
-Middleware (role.middleware.ts / acl.middleware.ts)
-    ↓
-Services (auth.service.ts) - Business logic
-    ↓
-Repositories (user.repository.ts) - Data access
-    ↓
-Database (Drizzle ORM)
-```
-
-Setiap layer terpisah untuk maintainability dan testability.
 
 ## 🔨 Development Commands
 
 ```bash
-# Development server dengan hot reload
 npm run dev
-
-# Build untuk production
 npm run build
-
-# Start production server
-npm start
-
-# Linting
+npm run start
 npm run lint
-
-# Database migration
-npm run db:migrate
-
-# Database studio/viewer
-npm run db:studio
-
-# Generate types dari schema
-npm run db:generate
+npx tsc --noEmit
 ```
 
-## 🗄️ Database Commands
+## 📖 Dokumentasi API
+
+Swagger UI tersedia di:
 
 ```bash
-# Jalankan migrations
-npx drizzle-kit migrate
-
-# Open Drizzle Studio (GUI untuk database)
-npx drizzle-kit studio
-
-# Generate migrations dari schema changes
-npx drizzle-kit generate
+http://localhost:3000/esurat/api-docs
 ```
+
+API docs ini di-generate dari blok JSDoc `@swagger` di route E-Surat.
 
 ## 🐛 Troubleshooting
 
-### Error: Database connection failed
+### Error database tidak tersambung
 
-- Pastikan MySQL berjalan
-- Verifikasi `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` di `.env.local`
-- Check MySQL username & password
+- Pastikan MySQL berjalan.
+- Cek `DB_HOST`, `DB_USER`, `DB_PASSWORD`, dan `DB_NAME`.
+- Jika pakai `drizzle-kit`, pastikan `DATABASE_URL` juga benar.
 
-### Error: OTP tidak terkirim / tidak muncul di console
+### OTP tidak terkirim
 
-**Console Mode** (EMAIL_MODE=console):
+- Cek `EMAIL_MODE=console`; kalau mode ini aktif, OTP memang hanya muncul di terminal.
+- Jika ingin email sungguhan, set `RESEND_API_KEY` dan `RESEND_FROM_EMAIL`.
+- Pastikan `RESEND_API_KEY` valid dan akun Resend aktif.
 
-- Check terminal/console output, OTP harus muncul di sana
-- Jangan lihat email inbox (mode console tidak kirim email sungguhan)
-- Pastikan `EMAIL_MODE=console` sudah di `.env.local`
+### Reset password tidak sesuai domain
 
-**SMTP Mode** (EMAIL_MODE=smtp):
+- Pastikan `NEXT_PUBLIC_APP_URL` diisi dengan domain yang benar.
+- Kalau lokal, gunakan `http://localhost:3000`.
 
-- Verifikasi SMTP credentials di `.env.local` lengkap semua
-- Jika pakai Gmail: Check App Password (bukan password biasa)
-- Cek server logs untuk error messages
-- Pastikan firewall tidak block SMTP port
+### JWT bermasalah
 
-### Error: "next dev warning tentang NODE_ENV"
+- Pastikan `JWT_SECRET` terisi dan cukup panjang.
+- Cek `JWT_EXPIRES_IN`.
+- Login ulang jika token sudah expired.
 
-⚠️ **NORMAL!** Next.js dev server memaksa `NODE_ENV=development`
+### Swagger tidak muncul
 
-Project ini **mengabaikan NODE_ENV**, gunakan `EMAIL_MODE` sebaliknya:
-
-- Console mode: `EMAIL_MODE=console` → OTP di console
-- SMTP mode: `EMAIL_MODE=smtp` → Email terkirim
-
-### Error: JWT token invalid
-
-- Pastikan `JWT_SECRET` cukup panjang (min 32 chars)
-- Check `JWT_EXPIRES_IN` (default: 1h)
-- Verify Authorization header format: `Bearer <token>`
-- Token sudah expired? Login ulang untuk dapat token baru
-
-### Error: Swagger docs not appearing
-
-- Pastikan API routes punya JSDoc dengan `@swagger`
-- Run dev server dan refresh di `/api-docs`
-- Check browser console untuk errors
-- Clear browser cache jika perlu
+- Jalankan `npm run dev`.
+- Buka `/esurat/api-docs`.
+- Pastikan route API punya JSDoc `@swagger`.
 
 ## 📚 Resources
 
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Drizzle ORM](https://orm.drizzle.team)
-- [Zod Validation](https://zod.dev)
-- [Jose JWT](https://github.com/panva/jose)
-- [Nodemailer Documentation](https://nodemailer.com)
-- [Gmail App Password Setup](https://myaccount.google.com/apppasswords)
-- [OpenAPI/Swagger](https://swagger.io)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs)
+- [Zod](https://zod.dev)
+- [Resend](https://resend.com/docs)
+- [Swagger](https://swagger.io)
 
 ## 📄 License
 
-Private project untuk Desa Sangkima
+Private project untuk Desa Sangkima.
 
 ## 👥 Support
 
