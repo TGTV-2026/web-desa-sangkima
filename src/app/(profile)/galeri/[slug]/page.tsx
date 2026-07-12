@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AlbumLightbox from "@/components/profile/AlbumLightbox";
+import InstagramEmbed from "@/components/profile/InstagramEmbed";
+import YoutubeEmbed from "@/components/profile/YoutubeEmbed";
 import { galleryService } from "@/server/services/gallery.service";
 import { formatTanggal } from "@/lib/format";
 
@@ -62,6 +64,31 @@ export default async function AlbumDetailPage({
       <div className="h-px w-full bg-line" />
 
       <AlbumLightbox photos={album.photos} />
+
+      {album.videos.length > 0 && (
+        <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-brass">
+              Video Dokumentasi
+            </span>
+            <h2 className="font-serif text-[24px] font-medium text-pine-900 md:text-[28px]">
+              Rekaman & Footage
+            </h2>
+          </div>
+          {/* Video pakai layout 16:9 terpisah dari grid foto agar tak ke-crop. */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {album.videos.map((video, i) =>
+              video.platform === "youtube" ? (
+                // Hanya video pertama yang autoplay (muted), agar tak semua
+                // video di album berputar sekaligus.
+                <YoutubeEmbed key={video.id} video={video} autoPlay={i === 0} />
+              ) : (
+                <InstagramEmbed key={video.id} video={video} />
+              ),
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

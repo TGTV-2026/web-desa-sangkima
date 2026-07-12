@@ -2,6 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import {
   boolean,
   int,
+  mysqlEnum,
   mysqlTable,
   timestamp,
   varchar,
@@ -33,6 +34,24 @@ export const galleryPhotos = mysqlTable("gallery_photos", {
   albumId: varchar("album_id", { length: 128 }).notNull(),
   url: varchar({ length: 500 }).notNull(),
   caption: varchar({ length: 300 }),
+  sortOrder: int("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Video referensi eksternal (YouTube/Instagram) di dalam album — bukan file
+// yang diunggah, hanya metadata + embed. externalId = video ID YouTube atau
+// shortcode Instagram; url = link asli yang di-paste admin (fallback link).
+export const galleryVideos = mysqlTable("gallery_videos", {
+  id: varchar({ length: 128 })
+    .primaryKey()
+    .$defaultFn(() => createId()),
+  albumId: varchar("album_id", { length: 128 }).notNull(),
+  platform: mysqlEnum(["youtube", "instagram"]).notNull(),
+  externalId: varchar("external_id", { length: 128 }).notNull(),
+  url: varchar({ length: 500 }).notNull(),
+  caption: varchar({ length: 300 }),
+  // Dari YouTube thumbnail API; null utk Instagram (embed bawa preview sendiri).
+  thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
   sortOrder: int("sort_order").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow(),
 });

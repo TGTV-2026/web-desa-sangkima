@@ -4,9 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
+> **Prinsip utama & realitas deployment ada di `@AGENTS.md` (terimpor di atas) — baca itu dulu.** Intinya: proyek ini sudah jalan di produksi, tugasnya **melanjutkan & mengembangkan**, bukan menulis ulang sistem yang ada.
+
 ## Tentang Proyek
 
-Backend + frontend Next.js App Router untuk **E-Surat Desa Sangkima** — layanan permohonan surat digital warga (login/register/OTP, ajukan surat, alur approval 2 tingkat staff→admin, terbit PDF + verifikasi QR). Seluruh aplikasi saat ini hidup di bawah route `/esurat/*` (`src/app/page.tsx` di root baru berupa halaman placeholder, belum modul lain).
+Web desa terpadu untuk **Desa Sangkima**, satu aplikasi Next.js berisi **tiga bagian** (berbagi satu database, design system, dan pola layering yang sama):
+
+1. **Web Profil publik** (route group `(profile)` di root `/`) — beranda, berita, galeri album (foto & video), PPID, produk koperasi, profil/struktur/statistik desa.
+2. **E-Surat** (`/esurat/*`) — permohonan surat digital warga: login/register/OTP, ajukan surat, approval 2 tingkat staff→admin, terbit PDF + verifikasi QR.
+3. **CMS Admin** (`/admin/*`) — kelola konten Web Profil; akun `cms_users` (`super_admin`/`editor`) terpisah dari akun warga.
 
 ## Tech Stack
 
@@ -103,8 +109,6 @@ src/
     ├── types/                    # Zod schema + TypeScript type per domain (gabung, bukan terpisah)
     └── utils/                    # session.ts, jwt.ts, hash.ts, otp.ts, letter-number.ts, upload.ts
 ```
-
-`src/controllers/` ada tapi kosong — sisa struktur lama, jangan dipakai untuk kode baru.
 
 ## Aturan Penulisan Kode
 

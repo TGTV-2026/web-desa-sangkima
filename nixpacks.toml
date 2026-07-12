@@ -1,0 +1,9 @@
+# Pasang ffmpeg di image produksi. Dipakai src/server/utils/videoUpload.ts untuk
+# mengompres video latar hero (720p, tanpa audio) sebelum disajikan ke pengunjung.
+# Tanpa ini, video diunggah apa adanya — 200 MB rekaman drone akan diunduh utuh
+# oleh setiap pengunjung beranda lewat kuota mereka sendiri.
+#
+# `aptPkgs` bersifat menambah, bukan mengganti, paket bawaan Nixpacks — jadi
+# deteksi Node.js/Next.js tetap berjalan seperti biasa.
+[phases.setup]
+aptPkgs = ["ffmpeg"]

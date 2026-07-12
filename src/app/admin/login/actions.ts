@@ -1,4 +1,5 @@
 "use server";
+import { pesanAksi } from "@/server/utils/appError";
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -17,7 +18,7 @@ export async function loginCms(input: unknown): Promise<LoginResult> {
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal masuk.",
+      message: pesanAksi(err, "Gagal masuk."),
     };
   }
   // di luar try agar redirect (yang melempar) tidak tertangkap sebagai error

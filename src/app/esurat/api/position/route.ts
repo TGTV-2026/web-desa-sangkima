@@ -1,3 +1,4 @@
+import { pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/position:
@@ -101,6 +102,7 @@ import { getAuthUser } from "@/server/middlewares/role.middleware";
 import {
   requireRole,
   handleACLError,
+  isACLError,
 } from "@/server/middlewares/acl.middleware";
 
 export async function GET(req: Request) {
@@ -112,14 +114,14 @@ export async function GET(req: Request) {
       { success: true, message: "Daftar jabatan berhasil diambil", data },
       { status: 200 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") {
+  } catch (error) {
+    if (isACLError(error)) {
       return handleACLError(error);
     }
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 500 },
     );
@@ -137,8 +139,8 @@ export async function POST(req: Request) {
       { success: true, message: "Jabatan berhasil dibuat", data },
       { status: 201 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") {
+  } catch (error) {
+    if (isACLError(error)) {
       return handleACLError(error);
     }
     if (error instanceof z.ZodError) {
@@ -154,7 +156,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 400 },
     );

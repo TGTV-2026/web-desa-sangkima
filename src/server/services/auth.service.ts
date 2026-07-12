@@ -1,3 +1,4 @@
+import { AppError } from "../utils/appError";
 import {
   registerSchema,
   loginSchema,
@@ -47,14 +48,10 @@ export const authService = {
 
     if (existingUser) {
       if (existingUser.email === validatedData.email) {
-        throw Object.assign(new Error("Email sudah terdaftar"), {
-          field: "email" as const,
-        });
+        throw new AppError("Email sudah terdaftar", { field: "email" });
       }
       if (existingUser.nik === validatedData.nik) {
-        throw Object.assign(new Error("NIK sudah terdaftar"), {
-          field: "nik" as const,
-        });
+        throw new AppError("NIK sudah terdaftar", { field: "nik" });
       }
     }
 
@@ -99,7 +96,7 @@ export const authService = {
     );
 
     if (!token) {
-      throw new Error("Kode OTP tidak valid atau sudah expired");
+      throw new AppError("Kode OTP tidak valid atau sudah expired");
     }
 
     // Mark token as used
@@ -112,7 +109,7 @@ export const authService = {
     // verifikasi, tanpa harus ke halaman login lagi.
     const user = await userRepository.findById(validatedData.userId);
     if (!user) {
-      throw new Error("User tidak ditemukan");
+      throw new AppError("User tidak ditemukan");
     }
 
     const jwt = await signToken({
@@ -140,12 +137,12 @@ export const authService = {
     // Find user
     const user = await userRepository.findByEmail(validatedData.email);
     if (!user) {
-      throw new Error("Email tidak terdaftar");
+      throw new AppError("Email tidak terdaftar");
     }
 
     // Check if email already verified
     if (user.emailVerifiedAt) {
-      throw new Error("Email sudah diaktifkan. Silakan login.");
+      throw new AppError("Email sudah diaktifkan. Silakan login.");
     }
 
     // Delete old OTP token
@@ -164,7 +161,7 @@ export const authService = {
       await sendOTPEmail(user.email, otp);
     } catch (error) {
       console.error("Failed to send OTP email:", error);
-      throw new Error("Gagal mengirim email OTP");
+      throw new AppError("Gagal mengirim email OTP");
     }
 
     return {
@@ -195,7 +192,7 @@ export const authService = {
 
     // Check if email is verified
     if (!user.emailVerifiedAt) {
-      throw new Error(
+      throw new AppError(
         "Email belum diaktifkan. Silakan verifikasi email terlebih dahulu.",
       );
     }
@@ -219,7 +216,7 @@ export const authService = {
       await sendPasswordResetEmail(user.email, resetToken, resetUrl);
     } catch (error) {
       console.error("Failed to send password reset email:", error);
-      throw new Error("Gagal mengirim email reset password");
+      throw new AppError("Gagal mengirim email reset password");
     }
 
     return {
@@ -246,14 +243,14 @@ export const authService = {
     );
 
     if (!resetToken) {
-      throw new Error("Token tidak valid atau sudah expired");
+      throw new AppError("Token tidak valid atau sudah expired");
     }
 
     // Get user
     const user = await userRepository.findById(validatedData.userId);
 
     if (!user) {
-      throw new Error("User tidak ditemukan");
+      throw new AppError("User tidak ditemukan");
     }
 
     // Hash new password
@@ -277,7 +274,7 @@ export const authService = {
 
     const user = await userRepository.findById(input.userId);
     if (!user) {
-      throw new Error("User tidak ditemukan");
+      throw new AppError("User tidak ditemukan");
     }
 
     const isOldValid = await comparePassword(
@@ -285,9 +282,7 @@ export const authService = {
       user.password,
     );
     if (!isOldValid) {
-      throw Object.assign(new Error("Password lama salah"), {
-        field: "oldPassword" as const,
-      });
+      throw new AppError("Password lama salah", { field: "oldPassword" });
     }
 
     const passwordHash = await hashPassword(validatedData.newPassword);
@@ -304,7 +299,7 @@ export const authService = {
 
     const user = await userRepository.findByEmail(validatedData.email);
     if (!user) {
-      throw new Error("Email atau password salah");
+      throw new AppError("Email atau password salah");
     }
 
     // Verifikasi password lebih dulu — status akun (nonaktif / belum verifikasi)
@@ -314,19 +309,19 @@ export const authService = {
       user.password,
     );
     if (!isPasswordValid) {
-      throw new Error("Email atau password salah");
+      throw new AppError("Email atau password salah");
     }
 
     if (user.deletedAt) {
-      throw new Error("Akun ini telah dinonaktifkan. Hubungi administrator.");
+      throw new AppError("Akun ini telah dinonaktifkan. Hubungi administrator.");
     }
 
     // Email belum diaktifkan → tandai supaya pemanggil bisa mengarahkan ke
     // halaman verifikasi OTP (bukan sekadar menampilkan error).
     if (!user.emailVerifiedAt) {
-      throw Object.assign(
-        new Error("Email belum diaktifkan. Silakan verifikasi email Anda."),
-        { code: "EMAIL_NOT_VERIFIED" as const, userId: user.id },
+      throw new AppError(
+        "Email belum diaktifkan. Silakan verifikasi email Anda.",
+        { code: "EMAIL_NOT_VERIFIED", userId: user.id },
       );
     }
 
@@ -354,7 +349,7 @@ export const authService = {
     const user = await userRepository.findById(validatedData.userId);
 
     if (!user) {
-      throw new Error("User tidak ditemukan");
+      throw new AppError("User tidak ditemukan");
     }
 
     // Resolve soft-deleted users holding this email
@@ -365,7 +360,7 @@ export const authService = {
       validatedData.newEmail,
     );
     if (existingUser && existingUser.id !== validatedData.userId) {
-      throw new Error("Email baru sudah terdaftar");
+      throw new AppError("Email baru sudah terdaftar");
     }
 
     // Delete old email change tokens
@@ -395,7 +390,7 @@ export const authService = {
       await sendOTPEmail(validatedData.newEmail, otp);
     } catch (error) {
       console.error("Failed to send OTP email:", error);
-      throw new Error("Gagal mengirim OTP ke email baru");
+      throw new AppError("Gagal mengirim OTP ke email baru");
     }
 
     return {
@@ -418,7 +413,7 @@ export const authService = {
     );
 
     if (!emailChangeToken) {
-      throw new Error("Kode OTP tidak valid atau sudah expired");
+      throw new AppError("Kode OTP tidak valid atau sudah expired");
     }
 
     // Get meta dengan email baru - handle both string dan object
@@ -430,7 +425,7 @@ export const authService = {
           meta = JSON.parse(emailChangeToken.meta);
         } catch (error) {
           console.error("Failed to parse meta JSON:", error);
-          throw new Error("Data email baru tidak valid");
+          throw new AppError("Data email baru tidak valid");
         }
       } else {
         meta = emailChangeToken.meta as { newEmail: string };
@@ -443,7 +438,7 @@ export const authService = {
     });
 
     if (!meta || !meta.newEmail) {
-      throw new Error("Data email baru tidak ditemukan");
+      throw new AppError("Data email baru tidak ditemukan");
     }
 
     // Update user email

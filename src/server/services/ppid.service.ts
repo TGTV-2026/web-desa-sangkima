@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { ppidRepository } from "../repositories/ppid.repository";
+import { deleteDocument } from "../utils/documentUpload";
 import {
   ppidDocInputSchema,
   type PpidAuthor,
@@ -80,6 +81,8 @@ export const ppidService = {
   },
 
   async remove(id: string): Promise<void> {
+    const row = await ppidRepository.findById(id);
+    if (row) await deleteDocument(row.fileUrl);
     await ppidRepository.remove(id);
   },
 };

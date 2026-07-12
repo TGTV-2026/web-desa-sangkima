@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireCmsUser } from "@/server/utils/cmsSession";
-import { ADMIN_NAV, type AdminNavItem } from "./nav";
+import { navUntukRole, type AdminNavItem } from "./nav";
 import TourLink from "./TourLink";
 
 export const dynamic = "force-dynamic";
@@ -53,9 +53,7 @@ const STEPS = [
 
 export default async function AdminDashboardPage() {
   const user = await requireCmsUser();
-  const items = ADMIN_NAV.filter(
-    (item) => !item.superAdminOnly || user.role === "super_admin",
-  );
+  const items = navUntukRole(user.role);
   const konten = items.filter((i) => i.group === "konten");
   const pengaturan = items.filter((i) => i.group === "pengaturan");
   const firstName = user.name.split(" ")[0];

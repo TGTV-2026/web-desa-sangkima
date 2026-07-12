@@ -1,3 +1,4 @@
+import { AppError, pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/auth/login:
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
       },
       { status: 200 },
     );
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -115,7 +116,7 @@ export async function POST(req: Request) {
 
     // Kredensial benar tapi email belum diverifikasi: tandai sesi pending dan
     // beri kode khusus agar klien mengarahkan user ke halaman verifikasi OTP.
-    if (error?.code === "EMAIL_NOT_VERIFIED" && error?.userId) {
+    if (error instanceof AppError && error.code === "EMAIL_NOT_VERIFIED" && error.userId) {
       await setPendingVerification(String(error.userId));
       return NextResponse.json(
         {
@@ -131,7 +132,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 401 },
     );

@@ -3,9 +3,9 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
-  type CSSProperties,
 } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
@@ -70,8 +70,10 @@ export default function CmsTour() {
   const [i, setI] = useState(0);
   const [active, setActive] = useState(false);
   const [rect, setRect] = useState<Rect | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const [mounted, setMounted] = useState(false);
   const startedRef = useRef(false);
+  const tipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -149,6 +151,33 @@ export default function CmsTour() {
     };
   }, [active, i, steps]);
 
+  // Jepit kartu penjelasan agar selalu utuh di layar (tak terpotong tepi).
+  // Diukur setelah render (offsetHeight/Width) lalu di-clamp ke dalam viewport.
+  useLayoutEffect(() => {
+    if (!active || steps.length === 0) return;
+    const node = tipRef.current;
+    if (!node) return;
+    const M = 16;
+    const w = node.offsetWidth;
+    const h = node.offsetHeight;
+    let left: number;
+    let top: number;
+    if (rect) {
+      left = Math.min(Math.max(M, rect.left), window.innerWidth - w - M);
+      const spaceBelow = window.innerHeight - (rect.top + rect.height);
+      // Taruh di bawah target bila muat; jika tidak, di atas — lalu jepit.
+      top =
+        spaceBelow >= h + 12 || spaceBelow >= rect.top
+          ? rect.top + rect.height + 12
+          : rect.top - 12 - h;
+      top = Math.min(Math.max(M, top), window.innerHeight - h - M);
+    } else {
+      left = (window.innerWidth - w) / 2;
+      top = (window.innerHeight - h) / 2;
+    }
+    setPos({ top, left });
+  }, [active, i, rect, steps.length]);
+
   // Keyboard: Esc = tutup, ← → = navigasi.
   useEffect(() => {
     if (!active) return;
@@ -165,29 +194,8 @@ export default function CmsTour() {
 
   const isLast = i === steps.length - 1;
   const PAD = 8;
-
-  // Posisi kartu tooltip.
-  const tipW = 340;
-  let tipStyle: CSSProperties;
-  if (rect) {
-    const spaceBelow = window.innerHeight - (rect.top + rect.height);
-    const below = spaceBelow > 240;
-    const top = below ? rect.top + rect.height + PAD + 12 : rect.top - PAD - 12;
-    const left = Math.min(
-      Math.max(16, rect.left),
-      window.innerWidth - tipW - 16,
-    );
-    tipStyle = below
-      ? { top, left, width: tipW }
-      : { top, left, width: tipW, transform: "translateY(-100%)" };
-  } else {
-    tipStyle = {
-      top: "50%",
-      left: "50%",
-      width: Math.min(tipW, window.innerWidth - 32),
-      transform: "translate(-50%,-50%)",
-    };
-  }
+  // Lebar responsif — jangan melebihi layar (penyebab teks terpotong di HP).
+  const tipW = Math.min(340, window.innerWidth - 32);
 
   return createPortal(
     <div className="fixed inset-0 z-[100]" aria-live="polite">
@@ -211,10 +219,16 @@ export default function CmsTour() {
         />
       )}
 
-      {/* Kartu penjelasan */}
+      {/* Kartu penjelasan — posisi diukur & dijepit di viewport (lihat useLayoutEffect) */}
       <div
-        className="absolute animate-[popIn_.35s_cubic-bezier(0.16,1,0.3,1)] rounded-lg border border-line bg-card p-5 shadow-2xl"
-        style={tipStyle}
+        ref={tipRef}
+        className="absolute max-h-[calc(100dvh-2rem)] animate-[popIn_.35s_cubic-bezier(0.16,1,0.3,1)] overflow-y-auto rounded-lg border border-line bg-card p-5 shadow-2xl"
+        style={{
+          width: tipW,
+          top: pos?.top ?? -9999,
+          left: pos?.left ?? -9999,
+          visibility: pos ? "visible" : "hidden",
+        }}
       >
         <div className="mb-2 flex items-center justify-between gap-3">
           <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-brass">

@@ -1,3 +1,4 @@
+import { pesanAman } from "@/server/utils/appError";
 import { NextResponse } from "next/server";
 import { getCmsUser } from "@/server/utils/cmsSession";
 import { saveDocument } from "@/server/utils/documentUpload";
@@ -9,6 +10,16 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { success: false, message: "Tidak berwenang" },
       { status: 401 },
+    );
+  }
+  // Akun yang emailnya belum diverifikasi hanya boleh membaca isi CMS.
+  if (!user.emailVerified) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Verifikasi email Anda dulu sebelum mengunggah berkas.",
+      },
+      { status: 403 },
     );
   }
 
@@ -33,7 +44,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: err instanceof Error ? err.message : "Gagal mengunggah",
+        message: pesanAman(err, "Gagal mengunggah"),
       },
       { status: 400 },
     );

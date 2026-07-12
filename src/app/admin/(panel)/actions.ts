@@ -1,9 +1,11 @@
 "use server";
+import { pesanAksi } from "@/server/utils/appError";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { siteContentService } from "@/server/services/siteContent.service";
-import { requireCmsUser } from "@/server/utils/cmsSession";
+import { requireVerifiedCmsUser } from "@/server/utils/cmsSession";
+import { deleteHeroVideo } from "@/server/utils/videoUpload";
 import { CONTENT_SECTIONS, type ContentKey } from "@/server/types/content";
 
 // Path publik yang perlu di-revalidate setelah satu seksi disimpan, agar
@@ -34,20 +36,35 @@ export async function saveSection(
   key: ContentKey,
   value: unknown,
 ): Promise<SaveResult> {
-  const user = await requireCmsUser();
   if (!(key in CONTENT_SECTIONS)) {
     return { success: false, message: "Seksi tidak dikenal" };
   }
-  // Tanda tangan surat bersifat sensitif — hanya super admin, bukan editor.
-  if (key === "surat" && user.role !== "super_admin") {
-    return {
-      success: false,
-      message: "Hanya Super Admin yang boleh mengubah tanda tangan surat.",
-    };
-  }
 
   try {
+    const user = await requireVerifiedCmsUser();
+    // Tanda tangan surat bersifat sensitif — hanya super admin, bukan editor.
+    if (key === "surat" && user.role !== "super_admin") {
+      return {
+        success: false,
+        message: "Hanya Super Admin yang boleh mengubah tanda tangan surat.",
+      };
+    }
+    // Video hero di-host sendiri dan bisa ratusan MB. Bila diganti/dikosongkan,
+    // berkas lamanya harus ikut dihapus — kalau tidak, volume uploads terus
+    // menumpuk berkas yatim yang tak dipakai siapa pun.
+    const videoLama =
+      key === "hero" ? (await siteContentService.get("hero")).backgroundVideo : "";
+
     await siteContentService.update(key, value, user.id);
+
+    if (key === "hero") {
+      const videoBaru =
+        (value as { backgroundVideo?: string }).backgroundVideo ?? "";
+      if (videoLama && videoLama !== videoBaru) {
+        await deleteHeroVideo(videoLama);
+      }
+    }
+
     for (const path of REVALIDATE[key]) revalidatePath(path);
     return { success: true };
   } catch (err) {
@@ -60,7 +77,7 @@ export async function saveSection(
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
 }

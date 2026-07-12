@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { productRepository } from "../repositories/product.repository";
+import { deleteProfileImage } from "../utils/imageUpload";
 import { productInputSchema, type ProductDTO } from "../types/product";
 
 function toDTO(
@@ -70,6 +71,8 @@ export const productService = {
   },
 
   async remove(id: string): Promise<void> {
+    const row = await productRepository.findById(id);
+    if (row) await deleteProfileImage(row.image);
     await productRepository.remove(id);
   },
 };

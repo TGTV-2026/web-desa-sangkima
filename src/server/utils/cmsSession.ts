@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import { cmsUserRepository } from "../repositories/cmsUser.repository";
 import type { CmsRole } from "../types/cmsUser";
+import { AppError } from "./appError";
 
 // Sesi CMS TERPISAH dari e-surat: cookie sendiri (cms_session), tabel cms_users
 // sendiri. Menandai token dengan scope "cms" agar tak tertukar dengan token
@@ -15,6 +16,12 @@ export type CmsSessionUser = {
   name: string;
   email: string;
   role: CmsRole;
+  emailVerified: boolean;
+  /** hanya terisi untuk role "rt" */
+  dusun: string | null;
+  rt: string | null;
+  /** true = sandi masih sandi sementara dari super_admin, wajib diganti dulu */
+  mustChangePassword: boolean;
 };
 
 function secret() {
@@ -65,6 +72,10 @@ export async function getCmsUser(): Promise<CmsSessionUser | null> {
       name: row.name,
       email: row.email,
       role: row.role as CmsRole,
+      emailVerified: !!row.emailVerifiedAt,
+      dusun: row.dusun,
+      rt: row.rt,
+      mustChangePassword: row.mustChangePassword,
     };
   } catch {
     return null;
@@ -82,5 +93,36 @@ export async function requireCmsUser(): Promise<CmsSessionUser> {
 export async function requireSuperAdmin(): Promise<CmsSessionUser> {
   const user = await requireCmsUser();
   if (user.role !== "super_admin") redirect("/admin");
+  return user;
+}
+
+/** Guard khusus ketua RT (modul Laporan RT — mengisi laporan sendiri). */
+export async function requireRtUser(): Promise<CmsSessionUser> {
+  const user = await requireCmsUser();
+  if (user.role !== "rt") redirect("/admin");
+  // Sandi sementara belum diganti → paksa ke halaman ganti sandi. Ditegakkan
+  // di guard (bukan cuma layout) supaya server action pun ikut terkunci.
+  if (user.mustChangePassword) redirect("/admin/ganti-sandi");
+  return user;
+}
+
+/** Dilempar oleh requireVerifiedCmsUser; ditangkap action → pesan ke operator. */
+export class CmsEmailNotVerifiedError extends AppError {
+  constructor() {
+    super(
+      "Email Anda belum diverifikasi. Buka menu “Verifikasi Email” untuk mengaktifkan akun sebelum mengubah konten.",
+    );
+    this.name = "CmsEmailNotVerifiedError";
+  }
+}
+
+/**
+ * Guard untuk SEMUA aksi tulis CMS (server action & route upload). Akun yang
+ * emailnya belum diverifikasi tetap boleh membaca isi CMS, tapi tak boleh
+ * mengubah apa pun. Ditegakkan di server supaya tak bisa diakali dari browser.
+ */
+export async function requireVerifiedCmsUser(): Promise<CmsSessionUser> {
+  const user = await requireCmsUser();
+  if (!user.emailVerified) throw new CmsEmailNotVerifiedError();
   return user;
 }

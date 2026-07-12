@@ -1,13 +1,16 @@
+import { AppError } from "./appError";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createId } from "@paralleldrive/cuid2";
 import { compressImage, type ImageVariant } from "./imageCompress";
 import { MAX_IMAGE_BYTES, MAX_IMAGE_LABEL } from "@/lib/uploadLimits";
 
-// Gambar konten web profil (galeri, hero, titik peta) bersifat PUBLIK, jadi
-// disimpan di public/uploads/profil/ dan dilayani statis lewat URL /uploads/profil/<file>.
-// (Beda dengan lampiran surat yang privat di /uploads/lampiran.)
-const PUBLIC_DIR = path.join(process.cwd(), "public", "uploads", "profil");
+// Gambar konten web profil (galeri, hero, titik peta) bersifat PUBLIK, tapi
+// disimpan DI LUAR public/ (mis. /uploads/profil/) dan dilayani lewat route
+// handler src/app/uploads/profil/[filename]/route.ts — bukan static file
+// Next.js, karena penulisan saat runtime tidak selalu langsung terlihat oleh
+// static serving di semua environment deploy (lihat serveUpload.ts).
+const PUBLIC_DIR = path.join(process.cwd(), "uploads", "profil");
 const PUBLIC_URL_BASE = "/uploads/profil";
 
 // Plafon pengaman tinggi — gambar dikompres server-side jadi jauh lebih kecil
@@ -29,10 +32,10 @@ export async function saveProfileImage(
   opts?: { variant?: ImageVariant },
 ): Promise<string> {
   if (!ALLOWED_IMAGE_TYPES[file.mime]) {
-    throw new Error("Format gambar harus JPG, PNG, atau WEBP");
+    throw new AppError("Format gambar harus JPG, PNG, atau WEBP");
   }
   if (file.size > MAX_IMAGE_SIZE) {
-    throw new Error(`Ukuran gambar melebihi ${MAX_IMAGE_LABEL}`);
+    throw new AppError(`Ukuran gambar melebihi ${MAX_IMAGE_LABEL}`);
   }
 
   const { buffer, ext } = await compressImage(
@@ -44,4 +47,14 @@ export async function saveProfileImage(
   const storedName = `${createId()}.${ext}`;
   await fs.writeFile(path.join(PUBLIC_DIR, storedName), buffer);
   return `${PUBLIC_URL_BASE}/${storedName}`;
+}
+
+/** Hapus file gambar berdasarkan URL publiknya. Aman dipanggil walau berkas sudah tak ada/kosong. */
+export async function deleteProfileImage(url: string | null | undefined): Promise<void> {
+  if (!url) return;
+  try {
+    await fs.unlink(path.join(PUBLIC_DIR, path.basename(url)));
+  } catch {
+    // sudah terhapus / tak ada — abaikan
+  }
 }

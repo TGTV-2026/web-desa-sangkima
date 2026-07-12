@@ -1,3 +1,4 @@
+import { pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/letter-types:
@@ -67,6 +68,7 @@ import { letterTypeService } from "@/server/services/letterType.service";
 import {
   requireRole,
   handleACLError,
+  isACLError,
 } from "@/server/middlewares/acl.middleware";
 
 export async function GET(req: Request) {
@@ -81,12 +83,12 @@ export async function GET(req: Request) {
       { success: true, message: "Daftar jenis surat berhasil diambil", data },
       { status: 200 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 500 },
     );
@@ -104,8 +106,8 @@ export async function POST(req: Request) {
       { success: true, message: "Jenis surat berhasil dibuat", data },
       { status: 201 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -119,7 +121,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 400 },
     );

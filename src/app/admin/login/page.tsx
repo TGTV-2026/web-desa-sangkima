@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCmsUser } from "@/server/utils/cmsSession";
 import CmsLoginForm from "./CmsLoginForm";
@@ -31,7 +32,15 @@ export default async function CmsLoginPage() {
         <div className="card-doc p-6">
           <CmsLoginForm />
         </div>
-        <p className="mt-6 text-center text-[11px] text-inkmut">
+        <p className="mt-4 text-center text-xs">
+          <Link
+            href="/admin/lupa-sandi"
+            className="font-semibold text-brass hover:underline"
+          >
+            Lupa kata sandi?
+          </Link>
+        </p>
+        <p className="mt-4 text-center text-[11px] text-inkmut">
           Akun ini terpisah dari akun layanan e-surat warga.
         </p>
       </div>

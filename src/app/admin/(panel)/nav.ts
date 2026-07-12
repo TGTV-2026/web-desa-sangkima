@@ -1,9 +1,12 @@
 import type { ContentKey } from "@/server/types/content";
+import type { CmsRole } from "@/server/types/cmsUser";
 
 // Daftar menu CMS.
 // `ready` = editornya sudah tersedia. `superAdminOnly` = hanya super_admin.
 // `desc` = penjelasan bahasa awam (dipakai di dashboard agar operator tak bingung).
 // `group` = pengelompokan dashboard: "konten" (isi website) vs "pengaturan".
+// `roles` = daftar peran yang melihat menu ini; tanpa `roles`, aturan lama
+// berlaku (super_admin + editor) — akun rt HANYA melihat menu yang menyebutnya.
 export type AdminNavItem = {
   key: ContentKey | string;
   href: string;
@@ -12,7 +15,18 @@ export type AdminNavItem = {
   desc: string;
   group: "konten" | "pengaturan";
   superAdminOnly?: boolean;
+  roles?: CmsRole[];
 };
+
+/** Filter menu sesuai peran — dipakai sidebar & dashboard agar aturannya satu. */
+export function navUntukRole(role: CmsRole): AdminNavItem[] {
+  return ADMIN_NAV.filter((item) => {
+    if (item.roles) return item.roles.includes(role);
+    if (item.superAdminOnly) return role === "super_admin";
+    // menu konten lama: untuk super_admin & editor, BUKAN ketua RT
+    return role !== "rt";
+  });
+}
 
 export const ADMIN_NAV: AdminNavItem[] = [
   {
@@ -121,12 +135,30 @@ export const ADMIN_NAV: AdminNavItem[] = [
     superAdminOnly: true,
   },
   {
+    key: "laporanRt",
+    href: "/admin/laporan-rt",
+    label: "Laporan RT",
+    desc: "Laporan kependudukan & potensi desa dari tiap ketua RT.",
+    group: "konten",
+    ready: true,
+    roles: ["rt", "super_admin"],
+  },
+  {
     key: "pengguna",
     href: "/admin/pengguna",
-    label: "Akun Editor",
-    desc: "Buat & atur akun editor pengelola website.",
+    label: "Akun Pengelola",
+    desc: "Buat & atur akun editor dan ketua RT (termasuk unggah CSV massal).",
     group: "pengaturan",
     ready: true,
     superAdminOnly: true,
+  },
+  {
+    key: "akun",
+    href: "/admin/akun",
+    label: "Akun Saya",
+    desc: "Ganti email (dengan verifikasi OTP) & kata sandi akun Anda sendiri.",
+    group: "pengaturan",
+    ready: true,
+    roles: ["super_admin", "editor", "rt"],
   },
 ];

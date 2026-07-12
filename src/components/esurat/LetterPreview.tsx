@@ -7,6 +7,8 @@ interface LetterPreviewProps {
   requestId: string;
   // true jika surat sudah DISETUJUI/SELESAI (tampilkan tombol unduh PDF resmi).
   issued: boolean;
+  // true jika surat sudah DIPROSES/DISETUJUI/SELESAI (tampilkan tombol cetak basah).
+  canDownloadNoSig?: boolean;
   // Berubah saat data surat berubah → paksa iframe muat ulang (mis. staff edit isian).
   refreshKey: string;
 }
@@ -19,6 +21,7 @@ interface LetterPreviewProps {
 export default function LetterPreview({
   requestId,
   issued,
+  canDownloadNoSig,
   refreshKey,
 }: LetterPreviewProps) {
   const [open, setOpen] = useState(false);
@@ -73,15 +76,29 @@ export default function LetterPreview({
         >
           Lihat Surat
         </button>
-        {issued && (
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-primary w-full text-center"
-          >
-            Unduh Surat (PDF)
-          </a>
+        {(issued || canDownloadNoSig) && (
+          <div className="flex flex-col gap-2 mt-2">
+            {issued && (
+              <a
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-primary w-full text-center"
+              >
+                Unduh Surat (PDF)
+              </a>
+            )}
+            {canDownloadNoSig && (
+              <a
+                href={`${pdfUrl}?nosig=1`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-outline w-full text-center text-xs text-ink/70"
+              >
+                Cetak Tanpa Tanda Tangan
+              </a>
+            )}
+          </div>
         )}
       </div>
 
@@ -112,15 +129,30 @@ export default function LetterPreview({
                   >
                     Buka di tab baru
                   </a>
-                  {issued && (
-                    <a
-                      href={pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-primary text-xs"
-                    >
-                      Unduh
-                    </a>
+                  {(issued || canDownloadNoSig) && (
+                    <>
+                      {canDownloadNoSig && (
+                        <a
+                          href={`${pdfUrl}?nosig=1`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-outline hidden text-xs sm:inline-flex text-ink/70"
+                          title="Unduh Tanpa Tanda Tangan"
+                        >
+                          Cetak Basah
+                        </a>
+                      )}
+                      {issued && (
+                        <a
+                          href={pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-primary text-xs"
+                        >
+                          Unduh
+                        </a>
+                      )}
+                    </>
                   )}
                   <button
                     type="button"

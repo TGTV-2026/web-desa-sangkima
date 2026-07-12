@@ -7,9 +7,7 @@ import { useEffect, useRef } from "react";
 import "leaflet/dist/leaflet.css";
 import "./contact-map.css";
 import type { Map as LeafletMap } from "leaflet";
-import { KATEGORI_WARNA, type TitikPeta } from "./peta-data";
-
-const WARNA_DEFAULT = "#275138";
+import { KATEGORI_WARNA, WARNA_DEFAULT, type TitikPeta } from "./peta-data";
 
 export default function ContactMap({
   titik,
@@ -25,19 +23,36 @@ export default function ContactMap({
 
   useEffect(() => {
     let cancelled = false;
+    let detachWheel: (() => void) | null = null;
 
     (async () => {
       // Import dinamis: Leaflet menyentuh window, jadi hanya dimuat di browser.
       const L = (await import("leaflet")).default;
       if (cancelled || !elRef.current || mapRef.current) return;
+      const el = elRef.current;
 
-      const map = L.map(elRef.current, {
+      const map = L.map(el, {
         center,
         zoom,
-        scrollWheelZoom: false, // jangan rebut scroll halaman — pakai tombol +/- atau drag
+        scrollWheelZoom: false, // jangan rebut scroll halaman — pakai tombol +/- atau pinch
         zoomControl: false,
+        zoomSnap: 0, // izinkan zoom pecahan agar pinch touchpad terasa halus
       });
       mapRef.current = map;
+
+      // Pinch touchpad dikirim browser sebagai wheel + ctrlKey (aksi default-nya
+      // zoom browser). Cegat khusus gesture itu untuk zoom peta ke arah kursor;
+      // scroll dua-jari biasa (tanpa ctrlKey) dibiarkan agar halaman tetap bisa
+      // di-scroll — persis niat awal scrollWheelZoom: false.
+      const onWheel = (e: WheelEvent) => {
+        if (!e.ctrlKey) return;
+        e.preventDefault();
+        const rect = el.getBoundingClientRect();
+        const point = L.point(e.clientX - rect.left, e.clientY - rect.top);
+        map.setZoomAround(point, map.getZoom() - e.deltaY * 0.01);
+      };
+      el.addEventListener("wheel", onWheel, { passive: false });
+      detachWheel = () => el.removeEventListener("wheel", onWheel);
 
       // Tombol zoom dipindah ke kanan agar tak menimpa label kiri-atas.
       L.control.zoom({ position: "topright" }).addTo(map);
@@ -52,6 +67,45 @@ export default function ContactMap({
           subdomains: "abcd",
         },
       ).addTo(map);
+
+      // Tujuan navigasi menyesuaikan perangkat: Android buka menu "Buka dengan"
+      // (skema geo: → Maps/Waze/dll), iOS ke Apple Maps, desktop ke Google Maps.
+      const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+      const isAndroid = /Android/i.test(ua);
+      const isIOS = /iPhone|iPad|iPod/i.test(ua);
+      const isMobile = isAndroid || isIOS;
+      const navHref = (lat: number, lng: number, label: string) => {
+        if (isAndroid)
+          return `geo:${lat},${lng}?q=${lat},${lng}(${encodeURIComponent(label)})`;
+        // Href iOS = Apple Maps sebagai fallback bila JS mati; app dipilih via klik.
+        if (isIOS) return `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+        return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+      };
+
+      // iOS tak punya menu "Buka dengan". Coba buka Google Maps app dulu; kalau
+      // tak terpasang (halaman tetap terlihat setelah jeda), jatuh ke Apple Maps.
+      const openIosNav = (lat: number, lng: number) => {
+        const googleApp = `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`;
+        const appleMaps = `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+        let done = false;
+        const timer = setTimeout(() => {
+          if (!done) window.location.href = appleMaps;
+        }, 1500);
+        // App terbuka → halaman tersembunyi/ditinggalkan → batalkan fallback.
+        const cancel = () => {
+          done = true;
+          clearTimeout(timer);
+        };
+        window.addEventListener("pagehide", cancel, { once: true });
+        document.addEventListener(
+          "visibilitychange",
+          () => {
+            if (document.hidden) cancel();
+          },
+          { once: true },
+        );
+        window.location.href = googleApp;
+      };
 
       const bounds: [number, number][] = [];
 
@@ -95,14 +149,52 @@ export default function ContactMap({
         body.append(tag, title, desc);
         card.append(img, body);
 
-        L.marker([t.lat, t.lng], { icon, title: t.nama })
+        // Popup navigasi (muncul saat marker diklik) — tooltip hover tak bisa
+        // diklik, jadi tombol arah ditaruh di popup interaktif ini.
+        const nav = document.createElement("div");
+        nav.className = "peta-nav";
+
+        const navTitle = document.createElement("span");
+        navTitle.className = "peta-nav-title";
+        navTitle.textContent = t.nama;
+
+        const navLabel = document.createElement("span");
+        navLabel.className = "peta-nav-label";
+        navLabel.textContent = "Navigasi ke lokasi ini";
+
+        const navBtn = document.createElement("a");
+        navBtn.className = "peta-nav-btn";
+        navBtn.href = navHref(t.lat, t.lng, t.nama);
+        if (isIOS) {
+          // Klik iOS: coba Google Maps app dulu, fallback Apple Maps.
+          navBtn.addEventListener("click", (ev) => {
+            ev.preventDefault();
+            openIosNav(t.lat, t.lng);
+          });
+        } else if (!isMobile) {
+          // Desktop buka tab baru (situs tetap terbuka). Android: navigasi
+          // langsung agar OS memunculkan menu "Buka dengan" tanpa tab kosong.
+          navBtn.target = "_blank";
+          navBtn.rel = "noopener noreferrer";
+        }
+        navBtn.textContent = "Petunjuk Arah";
+        nav.append(navTitle, navLabel, navBtn);
+
+        const marker = L.marker([t.lat, t.lng], { icon, title: t.nama })
           .addTo(map)
           .bindTooltip(card, {
             direction: "top",
             opacity: 1,
             className: "peta-tip",
             offset: [0, 0],
+          })
+          .bindPopup(nav, {
+            className: "peta-pop",
+            offset: [0, -6],
           });
+
+        // Saat popup dibuka, tutup tooltip hover agar tak menumpuk.
+        marker.on("click", () => marker.closeTooltip());
 
         bounds.push([t.lat, t.lng]);
       });
@@ -112,12 +204,100 @@ export default function ContactMap({
         map.fitBounds(bounds, { padding: [48, 48], maxZoom: 14 });
       }
 
+      // --- Lokasi pengguna (Geolocation browser via map.locate) ---
+      // Di balik tombol, bukan otomatis: prompt izin hanya muncul saat pengguna
+      // menekannya. Butuh HTTPS/localhost; kalau ditolak/gagal → pesan singkat.
+      let userMarker: import("leaflet").Marker | null = null;
+      let accuracyCircle: import("leaflet").Circle | null = null;
+      let msgTimer: ReturnType<typeof setTimeout> | undefined;
+
+      const clearLoading = () =>
+        el.querySelector(".peta-locate a")?.classList.remove("is-loading");
+
+      const showMsg = (text: string) => {
+        let box = el.querySelector<HTMLDivElement>(".peta-locate-msg");
+        if (!box) {
+          box = document.createElement("div");
+          box.className = "peta-locate-msg";
+          el.appendChild(box);
+        }
+        box.textContent = text;
+        box.classList.add("is-visible");
+        clearTimeout(msgTimer);
+        msgTimer = setTimeout(() => box?.classList.remove("is-visible"), 4000);
+      };
+
+      const userIcon = L.divIcon({
+        className: "peta-user",
+        html: `<span class="peta-user-dot"></span>`,
+        iconSize: [18, 18],
+        iconAnchor: [9, 9],
+      });
+
+      map.on("locationfound", (e) => {
+        clearLoading();
+        const radius = Math.max(e.accuracy / 2, 8);
+        if (!userMarker) {
+          userMarker = L.marker(e.latlng, {
+            icon: userIcon,
+            title: "Lokasi Anda",
+          }).addTo(map);
+          accuracyCircle = L.circle(e.latlng, {
+            radius,
+            color: "#2563eb",
+            weight: 1,
+            fillColor: "#3b82f6",
+            fillOpacity: 0.15,
+          }).addTo(map);
+        } else {
+          userMarker.setLatLng(e.latlng);
+          accuracyCircle?.setLatLng(e.latlng).setRadius(radius);
+        }
+      });
+
+      map.on("locationerror", (err) => {
+        clearLoading();
+        showMsg(
+          err.code === 1
+            ? "Izin lokasi ditolak — aktifkan izin lokasi di browser."
+            : "Tidak bisa mendapatkan lokasi Anda saat ini.",
+        );
+      });
+
+      // Tombol kontrol "lokasi saya" (ikon crosshair).
+      const LocateControl = L.Control.extend({
+        options: { position: "topright" as const },
+        onAdd() {
+          const container = L.DomUtil.create("div", "leaflet-bar peta-locate");
+          const btn = L.DomUtil.create("a", "", container) as HTMLAnchorElement;
+          btn.href = "#";
+          btn.title = "Tampilkan lokasi saya";
+          btn.setAttribute("role", "button");
+          btn.setAttribute("aria-label", "Tampilkan lokasi saya");
+          btn.innerHTML =
+            '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+          L.DomEvent.on(btn, "click", (ev: Event) => {
+            L.DomEvent.stop(ev);
+            btn.classList.add("is-loading");
+            map.locate({
+              setView: true,
+              maxZoom: 16,
+              enableHighAccuracy: true,
+              timeout: 10000,
+            });
+          });
+          return container;
+        },
+      });
+      map.addControl(new LocateControl());
+
       // Perbaiki ukuran setelah panel selesai layout (hindari tile abu-abu).
       setTimeout(() => map.invalidateSize(), 0);
     })();
 
     return () => {
       cancelled = true;
+      detachWheel?.();
       mapRef.current?.remove();
       mapRef.current = null;
     };

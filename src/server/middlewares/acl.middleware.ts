@@ -44,6 +44,11 @@ export class ACLError extends Error {
   }
 }
 
+/** Type guard untuk dipakai di `catch` route sebelum memanggil handleACLError. */
+export function isACLError(error: unknown): error is ACLError {
+  return error instanceof ACLError;
+}
+
 /**
  * Handler untuk menangkap ACL error
  */

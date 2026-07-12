@@ -1,8 +1,22 @@
 # @AGENTS.md
 
+## Prinsip Pengembangan — BACA DULU SEBELUM MENGUBAH APA PUN
+
+Proyek ini **sudah berjalan di produksi** (staging: https://desasangkima.cloud, deploy via Coolify) dan ditujukan untuk layanan warga desa sungguhan. Tugas di sini adalah **melanjutkan & mengembangkan sistem yang sudah ada, bukan menulis ulang.**
+
+- **Pahami dulu, ubah kemudian.** Sebelum menambah/mengubah apa pun, telusuri file & pola yang sudah ada di domain terkait (alur `schema → repository → service → route/action → komponen`). Ikuti pola itu; jangan bikin gaya baru yang bersaing dengannya.
+- **Perluas, jangan gantikan.** Tambah fitur sebagai *pendamping* dari yang sudah ada — contoh nyata: `galleryVideos` dibuat sebagai tabel terpisah di samping `galleryPhotos`, BUKAN merombak `galleryPhotos` jadi media polymorphic. Hindari refactor besar sistem yang sudah bekerja hanya demi "lebih rapi".
+- **Jangan hapus/ubah perilaku yang sudah jalan** tanpa alasan kuat dan konfirmasi. Kalau sesuatu terlihat "aneh", cari tahu **kenapa** dulu — sering kali itu keputusan sengaja (biasanya ada komentar Indonesia yang menjelaskan invariannya).
+- **Konsistensi > preferensi pribadi.** Pakai konvensi, styling (`globals.css`), util, dan struktur yang ditetapkan di dokumen ini, walau kamu terbiasa cara lain.
+- **Verifikasi sebelum menyebut selesai.** `npx tsc --noEmit` wajib bersih (dan saat ini memang bersih). `npm run lint` **belum** sepenuhnya bersih: tersisa baseline ~13 error yang diwarisi (kebanyakan `react-hooks/set-state-in-effect` pada pola mounted-guard komponen, plus beberapa `no-explicit-any` di parsing body form) — semuanya tak berkaitan dengan penanganan error dan berisiko bila diutak-atik sembarangan. Jangan menambah error baru, dan jangan menganggap lint hijau sebagai syarat yang sudah terpenuhi — bandingkan jumlahnya sebelum & sesudah perubahan Anda. Tidak ada test runner otomatis — untuk perubahan berdampak runtime, uji manual (`npm run dev`).
+
 ## Tentang Proyek
 
-Backend + frontend Next.js App Router untuk **E-Surat Desa Sangkima** — layanan permohonan surat digital warga (login/register/OTP, ajukan surat, alur approval 2 tingkat staff→admin, terbit PDF + verifikasi QR). Seluruh aplikasi saat ini hidup di bawah route `/esurat/*` (`src/app/page.tsx` di root baru berupa halaman placeholder, belum modul lain).
+Web desa terpadu untuk **Desa Sangkima**, satu aplikasi Next.js berisi **tiga bagian** yang berbagi satu database, satu design system, dan pola layering yang sama:
+
+1. **Web Profil publik** (route group `(profile)` di root `/`) — beranda, berita, galeri album (foto **dan** video), PPID/informasi publik, produk koperasi, profil/struktur/statistik desa. Awalnya dari desain Stitch.
+2. **E-Surat** (`/esurat/*`) — layanan permohonan surat digital warga: login/register/OTP, ajukan surat, alur approval 2 tingkat staff→admin, terbit PDF + verifikasi QR.
+3. **CMS Admin** (`/admin/*`) — panel kelola konten Web Profil. Akun CMS (`cms_users`, peran `super_admin`/`editor`) **terpisah** dari akun warga E-Surat.
 
 ## Tech Stack
 
@@ -74,33 +88,83 @@ Penempatan komponen frontend mengikuti dua kategori:
 
 Hook bersama di `src/hooks/`: `useToast` (notifikasi) dan `useSubmitAction` (konsolidasi pola `busy state → fetch → toast sukses/gagal`, dipakai komponen client yang melakukan mutasi). Jangan paksakan `useSubmitAction` pada alur yang punya percabangan non-generik (mis. redirect khusus berdasarkan kode error tertentu) — biarkan komponen itu pakai fetch manual agar perilakunya tetap eksplisit.
 
+### Web Profil & CMS (pola layering sama, hanya sesi & mutasi beda)
+
+Bagian Web Profil publik dan CMS Admin memakai layering identik dengan E-Surat (`schema → repository → service → …`). Perbedaannya:
+
+- **Sesi CMS terpisah dari sesi warga.** `getCmsUser()` / `requireCmsUser()` / `requireSuperAdmin()` di `src/server/utils/cmsSession.ts` (cookie `cms_session`, tabel `cms_users`). Jangan campur dengan `getSessionUser()`/`getAuthUser()` milik E-Surat.
+- **Mutasi CMS lewat Server Action, bukan API route.** Tiap modul CMS punya `actions.ts` co-located (mis. `src/app/admin/(panel)/album/actions.ts`), pakai `requireCmsUser()`, return bentuk `{ success, message }` (tipe `AlbumResult` dst.), lalu `revalidatePath(...)` + `router.refresh()` di klien.
+- **Domain**: `news` (berita), galeri = `galleryAlbums`/`galleryPhotos`/`galleryVideos`, `ppidDocuments`, `products`, plus konten teks generik lewat registry `siteContent`. Semua mengikuti pola yang sama — cari domain terdekat sebagai contoh sebelum menambah yang baru.
+- **Upload berkas**: gambar via `saveProfileImage()` (`imageUpload.ts`), dokumen via `saveDocument()` (`documentUpload.ts`). Berkas disimpan **DI LUAR `public/`** (folder `uploads/` di root) dan disajikan lewat route handler `src/app/uploads/**/route.ts`, **bukan** static file Next.js (alasan: lihat "Realitas Deployment"). Saat menghapus konten, **hapus juga file fisiknya** (`deleteProfileImage`/`deleteDocument`) — jangan hanya hapus baris DB.
+- **Video galeri** = referensi eksternal YouTube/Instagram (tabel `galleryVideos`), tidak diunggah ke server — URL di-parse via `parseVideoUrl()`, playback via embed.
+- **Video latar hero** = pengecualian yang disengaja: klip pendek (≤30 dtk) **di-host sendiri** di `uploads/video/`, karena iframe YouTube tak bisa dipakai sebagai latar autoplay-loop yang mulus (ada branding, kontrol, dan ratusan KB JS). Bedakan dari video galeri: itu tontonan sengaja & panjang → embed eksternal; ini dekorasi pendek → self-host kecil.
+  - Disajikan lewat `src/app/uploads/video/[filename]/route.ts` yang **mendukung HTTP Range** — wajib, karena Safari/iOS menolak memutar `<video>` dari sumber tanpa Range. Jangan pakai `serveUpload.ts` (membaca berkas utuh ke memori, tanpa Range).
+  - **Dikompres otomatis di server** oleh `ffmpeg` (720p, tanpa audio, CRF 30, `+faststart`) — operator boleh mengunggah rekaman drone mentahan hingga 500 MB, yang disajikan ke pengunjung ~2–3 MB. `ffmpeg` dipasang lewat `nixpacks.toml` (`aptPkgs`).
+  - Bila `ffmpeg` **tidak terpasang**, `saveHeroVideo()` tidak gagal — berkas disimpan apa adanya dan mengembalikan `compressed: false`. **Wajib diberitahukan ke operator** (CMS menampilkan peringatan), jangan didiamkan: video besar akan diunduh utuh oleh setiap pengunjung beranda.
+  - **Durasi ditegakkan di server** lewat `ffprobe` (>30 dtk ditolak), dengan `-t 30` sebagai pengaman. Cek `video.duration` di browser hanya untuk umpan balik cepat, bukan penjaga sesungguhnya.
+  - Berkas dikirim sebagai **raw body**, bukan `FormData`: `req.formData()` menumpuk SELURUH berkas di memori (500 MB unggahan = 500 MB RAM). `saveHeroVideo()` mengalirkan `req.body` langsung ke disk, dengan batas ukuran ditegakkan saat data mengalir (header `Content-Length` bisa dipalsukan). Terukur: unggah 300 MB hanya menaikkan RSS ~60 MB.
+  - Klien memakai **`XMLHttpRequest`**, bukan `fetch()` — hanya XHR yang bisa melaporkan progres unggah. Setelah 100% terkirim, kompresi ffmpeg berjalan tanpa progres yang bisa dipantau; UI menampilkan bar tak-tentu, jangan berpura-pura tahu persentasenya.
+  - Autoplay wajib `muted`; `preload="none"` dan `src` dipasang lewat ref agar tak ada unduhan bila pengunjung mengaktifkan hemat data (`navigator.connection.saveData`) atau `prefers-reduced-motion`.
+
+## Realitas Deployment & Operasional (jangan diabaikan — sudah menyebabkan bug nyata)
+
+Deploy ke **Coolify** (VPS Hostinger Debian, build Nixpacks, MySQL & app dalam container terpisah). Push ke branch `staging` memicu auto-redeploy. Hal-hal yang WAJIB dijaga:
+
+- **Kode ≠ data.** `git push`/redeploy hanya mengirim **kode**. Isi database dan file di `uploads/` **tidak** ikut. Konten CMS diisi di produksi atau dimigrasi terpisah (mysqldump + copy file).
+- **Folder `uploads/` HARUS berupa persistent volume** (`/app/uploads` di Coolify). Tanpa itu, setiap redeploy menghapus semua foto/dokumen yang diunggah. Inilah alasan berkas disimpan di `uploads/` (bukan `public/` yang di-snapshot saat build) dan disajikan lewat route handler.
+- **Schema DB produksi di-update manual** saat ada tabel/kolom baru — jalankan `npx drizzle-kit push` ke DB produksi **sebelum** fitur dipakai, kalau tidak halaman terkait crash (pernah terjadi pada `gallery_videos`).
+- **`EMAIL_MODE=smtp`** wajib di produksi, kalau `console` warga tak menerima OTP dan tak bisa daftar.
+- **Base URL / QR** harus domain produksi (bukan `localhost`), kalau tidak verifikasi surat rusak.
+- **Super admin CMS pertama** tidak dibuat oleh seed biasa — pakai `src/server/db/seedCms.ts` atau endpoint setup sekali-pakai.
+- **Tailwind v4 membungkus semua varian `hover:`/`group-hover:` di `@media (hover: hover)`** → efek hover mati di perangkat sentuh (`hover: none`). Untuk reveal-on-hover yang tetap jalan di layar sentuh, pakai CSS eksplisit (lihat `.thumb-actions` di `globals.css`), bukan utility `group-hover:` Tailwind.
+
+Checklist lengkap sebelum go-live ada di `docs/TESTING-DEPLOYMENT.md`.
+
 ## Struktur Folder
 
 ```
 src/
 ├── app/
-│   ├── esurat/                  # seluruh aplikasi (auth, dashboard, API) hidup di sini
+│   ├── (profile)/               # Web Profil publik (root /): beranda, berita, galeri, ppid, produk, dll
+│   ├── admin/                   # CMS: login/ + (panel)/<modul>/ (page.tsx + actions.ts + form co-located) + api/upload*
+│   ├── esurat/                  # E-Surat: auth, dashboard, api/ (route + JSDoc @swagger)
 │   │   ├── api/                 # API routes (auth, letter-requests, letter-types, users, position)
 │   │   ├── dashboard/           # halaman ber-sesi: ajukan, jenis-surat, permohonan, surat
 │   │   ├── register/, verify-otp/, verifikasi/[code]/, api-docs/
 │   │   ├── LoginForm.tsx, page.tsx
+│   ├── uploads/                 # route handler penyaji berkas upload (bukan static public/)
 │   ├── layout.tsx, page.tsx, globals.css
 ├── components/
 │   ├── Toast.tsx, ToastProvider.tsx     # sistem notifikasi global
-│   └── esurat/                          # komponen domain lintas-halaman (lihat di atas)
-│       └── auth/                        # shell layout halaman auth (AuthSplitLayout, AuthFormHeader)
+│   ├── esurat/                          # komponen domain E-Surat lintas-halaman
+│   │   └── auth/                        # shell layout halaman auth (AuthSplitLayout, AuthFormHeader)
+│   └── profile/                         # komponen Web Profil (AlbumLightbox, YoutubeEmbed, InstagramEmbed, dll)
 ├── hooks/                        # useToast, useSubmitAction
-├── lib/                          # format.ts (formatTanggal/formatTanggalWaktu), swagger.ts
+├── lib/                          # format.ts (formatTanggal/formatTanggalWaktu), swagger.ts, uploadLimits.ts
 └── server/
-    ├── db/                       # koneksi Drizzle + schema/
+    ├── db/                       # koneksi Drizzle + schema/ + seed.ts (E-Surat) + seedCms.ts (super admin CMS)
     ├── middlewares/              # role.middleware.ts (getAuthUser), acl.middleware.ts (requireRole)
-    ├── repositories/             # akses data per domain
+    ├── repositories/             # akses data per domain (E-Surat + web profil/CMS)
     ├── services/                 # logika bisnis + DTO shaping per domain
     ├── types/                    # Zod schema + TypeScript type per domain (gabung, bukan terpisah)
-    └── utils/                    # session.ts, jwt.ts, hash.ts, otp.ts, letter-number.ts, upload.ts
+    └── utils/                    # session.ts, cmsSession.ts, jwt.ts, hash.ts, otp.ts, letter-number.ts, upload.ts, imageUpload.ts, documentUpload.ts, serveUpload.ts
 ```
 
-`src/controllers/` ada tapi kosong — sisa struktur lama, jangan dipakai untuk kode baru.
+Folder `uploads/` (root proyek, di-gitignore) = tempat berkas terunggah disimpan di runtime; **wajib** dipetakan ke persistent volume di produksi (lihat "Realitas Deployment").
+
+## Penanganan error — pakai `AppError`, jangan teruskan `error.message` mentah
+
+**Masalah yang dulu ada** (sudah diperbaiki, jangan diulang): service melempar `new Error("pesan untuk warga")` — TAPI Drizzle/bcrypt/jose juga melempar `Error`, berisi teks query SQL. Karena keduanya `Error` polos, route tak bisa membedakannya dan meneruskan `error.message` apa adanya. Query SQL beserta NIK warga pernah tampil di form login CMS dan form register.
+
+**Konvensi sekarang** (`src/server/utils/appError.ts`):
+
+- **Service melempar `AppError`**, bukan `new Error`, untuk setiap pesan yang MEMANG boleh dibaca pengguna. Bawa `field`/`code`/`userId` lewat opsi konstruktor (mis. `throw new AppError("Email sudah terdaftar", { field: "email" })`), jangan `Object.assign`. `error: unknown` di `catch` lalu `error instanceof AppError` untuk membaca properti itu — **tak perlu `catch (error: any)` lagi**.
+- **Route API E-Surat**: `catch (error)` → `pesanAman(error, "pesan fallback")`. `AppError` diteruskan; error lain dicatat ke `console.error` dan diganti fallback.
+- **Server Action CMS**: `catch (err)` → `pesanAksi(err, "pesan fallback")`. Sama seperti `pesanAman` TAPI melempar ulang error kontrol Next (`redirect()`/`notFound()`) — kalau ditelan, guard sesi yang `redirect` di dalam `try` batal dan operator malah melihat toast "NEXT_REDIRECT".
+- **ACL** dikenali lewat `isACLError(error)` (bukan `error.name === "ACLError"`), lalu `handleACLError(error)`.
+- **Pengecualian**: `email.service.ts` sengaja melempar `Error` biasa (pesan internal "Email send failed: …") — memang TIDAK boleh sampai ke pengguna, jadi `pesanAman`/`pesanAksi` menggeneralkannya. Jangan ubah jadi `AppError`.
+
+Aturan singkat: **jangan pernah menaruh `error.message` mentah ke response/return** — selalu lewat `pesanAman`/`pesanAksi`.
 
 ## Aturan Penulisan Kode
 

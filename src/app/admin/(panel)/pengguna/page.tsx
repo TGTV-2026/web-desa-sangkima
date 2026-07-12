@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireSuperAdmin } from "@/server/utils/cmsSession";
 import { cmsUserService } from "@/server/services/cmsUser.service";
 import CmsUserList from "./CmsUserList";
+import BulkRtUpload from "./BulkRtUpload";
 
 export const dynamic = "force-dynamic";
 
@@ -15,18 +16,20 @@ export default async function AdminPenggunaPage() {
         <div>
           <span className="overline-doc text-brass">Akun & Akses</span>
           <h1 className="mt-1 font-serif text-[28px] font-medium text-pine-900">
-            Akun Editor
+            Akun Pengelola
           </h1>
           <p className="mt-2 max-w-xl text-sm leading-6 text-inkmut">
-            Kelola akun pengelola web profil. Editor bisa menulis konten;
-            Super Admin bisa mengelola akun &amp; tanda tangan surat. Akun ini
-            terpisah dari akun e-surat warga.
+            Kelola akun pengelola web profil. Editor menulis konten; Super Admin
+            mengelola akun &amp; tanda tangan surat; Ketua RT hanya mengisi
+            Laporan RT. Akun ini terpisah dari akun e-surat warga.
           </p>
         </div>
         <Link href="/admin/pengguna/baru" className="btn-primary shrink-0">
           + Tambah Editor
         </Link>
       </div>
+
+      <BulkRtUpload />
 
       <CmsUserList items={items} currentUserId={me.id} />
     </div>

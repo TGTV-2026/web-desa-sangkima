@@ -1,12 +1,16 @@
+import { AppError } from "./appError";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createId } from "@paralleldrive/cuid2";
 import { compressImage } from "./imageCompress";
 import { MAX_DOC_BYTES, MAX_DOC_LABEL } from "@/lib/uploadLimits";
 
-// Dokumen PPID bersifat PUBLIK (bisa diunduh warga), jadi disimpan di
-// public/uploads/dokumen/ dan dilayani statis lewat URL /uploads/dokumen/<file>.
-const PUBLIC_DIR = path.join(process.cwd(), "public", "uploads", "dokumen");
+// Dokumen PPID bersifat PUBLIK (bisa diunduh warga), tapi disimpan DI LUAR
+// public/ dan dilayani lewat route handler
+// src/app/uploads/dokumen/[filename]/route.ts — bukan static file Next.js,
+// karena penulisan saat runtime tidak selalu langsung terlihat oleh static
+// serving di semua environment deploy (lihat serveUpload.ts).
+const PUBLIC_DIR = path.join(process.cwd(), "uploads", "dokumen");
 const PUBLIC_URL_BASE = "/uploads/dokumen";
 
 export const MAX_DOC_SIZE = MAX_DOC_BYTES; // PDF disimpan apa adanya
@@ -26,10 +30,10 @@ export async function saveDocument(file: {
   buffer: Buffer;
 }): Promise<string> {
   if (!ALLOWED_DOC_TYPES[file.mime]) {
-    throw new Error("Berkas harus PDF, JPG, atau PNG");
+    throw new AppError("Berkas harus PDF, JPG, atau PNG");
   }
   if (file.size > MAX_DOC_SIZE) {
-    throw new Error(`Ukuran berkas melebihi ${MAX_DOC_LABEL}`);
+    throw new AppError(`Ukuran berkas melebihi ${MAX_DOC_LABEL}`);
   }
 
   await fs.mkdir(PUBLIC_DIR, { recursive: true });
@@ -46,4 +50,14 @@ export async function saveDocument(file: {
   const storedName = `${createId()}.${ext}`;
   await fs.writeFile(path.join(PUBLIC_DIR, storedName), buffer);
   return `${PUBLIC_URL_BASE}/${storedName}`;
+}
+
+/** Hapus dokumen berdasarkan URL publiknya. Aman dipanggil walau berkas sudah tak ada/kosong. */
+export async function deleteDocument(url: string | null | undefined): Promise<void> {
+  if (!url) return;
+  try {
+    await fs.unlink(path.join(PUBLIC_DIR, path.basename(url)));
+  } catch {
+    // sudah terhapus / tak ada — abaikan
+  }
 }

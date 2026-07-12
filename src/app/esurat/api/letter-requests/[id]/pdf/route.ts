@@ -1,3 +1,4 @@
+import { AppError, pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/letter-requests/{id}/pdf:
@@ -31,6 +32,7 @@ import { letterRequestService } from "@/server/services/letterRequest.service";
 import {
   requireRole,
   handleACLError,
+  isACLError,
 } from "@/server/middlewares/acl.middleware";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -40,24 +42,30 @@ export async function GET(req: Request, { params }: RouteContext) {
     const auth = await requireRole(req, ["user", "staff", "admin"]);
 
     const { id } = await params;
-    const appUrl = new URL(req.url).origin;
-    const pdf = await letterRequestService.generatePdf(id, auth, appUrl);
+    const url = new URL(req.url);
+    const appUrl = url.origin;
+    const noSignature = url.searchParams.get("nosig") === "1";
+    
+    const pdf = await letterRequestService.generatePdf(id, auth, appUrl, noSignature);
+
+    const filename = noSignature ? `surat-${id}-nosig.pdf` : `surat-${id}.pdf`;
 
     return new Response(pdf as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="surat-${id}.pdf"`,
+        "Content-Disposition": `inline; filename="${filename}"`,
       },
     });
-  } catch (error: any) {
-    if (error.name === "ACLError") return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     // pesan kepemilikan dari service (warga bukan pemilik) -> 403
-    const isForbidden = /berhak/i.test(error.message || "");
+    const isForbidden =
+      error instanceof AppError && /berhak/i.test(error.message);
     return Response.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: isForbidden ? 403 : 400 },
     );

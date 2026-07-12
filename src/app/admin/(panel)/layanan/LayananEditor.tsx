@@ -137,12 +137,20 @@ export default function LayananEditor({
                 />
               </div>
               <div>
-                <label className="label-doc text-xs">Tautan</label>
+                <label className="label-doc text-xs">Tautan tombol</label>
+                {/* Tautan sengaja dikunci: salah ubah bisa bikin tombol tak
+                    mengarah ke mana pun. Nilai tetap dikirim saat simpan. */}
                 <input
-                  className="input-doc mt-1 w-full"
-                  value={it.href}
-                  onChange={(e) => setItem(i, { href: e.target.value })}
+                  className="input-doc mt-1 w-full cursor-not-allowed bg-paper2/50 text-inkmut"
+                  value={it.href || "(tidak ada tautan)"}
+                  readOnly
+                  disabled
+                  aria-label="Tautan tombol (dikunci)"
                 />
+                <p className="mt-1 text-[11px] text-inkmut">
+                  🔒 Tautan dikunci agar tombol tidak salah arah. Hubungi
+                  pengembang bila perlu diubah.
+                </p>
               </div>
             </div>
           </div>

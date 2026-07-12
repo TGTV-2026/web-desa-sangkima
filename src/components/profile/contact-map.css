@@ -77,6 +77,57 @@
   color: #6f695b;
 }
 
+/* Popup navigasi (klik marker) — selaras tema kertas */
+.leaflet-popup.peta-pop .leaflet-popup-content-wrapper {
+  border: 1px solid #ddd6c5;
+  border-radius: 6px;
+  background: #fdfcf8;
+  box-shadow: 0 10px 30px rgba(14, 31, 24, 0.22);
+}
+.leaflet-popup.peta-pop .leaflet-popup-content {
+  margin: 12px 14px;
+  min-width: 176px;
+}
+.leaflet-popup.peta-pop .leaflet-popup-tip {
+  background: #fdfcf8;
+  border: 1px solid #ddd6c5;
+}
+.peta-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.peta-nav-title {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #14291f;
+}
+.peta-nav-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #6f695b;
+}
+.peta-nav-btn {
+  display: block;
+  padding: 8px 10px;
+  border: 1px solid #275138;
+  border-radius: 4px;
+  background: #275138;
+  color: #f5f2ea !important;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+.peta-nav-btn:hover {
+  background: #1c3a2b;
+}
+
 /* Kontrol zoom & atribusi selaras tema */
 .leaflet-bar a {
   background: #fdfcf8;
@@ -85,6 +136,78 @@
 }
 .leaflet-bar a:hover {
   background: #ebe6d9;
+}
+
+/* Tombol "lokasi saya" */
+.peta-locate a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.peta-locate a.is-loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Titik lokasi pengguna (Geolocation) — biru, konvensi "Anda di sini" */
+.peta-user-dot {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #2563eb;
+  border: 3px solid #fdfcf8;
+  box-shadow:
+    0 0 0 1px rgba(37, 99, 235, 0.5),
+    0 2px 6px rgba(20, 41, 31, 0.35);
+}
+.peta-user-dot::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -6px;
+  border-radius: 9999px;
+  background: rgba(37, 99, 235, 0.25);
+  animation: peta-user-pulse 2s ease-out infinite;
+}
+@keyframes peta-user-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+/* Pesan singkat saat lokasi gagal/ditolak */
+.peta-locate-msg {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  z-index: 1000;
+  max-width: 80%;
+  transform: translate(-50%, 8px);
+  padding: 8px 14px;
+  border: 1px solid #ddd6c5;
+  border-radius: 6px;
+  background: #fdfcf8;
+  color: #14291f;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(14, 31, 24, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+.peta-locate-msg.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 .leaflet-control-attribution {
   background: rgba(253, 252, 248, 0.8) !important;

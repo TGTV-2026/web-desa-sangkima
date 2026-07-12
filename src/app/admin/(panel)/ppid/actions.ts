@@ -1,10 +1,11 @@
 "use server";
+import { pesanAksi } from "@/server/utils/appError";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { ppidService } from "@/server/services/ppid.service";
-import { requireCmsUser } from "@/server/utils/cmsSession";
+import { requireVerifiedCmsUser } from "@/server/utils/cmsSession";
 
 export type PpidResult =
   | { success: true }
@@ -16,8 +17,8 @@ function revalidatePpid() {
 }
 
 export async function createPpidDoc(input: unknown): Promise<PpidResult> {
-  const user = await requireCmsUser();
   try {
+    const user = await requireVerifiedCmsUser();
     await ppidService.create(input, { id: user.id, name: user.name });
     revalidatePpid();
   } catch (err) {
@@ -26,7 +27,7 @@ export async function createPpidDoc(input: unknown): Promise<PpidResult> {
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
   redirect("/admin/ppid");
@@ -36,8 +37,8 @@ export async function updatePpidDoc(
   id: string,
   input: unknown,
 ): Promise<PpidResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await ppidService.update(id, input);
     revalidatePpid();
     revalidatePath(`/admin/ppid/${id}`);
@@ -47,22 +48,22 @@ export async function updatePpidDoc(
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
   redirect("/admin/ppid");
 }
 
 export async function deletePpidDoc(id: string): Promise<PpidResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await ppidService.remove(id);
     revalidatePpid();
     return { success: true };
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menghapus.",
+      message: pesanAksi(err, "Gagal menghapus."),
     };
   }
 }

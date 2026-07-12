@@ -34,34 +34,116 @@ const defaultProfil: ProfilContent = {
 
 /* --------------------------- Struktur Organisasi ------------------------- */
 
+const strukturMemberSchema = z.object({
+  jabatan: z.string().min(1, "Jabatan wajib diisi"),
+  nama: z.string().min(1, "Nama wajib diisi"),
+  // URL foto; kosong = pakai placeholder ikon. default("") agar data lama aman.
+  foto: z.string().default(""),
+});
+
+const strukturGroupSchema = z.object({
+  label: z.string().min(1, "Nama grup wajib diisi"),
+  members: z.array(strukturMemberSchema),
+});
+
 export const strukturContentSchema = z.object({
-  kepalaDesa: z.object({
-    nama: z.string().min(1, "Nama kepala desa wajib diisi"),
-    nip: z.string(),
-    // URL foto; kosong = pakai placeholder ikon. default("") agar data lama aman.
-    foto: z.string().default(""),
-  }),
-  aparatur: z.array(
-    z.object({
-      jabatan: z.string().min(1, "Jabatan wajib diisi"),
-      nama: z.string().min(1, "Nama wajib diisi"),
-      foto: z.string().default(""),
-    }),
-  ),
+  // Struktur dikelompokkan (Aparatur, BPD, LPM, dst.); publik & CMS memakai
+  // filter grup. Data lama berbentuk {kepalaDesa, aparatur} akan gagal parse →
+  // otomatis fallback ke default di bawah (lihat siteContentService.get).
+  groups: z.array(strukturGroupSchema),
 });
 export type StrukturContent = z.infer<typeof strukturContentSchema>;
+export type StrukturGroup = StrukturContent["groups"][number];
+export type StrukturMember = StrukturGroup["members"][number];
+
+// Helper ringkas untuk data awal (foto diisi belakangan lewat CMS).
+const m = (jabatan: string, nama: string) => ({ jabatan, nama, foto: "" });
+
+// Ketua RT 1..26 (urut sesuai dokumen Profil Desa 2026).
+const KETUA_RT = [
+  "Amir Syarifudin", "Suwarsono", "Rasna", "Mega Astuti", "Suryono",
+  "Sumariono", "Rusliyanto", "Erni Wati", "Sentot Anjar", "Taufik H",
+  "Ratna Sari", "Diana", "Rina Handayani", "Ali. R", "Imam Mahmudi",
+  "Suherdianto", "Sahabudin", "Abdurahman", "Suardi", "Santi", "Kusnadi",
+  "Sukirno", "Jerian Ugah", "Supiani", "Michael Irang", "Agang Bilung",
+];
 
 const defaultStruktur: StrukturContent = {
-  kepalaDesa: {
-    nama: "H. Ahmad Hidayat",
-    nip: "NIP. 19700512 199803 1 004",
-    foto: "",
-  },
-  aparatur: [
-    { jabatan: "Sekretaris Desa", nama: "Siti Aminah, S.A.P", foto: "" },
-    { jabatan: "Kaur Keuangan", nama: "Budi Santoso", foto: "" },
-    { jabatan: "Kasi Pemerintahan", nama: "M. Rahmat", foto: "" },
-    { jabatan: "Kasi Kesejahteraan", nama: "Nurhayati", foto: "" },
+  groups: [
+    {
+      label: "Aparatur Desa",
+      members: [
+        m("Kepala Desa", "Muhammad Alwi, S.Pd"),
+        m("Sekretaris Desa", "Larasati Ciptia Ningrum, S.Pd"),
+        m("Kaur Keuangan", "Harsita Jahseini, S.Pd"),
+        m("Kaur Umum", "Lisna Rajani Sari"),
+        m("Kasi Pemerintahan", "Yari Januar Oscar, S.Tr.T"),
+        m("Kaur Perencanaan", "Muhammad Aldi"),
+        m("Kasi Kesejahteraan", "Muhammadong"),
+        m("Kasi Pelayanan", "Astri Thamrin"),
+        m("Cleaning Service", "Karmin"),
+        m("Cleaning Service", "Lappuk Efendi"),
+        m("Staff Umum", "Sadrina"),
+        m("Staf Kesejahteraan", "Julian Agung Prathomo"),
+        m("Staf Pemerintahan", "Falentino Usat Bang, S.Hut"),
+        m("Staf Pelayanan", "Puspita Anggraini, Amd.Kep"),
+        m("Staf Perencanaan", "Chiesa Bisma Mahendra"),
+        m("Staf Kesejahteraan", "Desty Afryani, S.M"),
+        m("Staf Keuangan", "Suci"),
+      ],
+    },
+    {
+      label: "BPD",
+      members: [
+        m("Ketua BPD", "Moch. Ridwan, ST"),
+        m("Wakil Ketua BPD", "Natanael Yusron"),
+        m("Sekretaris BPD", "Sumarto"),
+        m("Anggota BPD", "Usman K"),
+        m("Anggota BPD", "M. Arpai"),
+        m("Anggota BPD", "Ahmad Rosdin"),
+        m("Anggota BPD", "Bonifasius Bang"),
+        m("Anggota BPD", "Haryanti Lestari"),
+        m("Anggota BPD", "Nursiah"),
+      ],
+    },
+    {
+      label: "LPM",
+      members: [
+        m("Ketua LPM", "Alamsyah"),
+        m("Sekretaris LPM", "Sugianto"),
+        m("Anggota LPM", "Jusriani"),
+        m("Anggota LPM", "Jufriadi"),
+        m("Anggota LPM", "Suparman"),
+      ],
+    },
+    {
+      label: "Lembaga Adat",
+      members: [
+        m("Ketua", "Rofain"),
+        m("Sekretaris", "Lenjau Usat"),
+        m("Anggota", "Heldi Bachtiar"),
+        m("Anggota", "M. Mukhlisin"),
+        m("Anggota", "Dahlan Yahya"),
+      ],
+    },
+    {
+      label: "Kepala Dusun",
+      members: [
+        m("Dusun Patra", "Irawan"),
+        m("Dusun Lestari Jaya", "M. Purnomo"),
+        m("Dusun Makmur Jaya", "Laster Sitanggang"),
+        m("Dusun Mekar Jaya", "Susilowati"),
+        m("Dusun Airport", "Syarifuddin"),
+        m("Dusun Sungai Tabuan", "Aziz"),
+        m("Dusun Teluk Lombok", "Muhammad Akbar B"),
+        m("Dusun Mekar Baru", "Sunarti"),
+        m("Dusun Mari Bangun", "Luther Ului"),
+      ],
+    },
+    {
+      label: "Ketua RT",
+      members: KETUA_RT.map((nama, i) => m(`RT ${i + 1}`, nama)),
+    },
   ],
 };
 
@@ -82,6 +164,8 @@ export const kontakContentSchema = z.object({
   // URL/handle sosial (kosong = tombolnya disembunyikan). default("") agar data lama aman.
   whatsapp: z.string().default(""),
   instagram: z.string().default(""),
+  facebook: z.string().default(""),
+  tiktok: z.string().default(""),
   petaCenter: z.tuple([z.number(), z.number()]),
   titik: z.array(petaTitikSchema),
 });
@@ -93,48 +177,68 @@ const defaultKontak: KontakContent = {
   email: "pemdes@sangkima.desa.id",
   whatsapp: "https://wa.me/6281234567890",
   instagram: "https://instagram.com/desasangkima",
-  petaCenter: [0.4067, 117.539],
+  facebook: "https://facebook.com/desasangkima",
+  tiktok: "https://tiktok.com/@desasangkima",
+  // Titik = masjid/mushola & sekolah sekitar Sangkima; koordinat dari Google Maps
+  // (plus code). Foto placeholder karena belum ada foto asli lokasi.
+  petaCenter: [0.3789, 117.5138],
   titik: [
     {
-      nama: "Kantor Desa Sangkima",
+      nama: "Kantor Desa & BPD Sangkima",
       kategori: "Pemerintahan",
-      lat: 0.4035,
-      lng: 117.538,
-      gambar: "/profile/hero-sangkima.jpg",
+      lat: 0.38081,
+      lng: 117.51381,
+      gambar: "/profile/peta/placeholder.svg",
       deskripsi:
-        "Pusat pelayanan administrasi dan pemerintahan Desa Sangkima.",
+        "Pusat pelayanan administrasi dan pemerintahan Desa Sangkima (kantor BPD).",
     },
     {
-      nama: "Hutan Lindung Sangkima",
-      kategori: "Wisata Alam",
-      lat: 0.4112,
-      lng: 117.529,
-      gambar: "/profile/galeri/hutan-lindung.jpg",
-      deskripsi: "Kawasan konservasi dengan kanopi hutan hujan tropis Borneo.",
+      nama: "Masjid Miftahul Khair",
+      kategori: "Ibadah",
+      lat: 0.37731,
+      lng: 117.51606,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Masjid warga di lingkungan Desa Sangkima.",
     },
     {
-      nama: "Sungai Sangkima",
-      kategori: "Wisata Alam",
-      lat: 0.398,
-      lng: 117.547,
-      gambar: "/profile/galeri/sungai-sangkima.jpg",
-      deskripsi: "Aliran sungai jernih untuk susur sungai dan ekowisata.",
+      nama: "Masjid Baitul Ma'mur Sangkima",
+      kategori: "Ibadah",
+      lat: 0.38106,
+      lng: 117.51581,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Masjid jamaah di kawasan Desa Sangkima.",
     },
     {
-      nama: "Sentra Kerajinan Rotan",
-      kategori: "UMKM",
-      lat: 0.406,
-      lng: 117.544,
-      gambar: "/profile/galeri/kerajinan-rotan.jpg",
-      deskripsi: "Pusat produksi anyaman rotan kelompok pengrajin lokal.",
+      nama: "Masjid Al Hikmah PT Pertamina",
+      kategori: "Ibadah",
+      lat: 0.37831,
+      lng: 117.51094,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Masjid di area PT Pertamina, Sangkima.",
     },
     {
-      nama: "Dek Ekowisata Terpadu",
-      kategori: "Wisata Alam",
-      lat: 0.415,
-      lng: 117.54,
-      gambar: "/profile/galeri/ekowisata.jpg",
-      deskripsi: "Dek pengamatan alam yang dikelola BUMDes.",
+      nama: "Mushola Ar Royyan",
+      kategori: "Ibadah",
+      lat: 0.379,
+      lng: 117.514,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Mushola warga RT 09, Desa Sangkima.",
+    },
+    {
+      nama: "SDN 005 Sangatta Selatan",
+      kategori: "Pendidikan",
+      lat: 0.37794,
+      lng: 117.51744,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Sekolah Dasar Negeri di Desa Sangkima.",
+    },
+    {
+      nama: "SMPN 2 Sangatta Selatan",
+      kategori: "Pendidikan",
+      lat: 0.37669,
+      lng: 117.51006,
+      gambar: "/profile/peta/placeholder.svg",
+      deskripsi: "Sekolah Menengah Pertama Negeri di Sangkima.",
     },
   ],
 };
@@ -150,6 +254,10 @@ export const heroContentSchema = z.object({
   secondaryLabel: z.string(),
   secondaryHref: z.string(),
   backgroundImage: z.string(),
+  // Video latar opsional (MP4/WEBM, di-host sendiri). Kosong = pakai gambar saja.
+  // backgroundImage tetap wajib: dipakai sebagai poster video dan sebagai
+  // tampilan untuk pengunjung yang memilih hemat data / kurangi animasi.
+  backgroundVideo: z.string().optional().default(""),
 });
 export type HeroContent = z.infer<typeof heroContentSchema>;
 
@@ -163,6 +271,7 @@ const defaultHero: HeroContent = {
   secondaryLabel: "Layanan Digital",
   secondaryHref: "#layanan",
   backgroundImage: "/profile/hero-sangkima.jpg",
+  backgroundVideo: "",
 };
 
 /* -------------------------------- Layanan -------------------------------- */
@@ -325,10 +434,6 @@ export const suratContentSchema = z.object({
   kopKecamatan: z.string(),
   kopDesa: z.string(),
   alamatKop: z.string(),
-  // Nama & jabatan penandatangan diambil otomatis dari akun yang menyetujui.
-  // Di sini hanya gambar TTD (dan opsional nama override kalau perlu).
-  signatureImage: z.string().default(""),
-  penandatanganNama: z.string().default(""),
 });
 export type SuratContent = z.infer<typeof suratContentSchema>;
 
@@ -337,8 +442,6 @@ const defaultSurat: SuratContent = {
   kopKecamatan: "KECAMATAN SANGATTA SELATAN",
   kopDesa: "DESA SANGKIMA",
   alamatKop: "Jl. Poros Sangatta - Bontang, Desa Sangkima, Kutai Timur",
-  signatureImage: "",
-  penandatanganNama: "",
 };
 
 /* ---------------------------------- PPID --------------------------------- */

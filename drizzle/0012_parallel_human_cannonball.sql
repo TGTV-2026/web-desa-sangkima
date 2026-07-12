@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `signature_url` varchar(255);

@@ -2,8 +2,8 @@
 // Data (alamat, titik peta, link WA/IG) dari CMS; warna kategori marker dari peta-data.
 import Reveal from "./Reveal";
 import ContactMap from "./ContactMap";
-import { KATEGORI_WARNA } from "./peta-data";
-import { MapPin, Move, WhatsApp, Instagram } from "./icons";
+import { KATEGORI_WARNA, WARNA_DEFAULT } from "./peta-data";
+import { MapPin, Move, WhatsApp, Instagram, Facebook, TikTok } from "./icons";
 import type { KontakContent } from "@/server/types/content";
 
 export default function ContactSection({
@@ -11,6 +11,12 @@ export default function ContactSection({
 }: {
   content: KontakContent;
 }) {
+  // Legend hanya menampilkan kategori yang benar-benar dipakai titik (bukan
+  // seluruh KATEGORI_WARNA) agar tak muncul kategori kosong.
+  const kategoriDipakai = Array.from(
+    new Set(content.titik.map((t) => t.kategori)),
+  );
+
   return (
     <section id="kontak" className="relative bg-paper py-24 md:py-32">
       <div className="mx-auto max-w-[1280px] px-5 md:px-12">
@@ -45,14 +51,14 @@ export default function ContactSection({
 
           {/* Legend kategori */}
           <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border border-line bg-card px-4 py-3">
-            {Object.entries(KATEGORI_WARNA).map(([kategori, warna]) => (
+            {kategoriDipakai.map((kategori) => (
               <span
                 key={kategori}
                 className="flex items-center gap-2 text-xs text-inkmut"
               >
                 <span
                   className="h-2.5 w-2.5 rounded-full"
-                  style={{ background: warna }}
+                  style={{ background: KATEGORI_WARNA[kategori] ?? WARNA_DEFAULT }}
                 />
                 {kategori}
               </span>
@@ -103,6 +109,46 @@ export default function ContactSection({
                   </span>
                   <span className="text-sm text-inkmut">
                     Ikuti kegiatan & kabar desa
+                  </span>
+                </span>
+              </a>
+            )}
+            {content.facebook && (
+              <a
+                href={content.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-4 border border-line bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-pine-700 hover:shadow-md"
+              >
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pine-900/5 text-pine-800 transition-colors group-hover:bg-pine-900 group-hover:text-paper">
+                  <Facebook className="h-6 w-6" />
+                </span>
+                <span className="flex flex-col">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-pine-900">
+                    Facebook
+                  </span>
+                  <span className="text-sm text-inkmut">
+                    Kabar & kegiatan desa
+                  </span>
+                </span>
+              </a>
+            )}
+            {content.tiktok && (
+              <a
+                href={content.tiktok}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-4 border border-line bg-card p-6 transition-all duration-300 hover:-translate-y-1 hover:border-brass hover:shadow-md"
+              >
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-pine-900/5 text-pine-800 transition-colors group-hover:bg-brass group-hover:text-paper">
+                  <TikTok className="h-6 w-6" />
+                </span>
+                <span className="flex flex-col">
+                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-pine-900">
+                    TikTok
+                  </span>
+                  <span className="text-sm text-inkmut">
+                    Video pendek seputar desa
                   </span>
                 </span>
               </a>

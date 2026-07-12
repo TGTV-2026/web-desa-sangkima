@@ -1,3 +1,4 @@
+import { pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/letter-requests:
@@ -60,6 +61,7 @@ import { letterRequestService } from "@/server/services/letterRequest.service";
 import {
   requireRole,
   handleACLError,
+  isACLError,
 } from "@/server/middlewares/acl.middleware";
 import { LETTER_STATUSES, type LetterStatus } from "@/server/types/letter";
 import {
@@ -127,12 +129,12 @@ export async function GET(req: Request) {
       { success: true, message: "Daftar pengajuan berhasil diambil", data },
       { status: 200 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 500 },
     );
@@ -155,10 +157,10 @@ export async function POST(req: Request) {
       { success: true, message: "Pengajuan surat berhasil dibuat", data },
       { status: 201 },
     );
-  } catch (error: any) {
+  } catch (error) {
     // rollback file yang terlanjur tersimpan bila pengajuan gagal dibuat
     if (saved.length > 0) await deleteAttachments(requestId);
-    if (error.name === "ACLError") return handleACLError(error);
+    if (isACLError(error)) return handleACLError(error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -172,7 +174,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 400 },
     );

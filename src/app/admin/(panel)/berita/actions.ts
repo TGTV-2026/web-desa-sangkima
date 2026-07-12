@@ -1,10 +1,11 @@
 "use server";
+import { pesanAksi } from "@/server/utils/appError";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { newsService } from "@/server/services/news.service";
-import { requireCmsUser } from "@/server/utils/cmsSession";
+import { requireVerifiedCmsUser } from "@/server/utils/cmsSession";
 
 export type NewsResult =
   | { success: true }
@@ -16,8 +17,8 @@ function revalidateBerita() {
 }
 
 export async function createNews(input: unknown): Promise<NewsResult> {
-  const user = await requireCmsUser();
   try {
+    const user = await requireVerifiedCmsUser();
     await newsService.create(input, { id: user.id, name: user.name });
     revalidateBerita();
   } catch (err) {
@@ -26,7 +27,7 @@ export async function createNews(input: unknown): Promise<NewsResult> {
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
   redirect("/admin/berita");
@@ -36,8 +37,8 @@ export async function updateNews(
   id: string,
   input: unknown,
 ): Promise<NewsResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await newsService.update(id, input);
     revalidateBerita();
     revalidatePath(`/admin/berita/${id}`);
@@ -47,22 +48,22 @@ export async function updateNews(
     }
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menyimpan.",
+      message: pesanAksi(err, "Gagal menyimpan."),
     };
   }
   redirect("/admin/berita");
 }
 
 export async function deleteNews(id: string): Promise<NewsResult> {
-  await requireCmsUser();
   try {
+    await requireVerifiedCmsUser();
     await newsService.remove(id);
     revalidateBerita();
     return { success: true };
   } catch (err) {
     return {
       success: false,
-      message: err instanceof Error ? err.message : "Gagal menghapus.",
+      message: pesanAksi(err, "Gagal menghapus."),
     };
   }
 }

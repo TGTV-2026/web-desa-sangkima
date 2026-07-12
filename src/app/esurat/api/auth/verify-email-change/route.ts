@@ -1,3 +1,4 @@
+import { pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/auth/verify-email-change:
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
       },
       { status: 200 },
     );
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -97,7 +98,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 400 },
     );

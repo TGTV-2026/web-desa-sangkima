@@ -1,3 +1,4 @@
+import { AppError, pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/users/profile:
@@ -82,6 +83,7 @@ import { userService } from "@/server/services/user.service";
 import {
   requireRole,
   handleACLError,
+  isACLError,
 } from "@/server/middlewares/acl.middleware";
 
 export async function GET(req: Request) {
@@ -93,31 +95,71 @@ export async function GET(req: Request) {
       { success: true, message: "Profil berhasil diambil", data },
       { status: 200 },
     );
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === "ACLError")
-      return handleACLError(error);
-    const message =
-      error instanceof Error ? error.message : "Terjadi kesalahan internal server";
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     return NextResponse.json(
-      { success: false, message },
+      {
+        success: false,
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
+      },
       { status: 500 },
     );
   }
 }
 
+import { saveProfileImage, deleteProfileImage } from "@/server/utils/imageUpload";
+
+async function parseUserBody(req: Request) {
+  const contentType = req.headers.get("content-type") ?? "";
+  if (!contentType.includes("multipart/form-data")) {
+    return await req.json();
+  }
+
+  const fd = await req.formData();
+  const body: Record<string, any> = {};
+  for (const [key, entry] of fd.entries()) {
+    if (key === "signatureImage" && entry instanceof File && entry.size > 0) {
+      const buffer = Buffer.from(await entry.arrayBuffer());
+      const url = await saveProfileImage(
+        { mime: entry.type, size: entry.size, buffer },
+        { variant: "graphic" }
+      );
+      body.signatureUrl = url;
+    } else if (typeof entry === "string") {
+      if (entry === "null" || entry === "") {
+        body[key] = null;
+      } else {
+        body[key] = entry;
+      }
+    }
+  }
+  return body;
+}
+
 export async function PUT(req: Request) {
   try {
     const auth = await requireRole(req, ["user", "staff", "admin"]);
-    const body = await req.json();
+    
+    const user = await userService.getById(auth.id);
+    const body = await parseUserBody(req);
+    
+    // cleanup old image if changed
+    if (
+      user?.signatureUrl &&
+      ("signatureUrl" in body) &&
+      body.signatureUrl !== user.signatureUrl
+    ) {
+      await deleteProfileImage(user.signatureUrl);
+    }
+
     const data = await userService.updateProfile(auth.id, body);
 
     return NextResponse.json(
       { success: true, message: "Profil berhasil diperbarui", data },
       { status: 200 },
     );
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === "ACLError")
-      return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
@@ -128,11 +170,13 @@ export async function PUT(req: Request) {
         { status: 400 },
       );
     }
-    const message =
-      error instanceof Error ? error.message : "Terjadi kesalahan internal server";
-    const isNotFound = message.includes("tidak ditemukan");
+    const isNotFound =
+      error instanceof AppError && error.message.includes("tidak ditemukan");
     return NextResponse.json(
-      { success: false, message },
+      {
+        success: false,
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
+      },
       { status: isNotFound ? 404 : 400 },
     );
   }

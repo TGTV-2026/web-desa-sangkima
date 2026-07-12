@@ -1,3 +1,4 @@
+import { pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/position/{id}:
@@ -86,6 +87,7 @@ import { positionService } from "@/server/services/position.service";
 import {
   requireRole,
   handleACLError,
+  isACLError,
 } from "@/server/middlewares/acl.middleware";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -100,14 +102,14 @@ export async function GET(req: Request, { params }: RouteContext) {
       { success: true, message: "Jabatan berhasil diambil", data },
       { status: 200 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") {
+  } catch (error) {
+    if (isACLError(error)) {
       return handleACLError(error);
     }
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 404 },
     );
@@ -126,8 +128,8 @@ export async function PUT(req: Request, { params }: RouteContext) {
       { success: true, message: "Jabatan berhasil diperbarui", data },
       { status: 200 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") {
+  } catch (error) {
+    if (isACLError(error)) {
       return handleACLError(error);
     }
     if (error instanceof z.ZodError) {
@@ -143,7 +145,7 @@ export async function PUT(req: Request, { params }: RouteContext) {
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 400 },
     );
@@ -161,14 +163,14 @@ export async function DELETE(req: Request, { params }: RouteContext) {
       { success: true, message: "Jabatan berhasil dihapus" },
       { status: 200 },
     );
-  } catch (error: any) {
-    if (error.name === "ACLError") {
+  } catch (error) {
+    if (isACLError(error)) {
       return handleACLError(error);
     }
     return NextResponse.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 404 },
     );

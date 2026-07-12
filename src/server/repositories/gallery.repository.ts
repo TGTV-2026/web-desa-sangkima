@@ -1,6 +1,6 @@
 import { asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
-import { galleryAlbums, galleryPhotos } from "../db/schema";
+import { galleryAlbums, galleryPhotos, galleryVideos } from "../db/schema";
 
 // Akses data album + foto galeri. Logika (validasi, slug) ada di service.
 export const galleryRepository = {
@@ -44,6 +44,7 @@ export const galleryRepository = {
 
   async removeAlbum(id: string) {
     await db.delete(galleryPhotos).where(eq(galleryPhotos.albumId, id));
+    await db.delete(galleryVideos).where(eq(galleryVideos.albumId, id));
     await db.delete(galleryAlbums).where(eq(galleryAlbums.id, id));
   },
 
@@ -87,5 +88,31 @@ export const galleryRepository = {
     const map: Record<string, number> = {};
     for (const r of rows) map[r.albumId] = Number(r.n);
     return map;
+  },
+
+  // === Video ===
+  async findVideosByAlbum(albumId: string) {
+    return db
+      .select()
+      .from(galleryVideos)
+      .where(eq(galleryVideos.albumId, albumId))
+      .orderBy(asc(galleryVideos.sortOrder), asc(galleryVideos.createdAt));
+  },
+
+  async findVideoById(id: string) {
+    const rows = await db
+      .select()
+      .from(galleryVideos)
+      .where(eq(galleryVideos.id, id))
+      .limit(1);
+    return rows[0];
+  },
+
+  async insertVideo(row: typeof galleryVideos.$inferInsert) {
+    await db.insert(galleryVideos).values(row);
+  },
+
+  async removeVideo(id: string) {
+    await db.delete(galleryVideos).where(eq(galleryVideos.id, id));
   },
 };

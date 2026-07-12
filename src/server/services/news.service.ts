@@ -1,5 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { newsRepository } from "../repositories/news.repository";
+import { deleteProfileImage } from "../utils/imageUpload";
 import {
   makeSlug,
   newsInputSchema,
@@ -81,6 +82,8 @@ export const newsService = {
   },
 
   async remove(id: string): Promise<void> {
+    const row = await newsRepository.findById(id);
+    if (row) await deleteProfileImage(row.coverImage);
     await newsRepository.remove(id);
   },
 };

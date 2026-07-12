@@ -1,3 +1,4 @@
+import { pesanAman } from "@/server/utils/appError";
 /**
  * @swagger
  * /api/letter-requests/{id}/lampiran/{index}:
@@ -33,6 +34,7 @@
 import {
   requireRole,
   handleACLError,
+  isACLError,
 } from "@/server/middlewares/acl.middleware";
 import { letterRequestRepository } from "@/server/repositories/letterRequest.repository";
 import { readAttachment } from "@/server/utils/upload";
@@ -83,12 +85,12 @@ export async function GET(req: Request, { params }: RouteContext) {
         "Content-Disposition": `inline; filename="${att.name}"`,
       },
     });
-  } catch (error: any) {
-    if (error.name === "ACLError") return handleACLError(error);
+  } catch (error) {
+    if (isACLError(error)) return handleACLError(error);
     return Response.json(
       {
         success: false,
-        message: error.message || "Terjadi kesalahan internal server",
+        message: pesanAman(error, "Terjadi kesalahan internal server"),
       },
       { status: 500 },
     );
