@@ -2,6 +2,7 @@ import { AppError } from "../utils/appError";
 import { createId } from "@paralleldrive/cuid2";
 import { cmsUserRepository } from "../repositories/cmsUser.repository";
 import { cmsUserTokenRepository } from "../repositories/cmsUserToken.repository";
+import { activityLogService } from "./activityLog.service";
 import { sendOTPEmail } from "./email.service";
 import { comparePassword, hashPassword } from "../utils/hash";
 import { generateOTP, getOTPExpiration } from "../utils/otp";
@@ -72,15 +73,44 @@ export const cmsUserService = {
     return row ? toDTO(row) : null;
   },
 
-  /** Verifikasi kredensial login. Return id akun bila cocok, atau lempar Error. */
-  async login(input: unknown): Promise<{ id: string }> {
+  /** Verifikasi kredensial login. Return id akun bila cocok, atau lempar Error.
+   * `ctx.ip` diteruskan dari route (header) — bukan dibaca di service (PRD 9.2). */
+  async login(
+    input: unknown,
+    ctx?: { ip?: string | null },
+  ): Promise<{ id: string }> {
     const { email, password } = cmsLoginSchema.parse(input);
     const row = await cmsUserRepository.findByEmail(email);
     if (!row || row.deletedAt) {
+      void activityLogService.record({
+        actorType: "cms",
+        actorName: email,
+        action: "auth.cms.login.failed",
+        summary: `Login CMS gagal — email tak dikenal: ${email}`,
+        ipAddress: ctx?.ip ?? null,
+      });
       throw new AppError("Email atau kata sandi salah");
     }
     const ok = await comparePassword(password, row.password);
-    if (!ok) throw new AppError("Email atau kata sandi salah");
+    if (!ok) {
+      void activityLogService.record({
+        actorType: "cms",
+        actorId: row.id,
+        actorName: row.name,
+        action: "auth.cms.login.failed",
+        summary: `Login CMS gagal — sandi salah: ${row.name}`,
+        ipAddress: ctx?.ip ?? null,
+      });
+      throw new AppError("Email atau kata sandi salah");
+    }
+    void activityLogService.record({
+      actorType: "cms",
+      actorId: row.id,
+      actorName: row.name,
+      action: "auth.cms.login.success",
+      summary: `Login CMS berhasil: ${row.name}`,
+      ipAddress: ctx?.ip ?? null,
+    });
     return { id: row.id };
   },
 
