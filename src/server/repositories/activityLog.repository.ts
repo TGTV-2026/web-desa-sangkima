@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, like, lte, or, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, like, lte, or, type SQL } from "drizzle-orm";
 import { db } from "../db";
 import { activityLogs, letterRequestLogs, users } from "../db/schema";
 import type { ActivityLogInput, AuditFilter } from "../types/activityLog";
@@ -47,6 +47,25 @@ export const activityLogRepository = {
       .where(conds.length ? and(...conds) : undefined)
       .orderBy(desc(activityLogs.createdAt))
       .limit(limit);
+  },
+
+  // Ringkasan untuk halaman Overview: total + hitungan login 24 jam + 7 hari.
+  async overviewStats() {
+    const d1 = new Date(Date.now() - 24 * 3600 * 1000);
+    const d7 = new Date(Date.now() - 7 * 24 * 3600 * 1000);
+    const c = (w?: SQL) =>
+      db
+        .select({ n: count() })
+        .from(activityLogs)
+        .where(w)
+        .then((r) => Number(r[0]?.n ?? 0));
+    const [total, gagal24, sukses24, act7] = await Promise.all([
+      c(),
+      c(and(like(activityLogs.action, "%.login.failed"), gte(activityLogs.createdAt, d1))),
+      c(and(like(activityLogs.action, "%.login.success"), gte(activityLogs.createdAt, d1))),
+      c(gte(activityLogs.createdAt, d7)),
+    ]);
+    return { total, gagal24, sukses24, act7 };
   },
 
   // Log status surat (sumber lama) + nama pengubah, untuk ditampilkan menyatu.

@@ -89,19 +89,51 @@ export const activityLogService = {
 
   // Daftar menyatu (activity_logs + letter_request_logs), terbaru dulu, paginasi.
   // Volume rendah (aksi P0/P1, bukan per-request) → over-fetch lalu merge aman.
+  // Gagal query (mis. tabel belum dibuat / DB down) → kembalikan kosong, JANGAN
+  // pecahkan halaman (pola sama seperti siteContentService.get).
   async list(
     f: AuditFilter,
   ): Promise<{ entries: AuditEntryDTO[]; page: number; hasMore: boolean }> {
     const page = f.page ?? 1;
-    const cap = page * AUDIT_PAGE_SIZE + 1;
-    const merged = await collect(f, cap);
-    const start = (page - 1) * AUDIT_PAGE_SIZE;
-    const entries = merged.slice(start, start + AUDIT_PAGE_SIZE);
-    return { entries, page, hasMore: merged.length > page * AUDIT_PAGE_SIZE };
+    try {
+      const cap = page * AUDIT_PAGE_SIZE + 1;
+      const merged = await collect(f, cap);
+      const start = (page - 1) * AUDIT_PAGE_SIZE;
+      const entries = merged.slice(start, start + AUDIT_PAGE_SIZE);
+      return { entries, page, hasMore: merged.length > page * AUDIT_PAGE_SIZE };
+    } catch (err) {
+      console.error("[audit] gagal memuat daftar aktivitas", err);
+      return { entries: [], page, hasMore: false };
+    }
   },
 
   // Untuk export CSV — ambil banyak (dibatasi agar tak membebani).
   async listForExport(f: AuditFilter): Promise<AuditEntryDTO[]> {
-    return collect(f, 5000);
+    try {
+      return await collect(f, 5000);
+    } catch (err) {
+      console.error("[audit] gagal export", err);
+      return [];
+    }
+  },
+
+  // Halaman Overview: statistik ringkas + aktivitas terbaru.
+  async overview(): Promise<{
+    stats: { total: number; gagal24: number; sukses24: number; act7: number };
+    recent: AuditEntryDTO[];
+  }> {
+    try {
+      const [stats, recent] = await Promise.all([
+        activityLogRepository.overviewStats(),
+        collect({ page: 1 }, 8),
+      ]);
+      return { stats, recent: recent.slice(0, 8) };
+    } catch (err) {
+      console.error("[audit] gagal memuat overview", err);
+      return {
+        stats: { total: 0, gagal24: 0, sukses24: 0, act7: 0 },
+        recent: [],
+      };
+    }
   },
 };

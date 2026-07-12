@@ -6,7 +6,6 @@ import { auditFilterSchema } from "@/server/types/activityLog";
 // Export hasil filter jadi CSV (US-9). Read-only, super_admin saja.
 function csvCell(v: unknown): string {
   const s = v == null ? "" : typeof v === "string" ? v : JSON.stringify(v);
-  // Bungkus dengan kutip bila mengandung karakter khusus; escape kutip ganda.
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
@@ -59,7 +58,6 @@ export async function GET(req: NextRequest) {
         .join(","),
     );
   }
-  // BOM agar Excel membaca UTF-8 dengan benar.
   const csv = "﻿" + lines.join("\r\n");
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
 
