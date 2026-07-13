@@ -59,6 +59,7 @@ function toDTO(row: LetterRequestJoinedRow): LetterRequestDTO {
       name: row.typeName,
       requiredFields: normalizeRequiredFields(row.typeRequiredFields),
       supportingDocs: getSupportingDocs(row.typeCode, row.typeSupportingDocs),
+      requireManualNumber: row.typeRequireManualNumber,
     },
     createdAt: (r.createdAt ?? new Date()).toISOString(),
     approvedAt: r.approvedAt ? r.approvedAt.toISOString() : null,
@@ -311,9 +312,17 @@ export const letterRequestService = {
       throw new AppError("Surat hanya bisa diproses dari status Diajukan");
     }
     
+    const type = await letterTypeRepository.findById(row.request.letterTypeId);
+    if (type?.requireManualNumber && !sequence) {
+      throw new AppError("Nomor urut surat wajib diisi untuk jenis surat ini", { field: "sequence" });
+    }
+
     const now = new Date();
-    // Gunakan urutan yang dimasukkan secara manual oleh verifikator
-    const letterNumber = formatLetterNumber(parseInt(sequence, 10), now);
+    // Gunakan nomor surat yang dimasukkan secara manual oleh verifikator, atau lewati jika dinonaktifkan
+    let letterNumber = null;
+    if (type?.requireManualNumber && sequence) {
+      letterNumber = sequence;
+    }
     const verificationCode = createId();
 
     await letterRequestRepository.update(id, {

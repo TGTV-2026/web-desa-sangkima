@@ -28,6 +28,8 @@ export const letterTypes = mysqlTable("letter_types", {
   // dokumen pendukung per jenis surat; NULL = fallback ke konstanta SUPPORTING_DOCS
   // (baris lama sebelum kolom ini ada), [] = memang tanpa lampiran
   supportingDocs: json("supporting_docs").$type<SupportingDoc[]>(),
+  // apakah nomor urut surat wajib diisi manual oleh Kaur saat memproses
+  requireManualNumber: boolean("require_manual_number").notNull().default(true),
   active: boolean().notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),

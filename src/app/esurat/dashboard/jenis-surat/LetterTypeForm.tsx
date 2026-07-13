@@ -26,6 +26,7 @@ export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminD
   const [description, setDescription] = useState(initial?.description ?? "");
   const [template, setTemplate] = useState(initial?.template ?? "");
   const [active, setActive] = useState(initial?.active ?? true);
+  const [requireManualNumber, setRequireManualNumber] = useState(initial?.requireManualNumber ?? true);
   const [fields, setFields] = useState<LetterFieldDef[]>(initial?.requiredFields ?? []);
   const [docs, setDocs] = useState<SupportingDoc[]>(initial?.supportingDocs ?? []);
 
@@ -44,6 +45,7 @@ export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminD
         options: f.type === "select" ? f.options?.filter(Boolean) : undefined,
       })),
       supportingDocs: docs.filter((d) => d.label.trim()),
+      requireManualNumber,
       active,
     };
 
@@ -193,6 +195,27 @@ export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminD
             templateDocx={initial.templateDocx}
           />
         )}
+        
+        <section className="card-doc p-6 rise-in" style={{ animationDelay: "30ms" }}>
+          <p className="overline-doc mb-1">Pengaturan Nomor Surat</p>
+          <label className="flex items-start gap-2.5 cursor-pointer group mt-3">
+            <input
+              type="checkbox"
+              checked={requireManualNumber}
+              onChange={(e) => setRequireManualNumber(e.target.checked)}
+              className="accent-pine-700 w-4 h-4 mt-0.5"
+            />
+            <div className="flex-1">
+              <span className="text-sm font-medium text-ink">
+                Membutuhkan input nomor surat oleh petugas
+              </span>
+              <p className="text-xs text-inkmut mt-1 leading-relaxed">
+                Jika diaktifkan, petugas akan diminta mengisi nomor urut manual, dan tag <span className="font-mono text-[11px] text-brass border border-line rounded-[3px] bg-card px-1 py-0.5">{`{nomor_surat}`}</span> akan diisi otomatis di dokumen. Jika dimatikan, tahap tersebut dilewati.
+              </p>
+            </div>
+          </label>
+        </section>
+
         <TagDictionary fields={fields} />
       </div>
     </div>

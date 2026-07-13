@@ -23,27 +23,21 @@ export default function SequencePanel({ busy, onConfirm, onCancel }: SequencePan
   return (
     <div className="flex flex-col gap-3">
       <label htmlFor="sequence" className="label-doc !mb-0">
-        Masukkan Nomor Urut Surat
+        Masukkan Nomor Urut
       </label>
       <div className="flex items-center gap-2">
-        <span className="text-inkmut font-mono bg-paper2 px-3 py-2 border border-line rounded-md text-sm">
-          470 /
-        </span>
         <input
           id="sequence"
           type="text"
           value={sequence}
-          onChange={(e) => setSequence(e.target.value.replace(/\D/g, ""))}
-          placeholder="001"
-          maxLength={5}
-          className="input-doc !w-24 text-center font-mono placeholder:font-sans"
+          onChange={(e) => setSequence(e.target.value)}
+          placeholder="Contoh: 001"
+          maxLength={10}
+          className="input-doc !w-32 text-center font-mono placeholder:font-sans"
         />
-        <span className="text-inkmut font-mono bg-paper2 px-3 py-2 border border-line rounded-md text-sm">
-          / DS-SKM / {month} / {year}
-        </span>
       </div>
       <p className="text-xs text-inkmut mt-1">
-        Nomor ini akan digunakan sebagai nomor resmi surat dan akan langsung tercetak pada PDF.
+        Masukkan nomor urutnya saja (misal: 001). Teks awalan/akhiran (seperti 470/...) sudah ada di dalam template dokumen.
       </p>
       
       <div className="flex gap-3 mt-2">

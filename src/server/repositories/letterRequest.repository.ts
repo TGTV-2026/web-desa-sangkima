@@ -17,6 +17,7 @@ const detailSelect = {
   typeName: letterTypes.name,
   typeRequiredFields: letterTypes.requiredFields,
   typeSupportingDocs: letterTypes.supportingDocs,
+  typeRequireManualNumber: letterTypes.requireManualNumber,
 };
 
 function joinedQuery() {

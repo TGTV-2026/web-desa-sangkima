@@ -25,6 +25,7 @@ function toDTO(row: LetterTypeRow): LetterTypeDTO {
     requiredFields: normalizeRequiredFields(row.requiredFields),
     supportingDocs: getSupportingDocs(row.code, row.supportingDocs),
     hasDocxTemplate: !!row.templateDocx,
+    requireManualNumber: row.requireManualNumber,
     active: row.active,
   };
 }

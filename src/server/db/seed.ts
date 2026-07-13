@@ -41,7 +41,8 @@ const SEED_LETTER_TYPES: Omit<TCreateLetterTypeInput, "supportingDocs">[] = [
         options: ["Pengajuan kredit/KUR", "Perizinan usaha", "BPJS Ketenagakerjaan", "Lainnya"],
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKD",
@@ -72,7 +73,8 @@ const SEED_LETTER_TYPES: Omit<TCreateLetterTypeInput, "supportingDocs">[] = [
         options: ["Pindah sekolah", "Keperluan bank", "Daftar kuliah", "Instansi pemerintah", "Lainnya"],
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKBM",
@@ -96,7 +98,8 @@ const SEED_LETTER_TYPES: Omit<TCreateLetterTypeInput, "supportingDocs">[] = [
         placeholder: "Isi jika ada keterangan khusus yang perlu dicantumkan",
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKTM",
@@ -134,7 +137,8 @@ const SEED_LETTER_TYPES: Omit<TCreateLetterTypeInput, "supportingDocs">[] = [
         options: ["Beasiswa", "BPJS gratis", "Bantuan sosial", "Keringanan biaya RS", "Lainnya"],
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SPN",
@@ -167,7 +171,8 @@ const SEED_LETTER_TYPES: Omit<TCreateLetterTypeInput, "supportingDocs">[] = [
         placeholder: "Pernikahan ke-",
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKH",
@@ -213,7 +218,8 @@ const SEED_LETTER_TYPES: Omit<TCreateLetterTypeInput, "supportingDocs">[] = [
         options: ["Laporan polisi", "Penggantian dokumen", "Lainnya"],
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKM",
@@ -262,7 +268,8 @@ const SEED_LETTER_TYPES: Omit<TCreateLetterTypeInput, "supportingDocs">[] = [
         options: ["Pengurusan warisan", "Klaim asuransi", "Administrasi bank", "Pensiun", "Lainnya"],
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKL",
@@ -325,7 +332,8 @@ const SEED_LETTER_TYPES: Omit<TCreateLetterTypeInput, "supportingDocs">[] = [
       { name: "nama_ibu", label: "Nama Ibu", type: "text", required: true },
       { name: "nik_ibu", label: "NIK Ibu", type: "text", required: true },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
 ];
 
@@ -492,3 +500,4 @@ seed().catch((err) => {
   console.error("❌ Gagal seed:", err);
   process.exit(1);
 });
+

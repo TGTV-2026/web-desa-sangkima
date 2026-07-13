@@ -383,12 +383,14 @@ const baseLetterTypeSchema = z.object({
   requiredFields: z.array(letterFieldDefSchema),
   // templateDocx sengaja TIDAK ada di sini — hanya route upload template yang boleh set
   supportingDocs: z.array(supportingDocSchema).optional(),
+  requireManualNumber: z.boolean(),
   active: z.boolean(),
 });
 
 export const createLetterTypeSchema = baseLetterTypeSchema.extend({
   requiredFields: z.array(letterFieldDefSchema).default([]),
   supportingDocs: z.array(supportingDocSchema).default([]),
+  requireManualNumber: z.boolean().default(true),
   active: z.boolean().default(true),
 });
 
@@ -423,7 +425,7 @@ export type TCreateLetterRequestInput = z.infer<
 // Operator menerima & mulai memproses (DIAJUKAN -> DIPROSES)
 export const processLetterRequestSchema = z.object({
   note: z.string().max(500).optional(),
-  sequence: z.string().regex(/^\d+$/, "Nomor urut hanya boleh berisi angka").min(1, "Nomor urut surat wajib diisi"),
+  sequence: z.string().min(1, "Nomor surat wajib diisi").optional(),
 });
 
 // Kepala desa menyetujui (DIPROSES -> DISETUJUI). Nomor surat dibuat sistem.
@@ -468,6 +470,7 @@ export type LetterTypeDTO = {
   requiredFields: LetterFieldDef[];
   supportingDocs: SupportingDoc[]; // sudah ter-resolve (kolom DB atau fallback konstanta)
   hasDocxTemplate: boolean;
+  requireManualNumber: boolean;
   active: boolean;
 };
 
@@ -503,7 +506,7 @@ export type LetterRequestDTO = {
   requester: RequesterDTO;
   letterType: Pick<
     LetterTypeDTO,
-    "id" | "code" | "name" | "requiredFields" | "supportingDocs"
+    "id" | "code" | "name" | "requiredFields" | "supportingDocs" | "requireManualNumber"
   >;
   createdAt: string; // ISO string
   approvedAt: string | null;
