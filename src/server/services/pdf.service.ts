@@ -87,6 +87,11 @@ export type LetterPdfInput = {
     placeOfBirth: string | null;
     birthday: Date | string | null;
     job: string | null;
+    religion: string | null;
+    gender: string | null;
+    citizenship: string | null;
+    status: string | null;
+    education: string | null;
   };
   purpose: string;
   data: Record<string, string | number | null> | null;
@@ -136,6 +141,11 @@ export function buildLetterVars(
         ? `${input.requester.placeOfBirth ?? "..."}, ${birthday ?? "..."}`
         : null,
     pekerjaan: input.requester.job,
+    agama: input.requester.religion,
+    jenis_kelamin: input.requester.gender === "L" ? "Laki-laki" : input.requester.gender === "P" ? "Perempuan" : input.requester.gender,
+    kewarganegaraan: input.requester.citizenship === "wni" ? "WNI" : input.requester.citizenship === "wna" ? "WNA" : input.requester.citizenship,
+    status_pernikahan: input.requester.status,
+    pendidikan: input.requester.education,
     keperluan: input.purpose,
     nama_penandatangan:
       input.signatory?.name ?? "............................",
