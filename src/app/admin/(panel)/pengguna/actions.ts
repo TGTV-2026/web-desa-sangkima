@@ -7,6 +7,7 @@ import { z } from "zod";
 import { cmsUserService } from "@/server/services/cmsUser.service";
 import { siteContentService } from "@/server/services/siteContent.service";
 import { requireSuperAdmin } from "@/server/utils/cmsSession";
+import { catatAksiCms } from "@/server/utils/audit";
 import type { BulkRtResult } from "@/server/types/cmsUser";
 
 export type CmsUserResult =
@@ -61,7 +62,7 @@ function parseCsv(text: string): Record<string, string>[] {
 export async function bulkCreateRtFromCsv(
   csvText: string,
 ): Promise<BulkRtActionResult> {
-  await requireSuperAdmin();
+  const me = await requireSuperAdmin();
   try {
     const rows = parseCsv(csvText);
     if (rows.length === 0) {
@@ -85,6 +86,13 @@ export async function bulkCreateRtFromCsv(
     const hasil = await cmsUserService.bulkCreateRt(rows, {
       dusunValid: statistik.dusun.map((d) => d.nama),
     });
+    await catatAksiCms(me, "cms_user.bulk_create_rt", {
+      targetType: "Akun RT",
+      summary: `Membuat ${hasil.dibuat.length} akun Ketua RT via unggah CSV${
+        hasil.gagal.length ? ` (${hasil.gagal.length} baris gagal)` : ""
+      }.`,
+      metadata: { dibuat: hasil.dibuat.length, gagal: hasil.gagal.length },
+    });
     revalidatePath("/admin/pengguna");
     return { success: true, hasil };
   } catch (err) {
@@ -93,9 +101,14 @@ export async function bulkCreateRtFromCsv(
 }
 
 export async function createCmsUser(input: unknown): Promise<CmsUserResult> {
-  await requireSuperAdmin();
+  const me = await requireSuperAdmin();
   try {
-    await cmsUserService.create(input);
+    const created = await cmsUserService.create(input);
+    await catatAksiCms(me, "cms_user.create", {
+      targetType: "Akun CMS",
+      targetId: created.id,
+      summary: `Membuat akun editor: ${created.email}.`,
+    });
     revalidatePath("/admin/pengguna");
   } catch (err) {
     if (err instanceof z.ZodError) {
@@ -113,9 +126,14 @@ export async function updateCmsUser(
   id: string,
   input: unknown,
 ): Promise<CmsUserResult> {
-  await requireSuperAdmin();
+  const me = await requireSuperAdmin();
   try {
     await cmsUserService.update(id, input);
+    await catatAksiCms(me, "cms_user.update", {
+      targetType: "Akun CMS",
+      targetId: id,
+      summary: `Mengubah data akun CMS (${id}).`,
+    });
     revalidatePath("/admin/pengguna");
     revalidatePath(`/admin/pengguna/${id}`);
   } catch (err) {
@@ -142,6 +160,13 @@ export async function setCmsUserActive(
   try {
     if (active) await cmsUserService.reactivate(id);
     else await cmsUserService.deactivate(id);
+    await catatAksiCms(me, active ? "cms_user.reactivate" : "cms_user.deactivate", {
+      targetType: "Akun CMS",
+      targetId: id,
+      summary: active
+        ? `Mengaktifkan ulang akun CMS (${id}).`
+        : `Menonaktifkan akun CMS (${id}).`,
+    });
     revalidatePath("/admin/pengguna");
     return { success: true };
   } catch (err) {
@@ -159,6 +184,11 @@ export async function deleteCmsUser(id: string): Promise<CmsUserResult> {
   }
   try {
     await cmsUserService.hardDelete(id);
+    await catatAksiCms(me, "cms_user.delete", {
+      targetType: "Akun CMS",
+      targetId: id,
+      summary: `Menghapus permanen akun CMS (${id}).`,
+    });
     revalidatePath("/admin/pengguna");
     return { success: true };
   } catch (err) {

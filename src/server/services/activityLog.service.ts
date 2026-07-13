@@ -1,84 +1,63 @@
 import { activityLogRepository } from "../repositories/activityLog.repository";
 import {
+  ACTION_CATALOG,
+  actionCategory,
   actionLabel,
-  AUDIT_PAGE_SIZE,
+  type ActivityLogDTO,
+  type ActivityLogFilter,
   type ActivityLogInput,
-  type AuditEntryDTO,
-  type AuditFilter,
+  type ActorType,
 } from "../types/activityLog";
 
-// Apakah log surat (letter.status_change) ikut ditampilkan untuk filter ini?
-// - actorType 'cms'/'system' → tidak (log surat berasal dari akun warga)
-// - filter action ada & bukan letter.status_change → tidak
-function includeLetterLogs(f: AuditFilter): boolean {
-  if (f.actorType === "cms" || f.actorType === "system") return false;
-  if (f.action && f.action !== "letter.status_change") return false;
-  return true;
-}
+// Batas aman menggabungkan dua sumber log di memori. Volume aksi P0/P1 rendah
+// (bukan per-request), jadi ini cukup untuk halaman audit desa.
+const MERGE_CAP = 500;
 
-// Hanya activity_logs (bukan letter) untuk filter action non-surat.
-function includeActivityLogs(f: AuditFilter): boolean {
-  return f.action !== "letter.status_change";
-}
-
-type LetterRow = Awaited<
-  ReturnType<typeof activityLogRepository.listLetterLogs>
->[number];
 type ActivityRow = Awaited<
   ReturnType<typeof activityLogRepository.listActivity>
 >[number];
+type LetterRow = Awaited<
+  ReturnType<typeof activityLogRepository.listLetterLogs>
+>[number];
 
-function activityToDTO(r: ActivityRow): AuditEntryDTO {
+function mapActivity(r: ActivityRow): ActivityLogDTO {
   return {
-    id: `a${r.id}`,
+    id: `act-${r.id}`,
     source: "activity",
-    actorType: r.actorType,
-    actorName: r.actorName,
+    actorType: r.actorType as ActorType,
+    actorName: r.actorName ?? "—",
     action: r.action,
     actionLabel: actionLabel(r.action),
+    category: actionCategory(r.action),
+    target: [r.targetType, r.targetId].filter(Boolean).join(": ") || "—",
     summary: r.summary,
-    targetType: r.targetType,
-    targetId: r.targetId,
-    metadata: r.metadata ?? null,
-    ipAddress: r.ipAddress,
-    createdAt: (r.createdAt ?? new Date()).toISOString(),
+    ipAddress: r.ipAddress ?? null,
+    createdAt: r.createdAt ?? new Date(0),
   };
 }
 
-function letterToDTO(r: LetterRow): AuditEntryDTO {
+function mapLetter(r: LetterRow): ActivityLogDTO {
   return {
-    id: `l${r.id}`,
+    id: `letter-${r.id}`,
     source: "letter",
     actorType: "warga",
-    actorName: r.actorName,
+    actorName: r.actorName ?? "—",
     action: "letter.status_change",
-    actionLabel: actionLabel("letter.status_change"),
-    summary: `Status surat → ${r.status}${r.note ? ` — ${r.note}` : ""}`,
-    targetType: "letter_request",
-    targetId: r.requestId,
-    metadata: { status: r.status, note: r.note ?? undefined },
+    actionLabel: `Surat → ${r.status}`,
+    category: "surat",
+    target: r.letterNumber ?? r.requestId,
+    summary: r.note ?? `Status pengajuan menjadi ${r.status}.`,
     ipAddress: null,
-    createdAt: (r.createdAt ?? new Date()).toISOString(),
+    createdAt: r.createdAt ?? new Date(0),
   };
-}
-
-async function collect(f: AuditFilter, cap: number): Promise<AuditEntryDTO[]> {
-  const [activity, letters] = await Promise.all([
-    includeActivityLogs(f)
-      ? activityLogRepository.listActivity(f, cap)
-      : Promise.resolve([] as ActivityRow[]),
-    includeLetterLogs(f)
-      ? activityLogRepository.listLetterLogs(f, cap)
-      : Promise.resolve([] as LetterRow[]),
-  ]);
-  return [...activity.map(activityToDTO), ...letters.map(letterToDTO)].sort(
-    (a, b) => b.createdAt.localeCompare(a.createdAt),
-  );
 }
 
 export const activityLogService = {
-  // Pencatatan fail-safe: kegagalan log TAK BOLEH menggagalkan aksi utama.
-  // Dipanggil "fire-and-forget" (`void activityLogService.record(...)`).
+  /**
+   * Catat satu aktivitas. FAIL-SAFE: kegagalan pencatatan TIDAK boleh
+   * menggagalkan aksi utama (approval surat, dll) — cukup ke log server.
+   * Panggil "fire-and-forget" setelah aksi utama sukses.
+   */
   async record(entry: ActivityLogInput): Promise<void> {
     try {
       await activityLogRepository.insert(entry);
@@ -87,53 +66,97 @@ export const activityLogService = {
     }
   },
 
-  // Daftar menyatu (activity_logs + letter_request_logs), terbaru dulu, paginasi.
-  // Volume rendah (aksi P0/P1, bukan per-request) → over-fetch lalu merge aman.
-  // Gagal query (mis. tabel belum dibuat / DB down) → kembalikan kosong, JANGAN
-  // pecahkan halaman (pola sama seperti siteContentService.get).
+  /**
+   * Daftar log menyatu (activity_logs + letter_request_logs), diurut terbaru
+   * dulu, dengan filter & paginasi sederhana.
+   */
   async list(
-    f: AuditFilter,
-  ): Promise<{ entries: AuditEntryDTO[]; page: number; hasMore: boolean }> {
-    const page = f.page ?? 1;
-    try {
-      const cap = page * AUDIT_PAGE_SIZE + 1;
-      const merged = await collect(f, cap);
-      const start = (page - 1) * AUDIT_PAGE_SIZE;
-      const entries = merged.slice(start, start + AUDIT_PAGE_SIZE);
-      return { entries, page, hasMore: merged.length > page * AUDIT_PAGE_SIZE };
-    } catch (err) {
-      console.error("[audit] gagal memuat daftar aktivitas", err);
-      return { entries: [], page, hasMore: false };
+    filter: ActivityLogFilter,
+  ): Promise<{ items: ActivityLogDTO[]; total: number }> {
+    const limit = filter.limit ?? 50;
+    const offset = filter.offset ?? 0;
+    const cat = filter.category;
+
+    // Log surat hanya relevan bila kategori tak dibatasi ke selain "surat",
+    // dan aktor bukan CMS/sistem (log surat berasal dari akun warga E-Surat).
+    const includeActivity = cat !== "surat";
+    const includeLetter =
+      (!cat || cat === "surat") &&
+      filter.actorType !== "cms" &&
+      filter.actorType !== "system";
+
+    // Untuk kategori non-surat, batasi aksi ke kategori itu.
+    let actions: string[] | undefined;
+    if (cat && cat !== "surat") {
+      actions = Object.entries(ACTION_CATALOG)
+        .filter(([, d]) => d.category === cat)
+        .map(([k]) => k);
     }
+
+    const [acts, letters] = await Promise.all([
+      includeActivity
+        ? activityLogRepository.listActivity({
+            actorType: filter.actorType,
+            actions,
+            dari: filter.dari,
+            sampai: filter.sampai,
+            q: filter.q,
+            limit: MERGE_CAP,
+          })
+        : Promise.resolve([] as ActivityRow[]),
+      includeLetter
+        ? activityLogRepository.listLetterLogs({
+            dari: filter.dari,
+            sampai: filter.sampai,
+            q: filter.q,
+            limit: MERGE_CAP,
+          })
+        : Promise.resolve([] as LetterRow[]),
+    ]);
+
+    const merged = [...acts.map(mapActivity), ...letters.map(mapLetter)].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+
+    return { items: merged.slice(offset, offset + limit), total: merged.length };
   },
 
-  // Untuk export CSV — ambil banyak (dibatasi agar tak membebani).
-  async listForExport(f: AuditFilter): Promise<AuditEntryDTO[]> {
-    try {
-      return await collect(f, 5000);
-    } catch (err) {
-      console.error("[audit] gagal export", err);
-      return [];
-    }
+  /** Ringkasan untuk dashboard: jumlah log 24 jam + login gagal 24 jam. */
+  async ringkasan24Jam(): Promise<{ totalLog: number; loginGagal: number }> {
+    const dari = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const rows = await activityLogRepository.listActivity({
+      dari,
+      limit: MERGE_CAP,
+    });
+    const loginGagal = rows.filter((r) => r.action.endsWith("login.failed")).length;
+    return { totalLog: rows.length, loginGagal };
   },
 
-  // Halaman Overview: statistik ringkas + aktivitas terbaru.
-  async overview(): Promise<{
-    stats: { total: number; gagal24: number; sukses24: number; act7: number };
-    recent: AuditEntryDTO[];
-  }> {
-    try {
-      const [stats, recent] = await Promise.all([
-        activityLogRepository.overviewStats(),
-        collect({ page: 1 }, 8),
-      ]);
-      return { stats, recent: recent.slice(0, 8) };
-    } catch (err) {
-      console.error("[audit] gagal memuat overview", err);
-      return {
-        stats: { total: 0, gagal24: 0, sukses24: 0, act7: 0 },
-        recent: [],
-      };
+  /**
+   * Tren login 7 hari terakhir untuk grafik dashboard: jumlah login sukses
+   * per hari, dipisah warga vs CMS.
+   */
+  async trenLogin7Hari(): Promise<
+    { tanggal: string; warga: number; cms: number }[]
+  > {
+    const dari = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const rows = await activityLogRepository.listActivity({
+      dari,
+      actions: ["auth.warga.login.success", "auth.cms.login.success"],
+      limit: MERGE_CAP,
+    });
+    const byDay = new Map<string, { warga: number; cms: number }>();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      byDay.set(d.toISOString().slice(0, 10), { warga: 0, cms: 0 });
     }
+    for (const r of rows) {
+      const key = (r.createdAt ?? new Date()).toISOString().slice(0, 10);
+      const bucket = byDay.get(key);
+      if (!bucket) continue;
+      if (r.actorType === "warga") bucket.warga += 1;
+      else if (r.actorType === "cms") bucket.cms += 1;
+    }
+    return [...byDay.entries()].map(([tanggal, v]) => ({ tanggal, ...v }));
   },
 };

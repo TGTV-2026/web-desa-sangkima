@@ -6,6 +6,7 @@ import { z } from "zod";
 import { siteContentService } from "@/server/services/siteContent.service";
 import { requireVerifiedCmsUser } from "@/server/utils/cmsSession";
 import { deleteHeroVideo } from "@/server/utils/videoUpload";
+import { catatAksiCms } from "@/server/utils/audit";
 import { CONTENT_SECTIONS, type ContentKey } from "@/server/types/content";
 
 // Path publik yang perlu di-revalidate setelah satu seksi disimpan, agar
@@ -56,6 +57,12 @@ export async function saveSection(
       key === "hero" ? (await siteContentService.get("hero")).backgroundVideo : "";
 
     await siteContentService.update(key, value, user.id);
+    await catatAksiCms(user, "content.update", {
+      targetType: "Konten",
+      targetId: key,
+      summary: `Memperbarui konten publik "${CONTENT_SECTIONS[key].label}".`,
+      metadata: { key },
+    });
 
     if (key === "hero") {
       const videoBaru =
