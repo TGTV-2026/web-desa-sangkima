@@ -3,7 +3,12 @@
 # Tanpa ini, video diunggah apa adanya — 200 MB rekaman drone akan diunduh utuh
 # oleh setiap pengunjung beranda lewat kuota mereka sendiri.
 #
+# libreoffice-writer + fonts-liberation: konversi template surat .docx → PDF
+# (src/server/utils/docxToPdf.ts). Liberation Serif = pengganti metrik-identik
+# Times New Roman, jadi layout template Word tidak bergeser. Tanpa soffice,
+# jenis surat ber-template DOCX gagal terbit dengan pesan error ke operator.
+#
 # `aptPkgs` bersifat menambah, bukan mengganti, paket bawaan Nixpacks — jadi
 # deteksi Node.js/Next.js tetap berjalan seperti biasa.
 [phases.setup]
-aptPkgs = ["ffmpeg"]
+aptPkgs = ["ffmpeg", "libreoffice-writer", "fonts-liberation"]

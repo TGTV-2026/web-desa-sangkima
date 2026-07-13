@@ -2,14 +2,15 @@ import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { db, pool } from "./index";
 import { letterTypes, positions, users } from "./schema";
-import type { TCreateLetterTypeInput } from "../types/letter";
+import { SUPPORTING_DOCS, type TCreateLetterTypeInput } from "../types/letter";
 import { hashPassword } from "../utils/hash";
 
 // 8 jenis surat Desa Sangkima sesuai skemaSurat.md.
 // requiredFields = field tambahan per jenis surat (jawaban disimpan di letter_requests.data).
 // Field identitas pemohon (nama/nik/alamat) auto-fill dari profil, tidak didefinisikan di sini.
+// supportingDocs diinjeksi dari konstanta SUPPORTING_DOCS saat seed (satu sumber, tanpa duplikasi).
 // Jalankan dengan: npx tsx src/server/db/seed.ts
-const SEED_LETTER_TYPES: TCreateLetterTypeInput[] = [
+const SEED_LETTER_TYPES: Omit<TCreateLetterTypeInput, "supportingDocs">[] = [
   {
     code: "SKU",
     name: "Surat Keterangan Usaha",
@@ -354,13 +355,15 @@ const slugEmail = (name: string) =>
 async function seedLetterTypes() {
   console.log("🌱 Menyemai jenis surat...");
   for (const item of SEED_LETTER_TYPES) {
+    const supportingDocs = SUPPORTING_DOCS[item.code] ?? [];
     const existing = await db
       .select()
       .from(letterTypes)
       .where(eq(letterTypes.code, item.code))
       .limit(1);
 
-    // upsert: perbarui requiredFields/template bila kode sudah ada (skema bisa berubah)
+    // upsert: perbarui requiredFields/template bila kode sudah ada (skema bisa berubah).
+    // templateDocx sengaja TIDAK di-set — re-seed tak boleh melepas template terunggah.
     if (existing[0]) {
       await db
         .update(letterTypes)
@@ -369,6 +372,7 @@ async function seedLetterTypes() {
           description: item.description,
           template: item.template,
           requiredFields: item.requiredFields,
+          supportingDocs,
           active: item.active,
         })
         .where(eq(letterTypes.code, item.code));
@@ -376,7 +380,7 @@ async function seedLetterTypes() {
       continue;
     }
 
-    await db.insert(letterTypes).values(item);
+    await db.insert(letterTypes).values({ ...item, supportingDocs });
     console.log(`✅ ${item.code} — ${item.name}`);
   }
 }

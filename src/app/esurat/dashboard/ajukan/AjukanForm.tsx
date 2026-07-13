@@ -6,7 +6,7 @@ import { useSubmitAction } from "@/hooks/useSubmitAction";
 import { useToast } from "@/hooks/useToast";
 import FormField from "@/components/esurat/FormField";
 import DocumentUploadField from "@/components/esurat/DocumentUploadField";
-import { SUPPORTING_DOCS, type LetterTypeDTO } from "@/server/types/letter";
+import type { LetterTypeDTO } from "@/server/types/letter";
 import DynamicLetterFields from "@/components/esurat/DynamicLetterFields";
 
 export default function AjukanForm({ type }: { type: LetterTypeDTO }) {
@@ -14,7 +14,7 @@ export default function AjukanForm({ type }: { type: LetterTypeDTO }) {
   const { toast } = useToast();
   const { busy: submitting, submit } = useSubmitAction();
 
-  const docs = SUPPORTING_DOCS[type.code] ?? [];
+  const docs = type.supportingDocs;
 
   const [purpose, setPurpose] = useState("");
   const [data, setData] = useState<Record<string, string>>({});

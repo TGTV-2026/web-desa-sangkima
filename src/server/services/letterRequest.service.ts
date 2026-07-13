@@ -18,7 +18,7 @@ import {
   buildLetterDataSchema,
   normalizeRequiredFields,
   parseJsonColumn,
-  SUPPORTING_DOCS,
+  getSupportingDocs,
   type LetterAttachment,
   type LetterLogDTO,
   type LetterRequestDTO,
@@ -28,7 +28,13 @@ import {
 } from "../types/letter";
 import type { PaginationMeta } from "../types/pagination";
 import { formatLetterNumber } from "../utils/letter-number";
-import { generateLetterPdf, savePdf, readPdf } from "./pdf.service";
+import { docxTemplateService } from "./docxTemplate.service";
+import {
+  generateLetterPdf,
+  savePdf,
+  readPdf,
+  type LetterPdfInput,
+} from "./pdf.service";
 
 function toDTO(row: LetterRequestJoinedRow): LetterRequestDTO {
   const r = row.request;
@@ -52,6 +58,7 @@ function toDTO(row: LetterRequestJoinedRow): LetterRequestDTO {
       code: row.typeCode,
       name: row.typeName,
       requiredFields: normalizeRequiredFields(row.typeRequiredFields),
+      supportingDocs: getSupportingDocs(row.typeCode, row.typeSupportingDocs),
     },
     createdAt: (r.createdAt ?? new Date()).toISOString(),
     approvedAt: r.approvedAt ? r.approvedAt.toISOString() : null,
@@ -127,7 +134,7 @@ async function renderPdf(
     }
   }
 
-  return generateLetterPdf({
+  const input: LetterPdfInput = {
     letterNumber: row.request.letterNumber ?? "-",
     verificationCode: row.request.verificationCode ?? "",
     approvedAt: row.request.approvedAt ?? row.request.verifiedAt ?? new Date(),
@@ -147,7 +154,14 @@ async function renderPdf(
     draft,
     noSignature,
     signatory,
-  });
+  };
+
+  // Jenis surat dengan template .docx terunggah dirender lewat pipeline
+  // docxtemplater + LibreOffice; sisanya tetap layout pdf-lib bawaan.
+  if (type?.templateDocx) {
+    return docxTemplateService.renderLetterPdfFromDocx(type.templateDocx, input);
+  }
+  return generateLetterPdf(input);
 }
 
 export const letterRequestService = {
@@ -189,7 +203,7 @@ export const letterRequestService = {
     const cleanData = parseLetterData(type.requiredFields, data.data);
 
     // pastikan tiap dokumen pendukung wajib sudah terunggah (pengaman; client juga memblok)
-    const docs = SUPPORTING_DOCS[type.code] ?? [];
+    const docs = getSupportingDocs(type.code, type.supportingDocs);
     const uploadedDocIndexes = new Set(attachments.map((a) => a.docIndex));
     docs.forEach((doc, i) => {
       if (doc.required && !uploadedDocIndexes.has(i)) {

@@ -46,4 +46,14 @@ export const letterTypeRepository = {
     await db.update(letterTypes).set(data).where(eq(letterTypes.id, id));
     return this.findById(id);
   },
+
+  // setter khusus templateDocx — sengaja di luar update() agar jalur update JSON
+  // biasa tak pernah bisa menyentuh kolom ini (hanya route upload template)
+  async setTemplateDocx(id: string, fileName: string | null) {
+    await db
+      .update(letterTypes)
+      .set({ templateDocx: fileName })
+      .where(eq(letterTypes.id, id));
+    return this.findById(id);
+  },
 };

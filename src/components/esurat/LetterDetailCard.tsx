@@ -65,7 +65,7 @@ export default function LetterDetailCard({
             <LampiranList
               requestId={request.id}
               attachments={request.attachments}
-              letterTypeCode={request.letterType.code}
+              docs={request.letterType.supportingDocs}
             />
 
             <LetterTimeline logs={logs} />

@@ -1,0 +1,200 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSubmitAction } from "@/hooks/useSubmitAction";
+import { useToast } from "@/hooks/useToast";
+import FormField from "@/components/esurat/FormField";
+import type {
+  LetterFieldDef,
+  LetterTypeAdminDTO,
+  SupportingDoc,
+} from "@/server/types/letter";
+import FieldBuilder from "./FieldBuilder";
+import SupportingDocsBuilder from "./SupportingDocsBuilder";
+import TagDictionary from "./TagDictionary";
+import TemplateUploadSection from "./TemplateUploadSection";
+
+/** Form tambah/ubah jenis surat; mode edit juga memuat pengelolaan template DOCX. */
+export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminDTO }) {
+  const router = useRouter();
+  const { toast } = useToast();
+  const { busy, submit } = useSubmitAction();
+
+  const [code, setCode] = useState(initial?.code ?? "");
+  const [name, setName] = useState(initial?.name ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [template, setTemplate] = useState(initial?.template ?? "");
+  const [active, setActive] = useState(initial?.active ?? true);
+  const [fields, setFields] = useState<LetterFieldDef[]>(initial?.requiredFields ?? []);
+  const [docs, setDocs] = useState<SupportingDoc[]>(initial?.supportingDocs ?? []);
+
+  const isEdit = !!initial;
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const payload = {
+      code: code.trim().toUpperCase(),
+      name: name.trim(),
+      description: description.trim() || undefined,
+      template: template.trim() || undefined,
+      requiredFields: fields.map((f) => ({
+        ...f,
+        // opsi kosong sisa pengetikan koma dibuang saat submit
+        options: f.type === "select" ? f.options?.filter(Boolean) : undefined,
+      })),
+      supportingDocs: docs.filter((d) => d.label.trim()),
+      active,
+    };
+
+    await submit(
+      () =>
+        fetch(isEdit ? `/esurat/api/letter-types/${initial.id}` : "/esurat/api/letter-types", {
+          method: isEdit ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }),
+      {
+        successMessage: isEdit
+          ? "Perubahan jenis surat tersimpan."
+          : "Jenis surat dibuat. Unggah template DOCX di bawah bila diperlukan.",
+        successTitle: "Tersimpan",
+        errorFallback: "Gagal menyimpan jenis surat",
+        // error Zod per-field lebih informatif daripada "Validasi gagal"
+        extractErrorMessage: (json) => {
+          const errors = json.errors as Record<string, string[]> | undefined;
+          const first = errors && Object.values(errors).flat()[0];
+          return first;
+        },
+        onSuccess: (json) => {
+          const data = json.data as { id?: string; templateWarnings?: string[] } | undefined;
+          data?.templateWarnings?.forEach((w) =>
+            toast(w, "Periksa Template DOCX", "error", 8000),
+          );
+          if (isEdit) router.refresh();
+          else if (data?.id) router.push(`/esurat/dashboard/jenis-surat/${data.id}`);
+        },
+      },
+    ).catch(() => {});
+  };
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-3 lg:items-start">
+      <form onSubmit={handleSubmit} className="lg:col-span-2 flex flex-col gap-6">
+        <section className="card-doc p-6 rise-in">
+          <p className="overline-doc mb-4">Informasi Dasar</p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <FormField
+              id="code"
+              label="Kode"
+              value={code}
+              onChange={(v) => setCode(v.toUpperCase())}
+              placeholder="mis. SKU"
+              required
+              disabled={isEdit}
+              maxLength={20}
+            />
+            <div className="sm:col-span-2">
+              <FormField
+                id="name"
+                label="Nama Jenis Surat"
+                value={name}
+                onChange={setName}
+                placeholder="mis. Surat Keterangan Usaha"
+                required
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <FormField
+              id="description"
+              label="Deskripsi"
+              type="textarea"
+              rows={2}
+              value={description}
+              onChange={setDescription}
+              optionalHint
+            />
+          </div>
+          <label className="mt-4 flex items-center gap-2.5 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={active}
+              onChange={(e) => setActive(e.target.checked)}
+              className="accent-pine-700 w-4 h-4"
+            />
+            Aktif (muncul di formulir pengajuan warga)
+          </label>
+        </section>
+
+        <section className="card-doc p-6 rise-in" style={{ animationDelay: "60ms" }}>
+          <p className="overline-doc mb-1">Field Tambahan</p>
+          <p className="text-xs text-inkmut mb-4 max-w-lg leading-relaxed">
+            Pertanyaan tambahan yang diisi warga saat mengajukan. Nama field otomatis
+            menjadi tag template, mis. field <span className="font-mono">nama_usaha</span>{" "}
+            → tag <span className="font-mono">{"{nama_usaha}"}</span>.
+          </p>
+          <FieldBuilder
+            fields={fields}
+            onChange={setFields}
+            warnRename={isEdit && !!initial?.templateDocx}
+          />
+        </section>
+
+        <section className="card-doc p-6 rise-in" style={{ animationDelay: "120ms" }}>
+          <p className="overline-doc mb-1">Dokumen Pendukung</p>
+          <p className="text-xs text-inkmut mb-4 max-w-lg leading-relaxed">
+            Lampiran yang wajib/opsional diunggah warga. Bila sudah ada pengajuan
+            berjalan, jangan menghapus atau mengubah urutan dokumen lama — tambahkan
+            dokumen baru di urutan paling akhir.
+          </p>
+          <SupportingDocsBuilder docs={docs} onChange={setDocs} />
+        </section>
+
+        <section className="card-doc p-6 rise-in" style={{ animationDelay: "180ms" }}>
+          <p className="overline-doc mb-1">Template Teks Bawaan</p>
+          <p className="text-xs text-inkmut mb-4 max-w-lg leading-relaxed">
+            Dipakai hanya bila belum ada template DOCX: satu paragraf isi surat dengan
+            placeholder <span className="font-mono">{"{{name}}"}</span>,{" "}
+            <span className="font-mono">{"{{nik}}"}</span>, dan nama field tambahan.
+            Kop, judul, dan tanda tangan diatur otomatis oleh sistem.
+          </p>
+          <FormField
+            id="template"
+            label="Isi Surat"
+            type="textarea"
+            rows={4}
+            value={template}
+            onChange={setTemplate}
+            optionalHint
+            inputClassName={initial?.templateDocx ? "opacity-60" : ""}
+          />
+        </section>
+
+        <div className="flex items-center gap-3">
+          <button type="submit" disabled={busy} className="btn-primary disabled:opacity-60">
+            {busy ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Buat Jenis Surat"}
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/esurat/dashboard/jenis-surat")}
+            className="btn-outline"
+          >
+            Kembali
+          </button>
+        </div>
+      </form>
+
+      <div className="flex flex-col gap-6">
+        {isEdit && (
+          <TemplateUploadSection
+            id={initial.id}
+            code={initial.code}
+            templateDocx={initial.templateDocx}
+          />
+        )}
+        <TagDictionary fields={fields} />
+      </div>
+    </div>
+  );
+}

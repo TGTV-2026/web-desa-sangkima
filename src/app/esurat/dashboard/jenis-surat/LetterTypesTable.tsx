@@ -1,3 +1,4 @@
+import Link from "next/link";
 import DataTable, { type DataTableColumn } from "@/components/esurat/DataTable";
 import ToggleActiveButton from "./ToggleActiveButton";
 import type { LetterTypeDTO } from "@/server/types/letter";
@@ -28,6 +29,20 @@ const columns: DataTableColumn<LetterTypeDTO>[] = [
     ),
   },
   {
+    header: "Template",
+    render: (t) => (
+      <span
+        className={`inline-flex items-center border rounded-[3px] px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.1em] ${
+          t.hasDocxTemplate
+            ? "border-brass/50 text-brass bg-brass/[0.06]"
+            : "border-line text-inkmut"
+        }`}
+      >
+        {t.hasDocxTemplate ? "DOCX" : "Bawaan"}
+      </span>
+    ),
+  },
+  {
     header: "Status",
     render: (t) => (
       <span
@@ -45,7 +60,17 @@ const columns: DataTableColumn<LetterTypeDTO>[] = [
     header: "Aksi",
     hiddenHeader: true,
     align: "right",
-    render: (t) => <ToggleActiveButton id={t.id} active={t.active} name={t.name} />,
+    render: (t) => (
+      <span className="inline-flex items-center gap-2">
+        <Link
+          href={`/esurat/dashboard/jenis-surat/${t.id}`}
+          className="rounded-[4px] border border-line bg-card px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap text-inkmut hover:text-ink hover:bg-paper2/50 transition-colors"
+        >
+          Ubah
+        </Link>
+        <ToggleActiveButton id={t.id} active={t.active} name={t.name} />
+      </span>
+    ),
   },
 ];
 

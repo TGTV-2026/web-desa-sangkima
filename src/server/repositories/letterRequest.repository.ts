@@ -16,6 +16,7 @@ const detailSelect = {
   typeCode: letterTypes.code,
   typeName: letterTypes.name,
   typeRequiredFields: letterTypes.requiredFields,
+  typeSupportingDocs: letterTypes.supportingDocs,
 };
 
 function joinedQuery() {
