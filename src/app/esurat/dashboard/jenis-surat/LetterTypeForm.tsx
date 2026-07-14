@@ -275,6 +275,7 @@ export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminD
           id={currentId}
           code={initial?.code ?? code}
           templateDocx={initial?.templateDocx ?? null}
+          initialReport={initial?.templateReport ?? null}
           onStageChange={(f) => {
             setStagedTemplate(f);
             setTemplateError(null);

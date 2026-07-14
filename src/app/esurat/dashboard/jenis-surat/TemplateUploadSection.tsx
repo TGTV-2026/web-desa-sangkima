@@ -58,10 +58,12 @@ export default function TemplateUploadSection({
   onStageChange,
   onUploaded,
   externalError,
+  initialReport,
 }: {
   id: string | null;
   code: string;
   templateDocx: string | null;
+  initialReport?: TemplateReport | null;
   onStageChange?: (file: File | null) => void;
   onUploaded?: () => void;
   /** Error validasi dari luar (mode buat: gate dry-run sebelum jenis surat dibuat). */
@@ -70,11 +72,14 @@ export default function TemplateUploadSection({
   const router = useRouter();
   const { busy, submit } = useSubmitAction();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [report, setReport] = useState<TemplateReport | null>(null);
+  const [report, setReport] = useState<TemplateReport | null>(initialReport ?? null);
   const [error, setError] = useState<TemplateError | null>(null);
   const [staged, setStaged] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const autoUploadedRef = useRef(false);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const upload = async (file: File) => {
     setReport(null);
@@ -187,7 +192,7 @@ export default function TemplateUploadSection({
           <p className="font-mono text-[11px] text-inkmut mt-0.5 break-all">{templateDocx}</p>
           <span className="mt-2 flex flex-wrap gap-2">
             <a
-              href={`/esurat/api/letter-types/${id}/template/preview?t=${Date.now()}`}
+              href={`/esurat/api/letter-types/${id}/template/preview${mounted ? `?t=${Date.now()}` : ""}`}
               target="_blank"
               rel="noreferrer"
               className="btn-outline !px-3 !py-1.5 text-xs"
@@ -320,14 +325,23 @@ export default function TemplateUploadSection({
       {report && (
         <div className="mt-4 border-t border-line pt-3 text-xs leading-relaxed">
           <p className="font-semibold text-ink mb-1.5">Hasil pemeriksaan:</p>
-          <p className="text-inkmut">
-            Tag terpakai:{" "}
+          <div className="mb-2">
+            <p className="text-inkmut mb-1">Tag terpakai:</p>
             {report.tags.length ? (
-              <span className="font-mono">{report.tags.map((t) => `{${t}}`).join(" ")}</span>
+              <span className="flex flex-wrap gap-1.5">
+                {report.tags.map((t) => (
+                  <span
+                    key={t}
+                    className="font-mono text-[11px] text-ink border border-line rounded-[3px] bg-paper2 px-1.5 py-0.5"
+                  >
+                    {`{${t}}`}
+                  </span>
+                ))}
+              </span>
             ) : (
-              "tidak ada"
+              <p className="text-inkmut">tidak ada</p>
             )}
-          </p>
+          </div>
           <PlaceholderChecklist hasQr={report.hasQr} hasTtd={report.hasTtd} />
         </div>
       )}

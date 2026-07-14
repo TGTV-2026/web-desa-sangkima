@@ -6,6 +6,7 @@ import {
   createLetterTypeSchema,
   updateLetterTypeSchema,
   normalizeRequiredFields,
+  parseJsonColumn,
   getSupportingDocs,
   type LetterFieldDef,
   type LetterTypeAdminDTO,
@@ -52,6 +53,7 @@ export const letterTypeService = {
       ...toDTO(row),
       template: row.template ?? null,
       templateDocx: row.templateDocx ?? null,
+      templateReport: parseJsonColumn<TemplateReport | null>(row.templateReport, null),
     };
   },
 
@@ -145,7 +147,7 @@ export const letterTypeService = {
     );
 
     const fileName = await docxTemplateService.saveTemplateFile(id, buffer);
-    await letterTypeRepository.setTemplateDocx(id, fileName);
+    await letterTypeRepository.setTemplateDocx(id, fileName, report);
     return report;
   },
 
@@ -154,7 +156,7 @@ export const letterTypeService = {
   async removeTemplate(id: string): Promise<void> {
     const row = await letterTypeRepository.findById(id);
     if (!row) throw new AppError("Jenis surat tidak ditemukan");
-    await letterTypeRepository.setTemplateDocx(id, null);
+    await letterTypeRepository.setTemplateDocx(id, null, null);
   },
 
   // Pratinjau PDF template aktif dengan data dummy; placeholder QR/TTD

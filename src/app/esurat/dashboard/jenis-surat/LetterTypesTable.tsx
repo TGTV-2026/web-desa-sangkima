@@ -12,20 +12,19 @@ const columns: DataTableColumn<LetterTypeDTO>[] = [
   { header: "Kode", render: (t) => <span className="font-mono font-medium text-brass">{t.code}</span> },
   {
     header: "Nama",
-    render: (t) => (
-      <>
-        <p className="font-semibold">{t.name}</p>
-        {t.description && (
-          <p className="text-xs text-inkmut mt-0.5 max-w-xs leading-relaxed">{t.description}</p>
-        )}
-      </>
-    ),
+    render: (t) => <p className="font-semibold">{t.name}</p>,
   },
   {
-    header: "Field Tambahan",
+    header: "Deskripsi",
     render: (t) => (
       <span className="text-inkmut">
-        {t.requiredFields.length === 0 ? "—" : t.requiredFields.map((f) => f.label).join(", ")}
+        {t.description ? (
+          <span className="text-xs leading-relaxed max-w-xs block line-clamp-2" title={t.description}>
+            {t.description}
+          </span>
+        ) : (
+          "—"
+        )}
       </span>
     ),
   },

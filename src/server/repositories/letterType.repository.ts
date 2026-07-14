@@ -5,6 +5,7 @@ import { letterTypes } from "../db/schema";
 import type {
   TCreateLetterTypeInput,
   TUpdateLetterTypeInput,
+  TemplateReport,
 } from "../types/letter";
 
 export const letterTypeRepository = {
@@ -50,10 +51,10 @@ export const letterTypeRepository = {
 
   // setter khusus templateDocx — sengaja di luar update() agar jalur update JSON
   // biasa tak pernah bisa menyentuh kolom ini (hanya route upload template)
-  async setTemplateDocx(id: string, fileName: string | null) {
+  async setTemplateDocx(id: string, fileName: string | null, report: TemplateReport | null) {
     await db
       .update(letterTypes)
-      .set({ templateDocx: fileName })
+      .set({ templateDocx: fileName, templateReport: report })
       .where(eq(letterTypes.id, id));
     return this.findById(id);
   },

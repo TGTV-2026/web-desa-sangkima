@@ -8,7 +8,7 @@ import {
   timestamp,
   varchar,
 } from "drizzle-orm/mysql-core";
-import type { LetterFieldDef, SupportingDoc } from "../../types/letter";
+import type { LetterFieldDef, SupportingDoc, TemplateReport } from "../../types/letter";
 
 // Master jenis surat (dikelola admin / kepala desa).
 // Contoh: SKD = Surat Keterangan Domisili, SKU = Surat Keterangan Usaha.
@@ -26,6 +26,8 @@ export const letterTypes = mysqlTable("letter_types", {
   requiredFields: json("required_fields").$type<LetterFieldDef[]>().default([]),
   // nama file template .docx aktif di uploads/templates/; NULL = render pdf-lib bawaan
   templateDocx: varchar("template_docx", { length: 255 }),
+  // hasil validasi terakhir dari templateDocx
+  templateReport: json("template_report").$type<TemplateReport>(),
   // dokumen pendukung per jenis surat; NULL = fallback ke konstanta SUPPORTING_DOCS
   // (baris lama sebelum kolom ini ada), [] = memang tanpa lampiran
   supportingDocs: json("supporting_docs").$type<SupportingDoc[]>(),

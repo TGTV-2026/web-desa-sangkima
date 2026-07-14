@@ -479,6 +479,7 @@ export type LetterTypeDTO = {
 export type LetterTypeAdminDTO = LetterTypeDTO & {
   template: string | null;
   templateDocx: string | null;
+  templateReport: TemplateReport | null;
 };
 
 // Laporan hasil validasi template .docx yang diunggah admin
