@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useToast } from "@/hooks/useToast";
 import type { StatistikDusunContent } from "@/server/types/content";
-import { saveSection } from "../actions";
+import { saveSection } from "../../actions";
 
 type Dusun = StatistikDusunContent["dusun"][number];
 
