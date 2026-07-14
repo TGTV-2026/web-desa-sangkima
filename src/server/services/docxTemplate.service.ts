@@ -301,7 +301,12 @@ export const docxTemplateService = {
       data,
       appUrl: "https://desasangkima.cloud",
       draft: true,
-      signatory: null,
+      signatory: {
+        name: "Contoh Kepala Desa",
+        positionCategory: "Kepala Desa",
+        signatureUrl: null,
+        nip: "198001012010011001",
+      },
     };
   },
 };

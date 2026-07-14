@@ -300,6 +300,7 @@ export const userRepository = {
       nik: data.nik,
       password: data.passwordHash,
       role: data.role,
+      nip: data.nip ?? null,
       positionId: data.positionId ?? null,
       religion: data.religion ?? null,
       address: data.address ?? null,

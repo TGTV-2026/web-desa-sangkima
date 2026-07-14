@@ -259,6 +259,7 @@ export const FIXED_LETTER_TAGS: { tag: string; label: string }[] = [
   { tag: "keperluan", label: "Keperluan pengajuan" },
   { tag: "nama_penandatangan", label: "Nama penandatangan (Kades/Sekdes)" },
   { tag: "jabatan_penandatangan", label: "Jabatan penandatangan" },
+  { tag: "nip_penandatangan", label: "NIP penandatangan (jika ada)" },
   { tag: "is_sekdes", label: "Blok kondisi: hanya tampil bila ditandatangani Sekdes, mis. {#is_sekdes}a.n Kepala Desa{/is_sekdes}" },
   { tag: "kop_kabupaten", label: "Kop: nama kabupaten" },
   { tag: "kop_kecamatan", label: "Kop: nama kecamatan" },

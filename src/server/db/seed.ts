@@ -483,6 +483,7 @@ async function seedUsers(positionByName: Map<string, string>) {
       // warga biasa tidak terikat jabatan
       job: u.role === "user" ? "Wiraswasta" : baseProfile.job,
       positionId: u.positionName ? positionByName.get(u.positionName) : undefined,
+      nip: u.role === "staff" ? `198001012010011${String(nik).slice(-3)}` : undefined,
     });
     console.log(`✅ ${u.role.padEnd(5)} — ${u.email}`);
   }

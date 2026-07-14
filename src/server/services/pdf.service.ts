@@ -103,6 +103,7 @@ export type LetterPdfInput = {
     name: string;
     positionCategory: string;
     signatureUrl?: string | null;
+    nip?: string | null;
   } | null;
   // Jika true, tanda tangan berupa gambar tidak dirender (untuk cetak basah)
   noSignature?: boolean;
@@ -150,6 +151,7 @@ export function buildLetterVars(
     nama_penandatangan:
       input.signatory?.name ?? "............................",
     jabatan_penandatangan: isSekdes ? "Sekretaris Desa" : "Kepala Desa Sangkima",
+    nip_penandatangan: input.signatory?.nip ?? "",
     is_sekdes: isSekdes,
     ...(input.data ?? {}),
   };

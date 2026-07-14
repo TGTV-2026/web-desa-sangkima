@@ -50,6 +50,7 @@ export const users = mysqlTable("users", {
   email: varchar({ length: 255 }).notNull().unique(),
   password: varchar({ length: 255 }).notNull(),
   role: roles.notNull().default("user"),
+  nip: varchar({ length: 255 }),
   religion: mysqlEnum(religions),
   address: varchar({ length: 255 }),
   birthday: date(),

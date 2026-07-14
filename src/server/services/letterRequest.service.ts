@@ -131,6 +131,7 @@ async function renderPdf(
         name: approver.user.name,
         positionCategory: approver.positionCategory ?? "Kepala Desa",
         signatureUrl: approver.user.signatureUrl ?? null,
+        nip: approver.user.nip ?? null,
       };
     }
   }

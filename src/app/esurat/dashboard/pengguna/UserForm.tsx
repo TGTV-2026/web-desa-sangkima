@@ -60,6 +60,7 @@ export default function UserForm(props: Props) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState(initial?.role ?? "user");
+  const [nip, setNip] = useState(initial?.nip ?? "");
   const [positionId, setPositionId] = useState(initial?.positionId ?? "");
   const [religion, setReligion] = useState(initial?.religion ?? "");
   const [address, setAddress] = useState(initial?.address ?? "");
@@ -112,6 +113,8 @@ export default function UserForm(props: Props) {
     if (role) fd.append("role", role);
     if (!isWarga && positionId) fd.append("positionId", positionId);
     else fd.append("positionId", "null");
+    if (isStaff && nip) fd.append("nip", nip);
+    else fd.append("nip", "null");
     
     if (religion) fd.append("religion", religion); else fd.append("religion", "null");
     if (address) fd.append("address", address); else fd.append("address", "null");
@@ -233,6 +236,12 @@ export default function UserForm(props: Props) {
           placeholder={isWarga ? "— Warga tidak punya jabatan —" : "— Tanpa jabatan —"}
           options={props.positions.map((p) => ({ value: p.id, label: p.name }))}
         />
+        {isStaff && (
+          <FormField
+            id="nip" label="NIP (Nomor Induk Pegawai)" value={nip}
+            onChange={setNip} optionalHint
+          />
+        )}
         <FormField
           id="gender" label="Jenis Kelamin" type="select" value={gender}
           onChange={setGender} optionalHint placeholder="— Pilih —"
