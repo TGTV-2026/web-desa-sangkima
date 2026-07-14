@@ -45,8 +45,9 @@ export async function GET(req: Request, { params }: RouteContext) {
     const url = new URL(req.url);
     const appUrl = url.origin;
     const noSignature = url.searchParams.get("nosig") === "1";
+    const signatoryId = url.searchParams.get("signatoryId") ?? undefined;
     
-    const pdf = await letterRequestService.generatePdf(id, auth, appUrl, noSignature);
+    const pdf = await letterRequestService.generatePdf(id, auth, appUrl, noSignature, signatoryId);
 
     const filename = noSignature ? `surat-${id}-nosig.pdf` : `surat-${id}.pdf`;
 

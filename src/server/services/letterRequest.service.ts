@@ -381,11 +381,14 @@ export const letterRequestService = {
       changedBy: actor.id,
     });
 
-    // terbitkan PDF dengan tanda tangan. Versi tanpa tanda tangan
-    // sudah dibuat saat status DIPROSES.
+    // terbitkan PDF dengan tanda tangan.
     const approvedRow = await getRowOrThrow(id);
     const pdf = await renderPdf(approvedRow, appUrl);
     const pdfPath = await savePdf(id, pdf);
+
+    // Buat ulang versi tanpa tanda tangan (nosig) dengan nama & NIP approver
+    const pdfNoSig = await renderPdf(approvedRow, appUrl, false, true);
+    await savePdf(id, pdfNoSig, true);
 
     await letterRequestRepository.update(id, { pdfPath });
 
@@ -468,7 +471,8 @@ export const letterRequestService = {
     id: string,
     actor: AuthUser,
     appUrl: string,
-    noSignature?: boolean
+    noSignature?: boolean,
+    signatoryId?: string
   ): Promise<Uint8Array> {
     const row = await getRowOrThrow(id);
     if (actor.role === "user" && row.request.userId !== actor.id) {
@@ -480,6 +484,11 @@ export const letterRequestService = {
       !(row.request.status === "DIPROSES" && noSignature)
     ) {
       throw new AppError("Surat belum disetujui, PDF belum bisa diunduh");
+    }
+
+    if (signatoryId && noSignature) {
+      const customRow = { ...row, request: { ...row.request, approvedBy: signatoryId } };
+      return renderPdf(customRow, appUrl, false, true);
     }
 
     // surat normalnya sudah punya PDF tersimpan sejak di-approve (snapshot data
