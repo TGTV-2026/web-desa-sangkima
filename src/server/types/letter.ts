@@ -153,13 +153,17 @@ export interface SKLData {
 // Satu dokumen pendukung: label tampilan + apakah wajib diunggah.
 export type SupportingDoc = { label: string; required: boolean };
 
-// Daftar dokumen pendukung per jenis surat. Index dalam array = docIndex yang
-// disimpan di tiap LetterAttachment; urutan TIDAK boleh diubah-acak agar lampiran
-// lama tetap merujuk dokumen yang benar (tambah dokumen baru di akhir array).
-// ponytail: konstanta keyed by code, bukan kolom DB — requiredFields jenis surat pun
-// dikelola lewat seed (admin UI read-only), jadi kolom DB tak memberi kemampuan edit
-// tanpa form admin baru. Bentuk { label, required }[] sengaja identik dengan calon
-// kolom letter_types.supportingDocs → migrasi ke DB nanti tinggal pindah.
+export const supportingDocSchema = z.object({
+  label: z.string().min(1, "Label dokumen wajib diisi"),
+  required: z.boolean().default(true),
+});
+
+// Daftar dokumen pendukung per jenis surat — LEGACY FALLBACK. Sumber kebenaran
+// sekarang kolom letter_types.supportingDocs (dikelola admin lewat UI); konstanta
+// ini hanya dipakai untuk baris lama yang kolomnya masih NULL (lihat
+// getSupportingDocs). Index dalam array = docIndex yang disimpan di tiap
+// LetterAttachment; urutan TIDAK boleh diubah-acak agar lampiran lama tetap
+// merujuk dokumen yang benar (tambah dokumen baru di akhir array).
 export const SUPPORTING_DOCS: Record<string, SupportingDoc[]> = {
   SKU: [
     { label: "Fotokopi KTP pemohon", required: true },
@@ -221,6 +225,48 @@ export const SUPPORTING_DOCS: Record<string, SupportingDoc[]> = {
   ],
 };
 
+// Resolusi dokumen pendukung: kolom DB non-null (termasuk []) = otoritatif,
+// NULL = fallback konstanta lama. Seed TIDAK aman dijalankan ulang di produksi
+// (membuat akun demo), jadi fallback ini wajib untuk baris pra-migrasi.
+export function getSupportingDocs(code: string, raw: unknown): SupportingDoc[] {
+  const parsed = parseJsonColumn<unknown>(raw, null);
+  if (Array.isArray(parsed)) return parsed as SupportingDoc[];
+  return SUPPORTING_DOCS[code] ?? [];
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Kamus tag template .docx                                                  */
+/* -------------------------------------------------------------------------- */
+
+// Tag tetap yang selalu tersedia di template .docx apa pun jenis suratnya
+// (di luar ini: nama tiap requiredFields juga jadi tag). Dipakai validasi
+// upload template + panel Kamus Tag di UI admin.
+export const FIXED_LETTER_TAGS: { tag: string; label: string }[] = [
+  { tag: "nomor_surat", label: "Nomor surat (terbit saat diproses)" },
+  { tag: "tanggal_surat", label: "Tanggal surat, mis. 12 Juli 2026" },
+  { tag: "nama", label: "Nama lengkap pemohon" },
+  { tag: "nik", label: "NIK pemohon" },
+  { tag: "alamat", label: "Alamat pemohon (sesuai profil)" },
+  { tag: "tempat_lahir", label: "Tempat lahir pemohon" },
+  { tag: "tanggal_lahir", label: "Tanggal lahir pemohon" },
+  { tag: "tempat_tanggal_lahir", label: "Tempat, tanggal lahir (gabung)" },
+  { tag: "pekerjaan", label: "Pekerjaan pemohon" },
+  { tag: "agama", label: "Agama pemohon" },
+  { tag: "jenis_kelamin", label: "Jenis kelamin pemohon" },
+  { tag: "kewarganegaraan", label: "Kewarganegaraan pemohon" },
+  { tag: "status_pernikahan", label: "Status pernikahan pemohon" },
+  { tag: "pendidikan", label: "Pendidikan terakhir pemohon" },
+  { tag: "keperluan", label: "Keperluan pengajuan" },
+  { tag: "nama_penandatangan", label: "Nama penandatangan (Kades/Sekdes)" },
+  { tag: "jabatan_penandatangan", label: "Jabatan penandatangan" },
+  { tag: "nip_penandatangan", label: "NIP penandatangan (jika ada)" },
+  { tag: "is_sekdes", label: "Blok kondisi: hanya tampil bila ditandatangani Sekdes, mis. {#is_sekdes}a.n Kepala Desa{/is_sekdes}" },
+  { tag: "kop_kabupaten", label: "Kop: nama kabupaten" },
+  { tag: "kop_kecamatan", label: "Kop: nama kecamatan" },
+  { tag: "kop_desa", label: "Kop: nama desa" },
+  { tag: "alamat_kop", label: "Kop: alamat kantor desa" },
+];
+
 /* -------------------------------------------------------------------------- */
 /*  Definisi field tambahan per jenis surat                                   */
 /*  (mis. SKU butuh "nama usaha"). Disimpan di letter_types.requiredFields    */
@@ -228,7 +274,11 @@ export const SUPPORTING_DOCS: Record<string, SupportingDoc[]> = {
 /* -------------------------------------------------------------------------- */
 
 export const letterFieldDefSchema = z.object({
-  name: z.string().min(1), // key di object `data`, mis. "nama_usaha"
+  // key di object `data` sekaligus nama tag {snake_case} di template docx
+  name: z
+    .string()
+    .min(1, "Nama field wajib diisi")
+    .regex(/^[a-z0-9_]+$/, "Nama field hanya huruf kecil, angka, dan _"),
   label: z.string().min(1), // teks yang ditampilkan ke warga
   type: z
     .enum(["text", "number", "date", "time", "textarea", "select"])
@@ -332,11 +382,16 @@ const baseLetterTypeSchema = z.object({
   description: z.string().max(500).optional(),
   template: z.string().optional(), // isi surat dengan placeholder, mis. {{name}}
   requiredFields: z.array(letterFieldDefSchema),
+  // templateDocx sengaja TIDAK ada di sini — hanya route upload template yang boleh set
+  supportingDocs: z.array(supportingDocSchema).optional(),
+  requireManualNumber: z.boolean(),
   active: z.boolean(),
 });
 
 export const createLetterTypeSchema = baseLetterTypeSchema.extend({
   requiredFields: z.array(letterFieldDefSchema).default([]),
+  supportingDocs: z.array(supportingDocSchema).default([]),
+  requireManualNumber: z.boolean().default(true),
   active: z.boolean().default(true),
 });
 
@@ -371,7 +426,7 @@ export type TCreateLetterRequestInput = z.infer<
 // Operator menerima & mulai memproses (DIAJUKAN -> DIPROSES)
 export const processLetterRequestSchema = z.object({
   note: z.string().max(500).optional(),
-  sequence: z.string().regex(/^\d+$/, "Nomor urut hanya boleh berisi angka").min(1, "Nomor urut surat wajib diisi"),
+  sequence: z.string().trim().optional(),
 });
 
 // Kepala desa menyetujui (DIPROSES -> DISETUJUI). Nomor surat dibuat sistem.
@@ -414,7 +469,24 @@ export type LetterTypeDTO = {
   name: string;
   description: string | null;
   requiredFields: LetterFieldDef[];
+  supportingDocs: SupportingDoc[]; // sudah ter-resolve (kolom DB atau fallback konstanta)
+  hasDocxTemplate: boolean;
+  requireManualNumber: boolean;
   active: boolean;
+};
+
+// Versi lengkap untuk form admin (template teks + nama file docx aktif)
+export type LetterTypeAdminDTO = LetterTypeDTO & {
+  template: string | null;
+  templateDocx: string | null;
+  templateReport: TemplateReport | null;
+};
+
+// Laporan hasil validasi template .docx yang diunggah admin
+export type TemplateReport = {
+  tags: string[];
+  hasQr: boolean;
+  hasTtd: boolean;
 };
 
 // Ringkasan pemohon (diambil dari profil user) untuk ditampilkan ke petugas
@@ -434,7 +506,10 @@ export type LetterRequestDTO = {
   rejectionReason: string | null;
   verificationCode: string | null;
   requester: RequesterDTO;
-  letterType: Pick<LetterTypeDTO, "id" | "code" | "name" | "requiredFields">;
+  letterType: Pick<
+    LetterTypeDTO,
+    "id" | "code" | "name" | "requiredFields" | "supportingDocs" | "requireManualNumber"
+  >;
   createdAt: string; // ISO string
   approvedAt: string | null;
 };

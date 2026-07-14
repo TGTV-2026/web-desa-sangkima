@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/useToast";
 import FormField from "@/components/esurat/FormField";
 import DocumentUploadField from "@/components/esurat/DocumentUploadField";
 import DynamicLetterFields from "@/components/esurat/DynamicLetterFields";
-import { SUPPORTING_DOCS, type LetterTypeDTO } from "@/server/types/letter";
+import type { LetterTypeDTO } from "@/server/types/letter";
 import { isProfileComplete } from "@/server/types/user";
 import UserPicker, { type PickedUser } from "./UserPicker";
 
@@ -16,7 +16,7 @@ export default function TambahPengajuanForm({ type }: { type: LetterTypeDTO }) {
   const { toast } = useToast();
   const { busy: submitting, submit } = useSubmitAction();
 
-  const docs = SUPPORTING_DOCS[type.code] ?? [];
+  const docs = type.supportingDocs;
 
   const [requester, setRequester] = useState<PickedUser | null>(null);
   const [purpose, setPurpose] = useState("");

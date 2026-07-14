@@ -29,12 +29,12 @@ const MONTHS_ID = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
 
-function formatTanggalID(date: Date) {
+export function formatTanggalID(date: Date) {
   return `${date.getDate()} ${MONTHS_ID[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 // Isi template surat: {{key}} dan blok kondisional {{#key}}...{{/key}}
-function renderTemplate(tpl: string, vars: Record<string, string | number | null | undefined>) {
+function renderTemplate(tpl: string, vars: Record<string, string | number | boolean | null | undefined>) {
   let out = tpl.replace(/\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_, k, inner) =>
     vars[k] ? inner : "",
   );
@@ -87,6 +87,11 @@ export type LetterPdfInput = {
     placeOfBirth: string | null;
     birthday: Date | string | null;
     job: string | null;
+    religion: string | null;
+    gender: string | null;
+    citizenship: string | null;
+    status: string | null;
+    education: string | null;
   };
   purpose: string;
   data: Record<string, string | number | null> | null;
@@ -98,10 +103,83 @@ export type LetterPdfInput = {
     name: string;
     positionCategory: string;
     signatureUrl?: string | null;
+    nip?: string | null;
   } | null;
   // Jika true, tanda tangan berupa gambar tidak dirender (untuk cetak basah)
   noSignature?: boolean;
 };
+
+// Kumpulan variabel yang bisa dipakai template (teks lama maupun .docx).
+// Kunci Inggris dipertahankan untuk kompat 8 template teks seed lama;
+// kunci Indonesia = vokabular tag .docx (lihat FIXED_LETTER_TAGS di types/letter.ts).
+export function buildLetterVars(
+  input: LetterPdfInput,
+): Record<string, string | number | boolean | null | undefined> {
+  const birthday =
+    input.requester.birthday instanceof Date
+      ? formatTanggalID(input.requester.birthday)
+      : input.requester.birthday
+        ? formatTanggalID(new Date(input.requester.birthday))
+        : null;
+  const isSekdes = input.signatory?.positionCategory === "Sekretaris Desa";
+  return {
+    // kunci lama (template teks {{...}})
+    name: input.requester.name,
+    nik: input.requester.nik,
+    address: input.requester.address,
+    placeOfBirth: input.requester.placeOfBirth,
+    job: input.requester.job,
+    purpose: input.purpose,
+    // vokabular tag .docx
+    nomor_surat: input.draft ? "(belum diterbitkan)" : input.letterNumber,
+    tanggal_surat: formatTanggalID(input.approvedAt),
+    nama: input.requester.name,
+    alamat: input.requester.address,
+    tempat_lahir: input.requester.placeOfBirth,
+    tanggal_lahir: birthday,
+    tempat_tanggal_lahir:
+      input.requester.placeOfBirth || birthday
+        ? `${input.requester.placeOfBirth ?? "..."}, ${birthday ?? "..."}`
+        : null,
+    pekerjaan: input.requester.job,
+    agama: input.requester.religion,
+    jenis_kelamin: input.requester.gender === "L" ? "Laki-laki" : input.requester.gender === "P" ? "Perempuan" : input.requester.gender,
+    kewarganegaraan: input.requester.citizenship === "wni" ? "WNI" : input.requester.citizenship === "wna" ? "WNA" : input.requester.citizenship,
+    status_pernikahan: input.requester.status,
+    pendidikan: input.requester.education,
+    keperluan: input.purpose,
+    nama_penandatangan:
+      input.signatory?.name ?? "............................",
+    jabatan_penandatangan: isSekdes ? "Sekretaris Desa" : "Kepala Desa Sangkima",
+    nip_penandatangan: input.signatory?.nip ?? "",
+    is_sekdes: isSekdes,
+    ...(input.data ?? {}),
+  };
+}
+
+// Stempel watermark PRATINJAU di atas PDF hasil konversi .docx (jalur legacy
+// menggambar watermark-nya sendiri di generateLetterPdf).
+export async function stampDraftWatermark(pdf: Uint8Array): Promise<Uint8Array> {
+  const doc = await PDFDocument.load(pdf);
+  const bold = await doc.embedFont(StandardFonts.TimesRomanBold);
+  const wm = "PRATINJAU";
+  const wmSize = 80;
+  const wmWidth = bold.widthOfTextAtSize(wm, wmSize);
+  for (const page of doc.getPages()) {
+    const { width, height } = page.getSize();
+    // opacity rendah karena digambar DI ATAS konten, bukan di belakang
+    page.drawText(wm, {
+      x: (width - wmWidth) / 2,
+      y: height / 2,
+      size: wmSize,
+      font: bold,
+      color: rgb(0.7, 0.7, 0.7),
+      rotate: degrees(45),
+      opacity: 0.25,
+    });
+  }
+  return doc.save();
+}
 
 export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Array> {
   // Kop & tanda tangan bisa diatur lewat CMS (fallback ke default bila belum diisi).
@@ -158,15 +236,7 @@ export async function generateLetterPdf(input: LetterPdfInput): Promise<Uint8Arr
   y -= 30;
 
   // === ISI ===
-  const vars = {
-    name: input.requester.name,
-    nik: input.requester.nik,
-    address: input.requester.address,
-    placeOfBirth: input.requester.placeOfBirth,
-    job: input.requester.job,
-    purpose: input.purpose,
-    ...(input.data ?? {}),
-  };
+  const vars = buildLetterVars(input);
   const intro =
     "Yang bertanda tangan di bawah ini Kepala Desa Sangkima, Kecamatan Sangatta Selatan, Kabupaten Kutai Timur, dengan ini menerangkan bahwa:";
   y = drawWrapped(page, intro, { x: margin, y, size: 11, font: normal, maxWidth: width - margin * 2, lineHeight: 16 });

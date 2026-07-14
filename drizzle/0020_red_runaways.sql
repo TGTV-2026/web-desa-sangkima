@@ -1,0 +1,1 @@
+ALTER TABLE `letter_types` ADD `template_report` json;

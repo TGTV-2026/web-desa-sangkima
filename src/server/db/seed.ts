@@ -2,14 +2,15 @@ import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { db, pool } from "./index";
 import { letterTypes, positions, users } from "./schema";
-import type { TCreateLetterTypeInput } from "../types/letter";
+import { SUPPORTING_DOCS, type TCreateLetterTypeInput } from "../types/letter";
 import { hashPassword } from "../utils/hash";
 
 // 8 jenis surat Desa Sangkima sesuai skemaSurat.md.
 // requiredFields = field tambahan per jenis surat (jawaban disimpan di letter_requests.data).
 // Field identitas pemohon (nama/nik/alamat) auto-fill dari profil, tidak didefinisikan di sini.
+// supportingDocs diinjeksi dari konstanta SUPPORTING_DOCS saat seed (satu sumber, tanpa duplikasi).
 // Jalankan dengan: npx tsx src/server/db/seed.ts
-const SEED_LETTER_TYPES: TCreateLetterTypeInput[] = [
+const SEED_LETTER_TYPES: Omit<TCreateLetterTypeInput, "supportingDocs">[] = [
   {
     code: "SKU",
     name: "Surat Keterangan Usaha",
@@ -40,7 +41,8 @@ const SEED_LETTER_TYPES: TCreateLetterTypeInput[] = [
         options: ["Pengajuan kredit/KUR", "Perizinan usaha", "BPJS Ketenagakerjaan", "Lainnya"],
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKD",
@@ -71,7 +73,8 @@ const SEED_LETTER_TYPES: TCreateLetterTypeInput[] = [
         options: ["Pindah sekolah", "Keperluan bank", "Daftar kuliah", "Instansi pemerintah", "Lainnya"],
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKBM",
@@ -95,7 +98,8 @@ const SEED_LETTER_TYPES: TCreateLetterTypeInput[] = [
         placeholder: "Isi jika ada keterangan khusus yang perlu dicantumkan",
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKTM",
@@ -133,7 +137,8 @@ const SEED_LETTER_TYPES: TCreateLetterTypeInput[] = [
         options: ["Beasiswa", "BPJS gratis", "Bantuan sosial", "Keringanan biaya RS", "Lainnya"],
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SPN",
@@ -166,7 +171,8 @@ const SEED_LETTER_TYPES: TCreateLetterTypeInput[] = [
         placeholder: "Pernikahan ke-",
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKH",
@@ -212,7 +218,8 @@ const SEED_LETTER_TYPES: TCreateLetterTypeInput[] = [
         options: ["Laporan polisi", "Penggantian dokumen", "Lainnya"],
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKM",
@@ -261,7 +268,8 @@ const SEED_LETTER_TYPES: TCreateLetterTypeInput[] = [
         options: ["Pengurusan warisan", "Klaim asuransi", "Administrasi bank", "Pensiun", "Lainnya"],
       },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
   {
     code: "SKL",
@@ -324,7 +332,8 @@ const SEED_LETTER_TYPES: TCreateLetterTypeInput[] = [
       { name: "nama_ibu", label: "Nama Ibu", type: "text", required: true },
       { name: "nik_ibu", label: "NIK Ibu", type: "text", required: true },
     ],
-    active: true,
+    requireManualNumber: true,
+      active: true,
   },
 ];
 
@@ -354,13 +363,15 @@ const slugEmail = (name: string) =>
 async function seedLetterTypes() {
   console.log("🌱 Menyemai jenis surat...");
   for (const item of SEED_LETTER_TYPES) {
+    const supportingDocs = SUPPORTING_DOCS[item.code] ?? [];
     const existing = await db
       .select()
       .from(letterTypes)
       .where(eq(letterTypes.code, item.code))
       .limit(1);
 
-    // upsert: perbarui requiredFields/template bila kode sudah ada (skema bisa berubah)
+    // upsert: perbarui requiredFields/template bila kode sudah ada (skema bisa berubah).
+    // templateDocx sengaja TIDAK di-set — re-seed tak boleh melepas template terunggah.
     if (existing[0]) {
       await db
         .update(letterTypes)
@@ -369,6 +380,7 @@ async function seedLetterTypes() {
           description: item.description,
           template: item.template,
           requiredFields: item.requiredFields,
+          supportingDocs,
           active: item.active,
         })
         .where(eq(letterTypes.code, item.code));
@@ -376,7 +388,7 @@ async function seedLetterTypes() {
       continue;
     }
 
-    await db.insert(letterTypes).values(item);
+    await db.insert(letterTypes).values({ ...item, supportingDocs });
     console.log(`✅ ${item.code} — ${item.name}`);
   }
 }
@@ -471,13 +483,14 @@ async function seedUsers(positionByName: Map<string, string>) {
       // warga biasa tidak terikat jabatan
       job: u.role === "user" ? "Wiraswasta" : baseProfile.job,
       positionId: u.positionName ? positionByName.get(u.positionName) : undefined,
+      nip: u.role === "staff" ? `198001012010011${String(nik).slice(-3)}` : undefined,
     });
     console.log(`✅ ${u.role.padEnd(5)} — ${u.email}`);
   }
 }
 
 async function seed() {
-  await seedLetterTypes();
+  // await seedLetterTypes();
   const positionByName = await seedPositions();
   await seedUsers(positionByName);
   console.log("Selesai.");
@@ -488,3 +501,4 @@ seed().catch((err) => {
   console.error("❌ Gagal seed:", err);
   process.exit(1);
 });
+

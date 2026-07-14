@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import PreviewModal from "@/components/esurat/PreviewModal";
-import { SUPPORTING_DOCS, type LetterAttachmentDTO } from "@/server/types/letter";
+import type { LetterAttachmentDTO, SupportingDoc } from "@/server/types/letter";
 
 function formatSize(bytes: number) {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -13,13 +13,12 @@ function formatSize(bytes: number) {
 export default function LampiranList({
   requestId,
   attachments,
-  letterTypeCode,
+  docs,
 }: {
   requestId: string;
   attachments: LetterAttachmentDTO[];
-  letterTypeCode: string;
+  docs: SupportingDoc[];
 }) {
-  const docs = SUPPORTING_DOCS[letterTypeCode] ?? [];
   // nama dokumen sesuai slotnya; fallback untuk lampiran lama tanpa docIndex
   const docLabel = (a: LetterAttachmentDTO, i: number) =>
     (a.docIndex != null && docs[a.docIndex]?.label) || `Lampiran ${i + 1}`;

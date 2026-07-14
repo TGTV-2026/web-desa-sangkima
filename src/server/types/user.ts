@@ -15,6 +15,7 @@ export const createUserByAdminSchema = z
       .regex(/^\d+$/, "NIK hanya boleh berisi angka"),
     password: z.string().min(8, "Password minimal 8 karakter"),
     role: z.enum(["user", "staff", "admin"]).default("user"),
+    nip: z.string().optional().nullable(),
     positionId: z.string().optional().nullable(),
     religion: z.enum(religions).optional().nullable(),
     address: z.string().optional().nullable(),
@@ -48,6 +49,7 @@ export const updateUserSchema = z
       .optional(),
     password: z.string().min(8, "Password minimal 8 karakter").optional(),
     role: z.enum(["user", "staff", "admin"]).optional(),
+    nip: z.string().optional().nullable(),
     positionId: z.string().optional().nullable(),
     religion: z.enum(religions).optional().nullable(),
     address: z.string().optional().nullable(),
@@ -106,6 +108,7 @@ export type UserDTO = {
   email: string;
   nik: string;
   role: "user" | "staff" | "admin";
+  nip: string | null;
   positionId: string | null;
   positionName: string | null;
   religion: string | null;

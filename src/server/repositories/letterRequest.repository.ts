@@ -16,6 +16,8 @@ const detailSelect = {
   typeCode: letterTypes.code,
   typeName: letterTypes.name,
   typeRequiredFields: letterTypes.requiredFields,
+  typeSupportingDocs: letterTypes.supportingDocs,
+  typeRequireManualNumber: letterTypes.requireManualNumber,
 };
 
 function joinedQuery() {
@@ -64,6 +66,16 @@ export const letterRequestRepository = {
   async findByVerificationCode(code: string) {
     const rows = await joinedQuery()
       .where(eq(letterRequests.verificationCode, code))
+      .limit(1);
+    return rows[0];
+  },
+
+  // Cek apakah nomor surat sudah dipakai (kolom letter_number unik)
+  async findByLetterNumber(letterNumber: string) {
+    const rows = await db
+      .select({ id: letterRequests.id })
+      .from(letterRequests)
+      .where(eq(letterRequests.letterNumber, letterNumber))
       .limit(1);
     return rows[0];
   },
@@ -127,6 +139,16 @@ export const letterRequestRepository = {
       .leftJoin(users, eq(letterRequestLogs.changedBy, users.id))
       .where(eq(letterRequestLogs.requestId, requestId))
       .orderBy(asc(letterRequestLogs.createdAt));
+  },
+
+  // Hitung SEMUA permohonan (termasuk yang soft-deleted) yang mereferensikan
+  // jenis surat ini — dipakai untuk menentukan hapus permanen vs soft delete.
+  async countByLetterType(letterTypeId: string) {
+    const rows = await db
+      .select({ total: count() })
+      .from(letterRequests)
+      .where(eq(letterRequests.letterTypeId, letterTypeId));
+    return rows[0]?.total ?? 0;
   },
 
   // Cek apakah warga masih punya pengajuan jenis surat ini yang belum kelar (belum disetujui/ditolak)

@@ -20,6 +20,7 @@ function toDTO(row: UserRow): UserDTO {
     email: row.user.email,
     nik: row.user.nik,
     role: row.user.role as UserDTO["role"],
+    nip: row.user.nip ?? null,
     positionId: row.user.positionId ?? null,
     positionName: row.positionName ?? null,
     religion: row.user.religion ?? null,
