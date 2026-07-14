@@ -324,6 +324,17 @@ export const letterRequestService = {
     if (type?.requireManualNumber && sequence) {
       letterNumber = sequence;
     }
+
+    // Tolak nomor duplikat dengan pesan jelas sebelum kena unique constraint DB.
+    // ponytail: pre-check + unique index DB sebagai jaring pengaman; race dua
+    // verifikator bersamaan sangat jarang di alur satu-operator ini.
+    if (letterNumber) {
+      const existing = await letterRequestRepository.findByLetterNumber(letterNumber);
+      if (existing) {
+        throw new AppError("Nomor surat sudah digunakan, masukkan nomor lain", { field: "sequence" });
+      }
+    }
+
     const verificationCode = createId();
 
     await letterRequestRepository.update(id, {

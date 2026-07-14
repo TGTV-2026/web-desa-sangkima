@@ -426,7 +426,7 @@ export type TCreateLetterRequestInput = z.infer<
 // Operator menerima & mulai memproses (DIAJUKAN -> DIPROSES)
 export const processLetterRequestSchema = z.object({
   note: z.string().max(500).optional(),
-  sequence: z.string().min(1, "Nomor surat wajib diisi").optional(),
+  sequence: z.string().trim().optional(),
 });
 
 // Kepala desa menyetujui (DIPROSES -> DISETUJUI). Nomor surat dibuat sistem.

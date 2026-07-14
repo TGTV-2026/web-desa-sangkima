@@ -70,6 +70,16 @@ export const letterRequestRepository = {
     return rows[0];
   },
 
+  // Cek apakah nomor surat sudah dipakai (kolom letter_number unik)
+  async findByLetterNumber(letterNumber: string) {
+    const rows = await db
+      .select({ id: letterRequests.id })
+      .from(letterRequests)
+      .where(eq(letterRequests.letterNumber, letterNumber))
+      .limit(1);
+    return rows[0];
+  },
+
   async findByUser(userId: string, status?: LetterStatus) {
     const conditions = [eq(letterRequests.userId, userId)];
     if (status) conditions.push(eq(letterRequests.status, status));
