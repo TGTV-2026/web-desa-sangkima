@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "a7a50034-4bc1-4367-9579-a7b4d9d48875",
-  "prevId": "898ffb2d-59b2-4769-9a0f-7548939e561b",
+  "id": "ed21761a-0c1b-4ce2-abab-3bde57de7123",
+  "prevId": "a7a50034-4bc1-4367-9579-a7b4d9d48875",
   "tables": {
     "activity_logs": {
       "name": "activity_logs",
@@ -969,13 +969,13 @@
           "notNull": false,
           "autoincrement": false
         },
-        "require_letter_number": {
-          "name": "require_letter_number",
+        "require_manual_number": {
+          "name": "require_manual_number",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": false
+          "default": true
         },
         "active": {
           "name": "active",
@@ -1001,6 +1001,13 @@
           "autoincrement": false,
           "onUpdate": true,
           "default": "(now())"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "datetime",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -1893,7 +1900,9 @@
   "_meta": {
     "schemas": {},
     "tables": {},
-    "columns": {}
+    "columns": {
+      "\"letter_types\".\"require_letter_number\"": "\"letter_types\".\"require_manual_number\""
+    }
   },
   "internal": {
     "tables": {},

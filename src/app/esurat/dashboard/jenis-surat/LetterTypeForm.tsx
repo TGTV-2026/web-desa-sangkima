@@ -90,8 +90,11 @@ export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminD
       options: f.type === "select" ? f.options?.filter(Boolean) : undefined,
     }));
 
-    // Jenis surat TIDAK dibuat bila template masih punya tag tak dikenal.
-    if (!isEdit && stagedTemplate) {
+    if (!isEdit) {
+      if (!stagedTemplate) {
+        toast("Template DOCX wajib diunggah.", "Peringatan", "error", 4000);
+        return;
+      }
       const ok = await validateStagedTemplate(stagedTemplate, requiredFields);
       if (!ok) return;
     }

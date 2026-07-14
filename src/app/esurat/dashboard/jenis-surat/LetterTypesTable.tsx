@@ -1,6 +1,7 @@
 import Link from "next/link";
 import DataTable, { type DataTableColumn } from "@/components/esurat/DataTable";
 import ToggleActiveButton from "./ToggleActiveButton";
+import DeleteLetterTypeButton from "./DeleteLetterTypeButton";
 import type { LetterTypeDTO } from "@/server/types/letter";
 
 export interface LetterTypesTableProps {
@@ -69,6 +70,7 @@ const columns: DataTableColumn<LetterTypeDTO>[] = [
           Ubah
         </Link>
         <ToggleActiveButton id={t.id} active={t.active} name={t.name} />
+        <DeleteLetterTypeButton id={t.id} name={t.name} />
       </span>
     ),
   },

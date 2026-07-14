@@ -131,6 +131,16 @@ export const letterRequestRepository = {
       .orderBy(asc(letterRequestLogs.createdAt));
   },
 
+  // Hitung SEMUA permohonan (termasuk yang soft-deleted) yang mereferensikan
+  // jenis surat ini — dipakai untuk menentukan hapus permanen vs soft delete.
+  async countByLetterType(letterTypeId: string) {
+    const rows = await db
+      .select({ total: count() })
+      .from(letterRequests)
+      .where(eq(letterRequests.letterTypeId, letterTypeId));
+    return rows[0]?.total ?? 0;
+  },
+
   // Cek apakah warga masih punya pengajuan jenis surat ini yang belum kelar (belum disetujui/ditolak)
   async hasPending(userId: string, letterTypeId: string) {
     const rows = await db

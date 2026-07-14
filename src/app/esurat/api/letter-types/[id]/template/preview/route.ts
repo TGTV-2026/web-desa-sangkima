@@ -23,6 +23,7 @@ import { pesanAman } from "@/server/utils/appError";
  */
 
 import { NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
 import { letterTypeService } from "@/server/services/letterType.service";
 import {
   requireRole,

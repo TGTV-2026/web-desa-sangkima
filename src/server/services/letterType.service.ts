@@ -1,5 +1,6 @@
 import { AppError } from "../utils/appError";
 import { letterTypeRepository } from "../repositories/letterType.repository";
+import { letterRequestRepository } from "../repositories/letterRequest.repository";
 import { docxTemplateService } from "./docxTemplate.service";
 import {
   createLetterTypeSchema,
@@ -39,14 +40,14 @@ export const letterTypeService = {
 
   async getById(id: string): Promise<LetterTypeDTO> {
     const row = await letterTypeRepository.findById(id);
-    if (!row) throw new AppError("Jenis surat tidak ditemukan");
+    if (!row || row.deletedAt) throw new AppError("Jenis surat tidak ditemukan");
     return toDTO(row);
   },
 
   // Versi form admin: menyertakan template teks & nama file docx aktif
   async getByIdForAdmin(id: string): Promise<LetterTypeAdminDTO> {
     const row = await letterTypeRepository.findById(id);
-    if (!row) throw new AppError("Jenis surat tidak ditemukan");
+    if (!row || row.deletedAt) throw new AppError("Jenis surat tidak ditemukan");
     return {
       ...toDTO(row),
       template: row.template ?? null,
@@ -171,5 +172,23 @@ export const letterTypeService = {
       }),
       { keepPlaceholders: true },
     );
+  },
+
+  // Hapus cerdas: belum pernah dipakai permohonan → hapus permanen (baris + file
+  // template, kode bebas lagi); sudah dipakai → soft delete (FK NOT NULL melarang
+  // hapus permanen; permohonan lama tetap resolve lewat join). Selalu aman.
+  async remove(id: string): Promise<{ mode: "hard" | "soft" }> {
+    const row = await letterTypeRepository.findById(id);
+    if (!row || row.deletedAt) throw new AppError("Jenis surat tidak ditemukan");
+
+    const refs = await letterRequestRepository.countByLetterType(id);
+    if (refs > 0) {
+      await letterTypeRepository.softDelete(id);
+      return { mode: "soft" };
+    }
+
+    if (row.templateDocx) await docxTemplateService.deleteTemplateFile(row.templateDocx);
+    await letterTypeRepository.hardDelete(id);
+    return { mode: "hard" };
   },
 };

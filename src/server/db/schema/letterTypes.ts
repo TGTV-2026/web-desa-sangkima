@@ -1,6 +1,7 @@
 import { createId } from "@paralleldrive/cuid2";
 import {
   boolean,
+  datetime,
   json,
   mysqlTable,
   text,
@@ -33,4 +34,7 @@ export const letterTypes = mysqlTable("letter_types", {
   active: boolean().notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow(),
+  // soft delete: disembunyikan dari daftar & formulir, tapi baris tetap ada agar
+  // permohonan lama (FK NOT NULL) tetap resolve lewat join
+  deletedAt: datetime("deleted_at"),
 });

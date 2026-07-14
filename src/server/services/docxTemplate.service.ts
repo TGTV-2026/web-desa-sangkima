@@ -151,6 +151,16 @@ export const docxTemplateService = {
     return fileName;
   },
 
+  // Hapus berkas fisik template (dipakai saat jenis surat dihapus permanen).
+  // basename = pengaman path traversal; abaikan bila berkas sudah tak ada.
+  async deleteTemplateFile(fileName: string): Promise<void> {
+    try {
+      await fs.promises.unlink(path.join(TEMPLATE_DIR, path.basename(fileName)));
+    } catch {
+      // ENOENT dsb. — berkas sudah hilang, tak masalah
+    }
+  },
+
   async readTemplateFile(fileName: string): Promise<Buffer> {
     try {
       // basename = pengaman path traversal (nama file datang dari kolom DB)
@@ -281,7 +291,7 @@ export const docxTemplateService = {
         placeOfBirth: "Sangatta",
         birthday: "1990-01-01",
         job: "Wiraswasta",
-        religion: "islam",
+        religion: "Islam",
         gender: "L",
         citizenship: "wni",
         status: "Menikah",

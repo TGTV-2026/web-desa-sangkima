@@ -50,25 +50,11 @@ import { pesanAman } from "@/server/utils/appError";
  *         description: File .docx
  *       404:
  *         description: Belum ada template
- *   delete:
- *     tags:
- *       - E-Surat - Jenis Surat
- *     summary: "🗑️ Lepas template DOCX (admin)"
- *     description: Jenis surat kembali memakai render bawaan; file lama tetap diarsip di server.
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Template dilepas
+
  */
 
 import { NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
 import { letterTypeService } from "@/server/services/letterType.service";
 import { docxTemplateService } from "@/server/services/docxTemplate.service";
 import { AppError } from "@/server/utils/appError";
@@ -148,27 +134,3 @@ export async function GET(req: Request, { params }: RouteContext) {
   }
 }
 
-export async function DELETE(req: Request, { params }: RouteContext) {
-  try {
-    await requireRole(req, ["admin"]);
-
-    const { id } = await params;
-    await letterTypeService.removeTemplate(id);
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Template dilepas — jenis surat memakai render bawaan",
-      },
-      { status: 200 },
-    );
-  } catch (error) {
-    if (isACLError(error)) return handleACLError(error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: pesanAman(error, "Gagal melepas template"),
-      },
-      { status: 400 },
-    );
-  }
-}

@@ -156,22 +156,7 @@ export default function TemplateUploadSection({
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const detach = async () => {
-    if (!confirm("Lepas template DOCX? Jenis surat kembali memakai render bawaan sistem.")) return;
-    await submit(
-      () => fetch(`/esurat/api/letter-types/${id}/template`, { method: "DELETE" }),
-      {
-        successMessage: "Template dilepas — kembali ke render bawaan.",
-        successTitle: "Tersimpan",
-        errorFallback: "Gagal melepas template",
-        onSuccess: () => {
-          setReport(null);
-          setError(null);
-          router.refresh();
-        },
-      },
-    ).catch(() => {});
-  };
+
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -202,7 +187,7 @@ export default function TemplateUploadSection({
           <p className="font-mono text-[11px] text-inkmut mt-0.5 break-all">{templateDocx}</p>
           <span className="mt-2 flex flex-wrap gap-2">
             <a
-              href={`/esurat/api/letter-types/${id}/template/preview`}
+              href={`/esurat/api/letter-types/${id}/template/preview?t=${Date.now()}`}
               target="_blank"
               rel="noreferrer"
               className="btn-outline !px-3 !py-1.5 text-xs"
@@ -216,14 +201,7 @@ export default function TemplateUploadSection({
             >
               Unduh
             </a>
-            <button
-              type="button"
-              onClick={detach}
-              disabled={busy}
-              className="btn-danger !px-3 !py-1.5 text-xs disabled:opacity-60"
-            >
-              Lepas
-            </button>
+
           </span>
         </div>
       )}
@@ -249,7 +227,7 @@ export default function TemplateUploadSection({
       ) : (
         <>
           {!templateDocx && (
-            <p className="label-doc">{id ? "Unggah template" : "Template (opsional)"}</p>
+            <p className="label-doc">{id ? "Unggah template" : "Template DOCX (wajib)"}</p>
           )}
           <input
             ref={fileRef}

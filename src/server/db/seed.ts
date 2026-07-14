@@ -489,7 +489,7 @@ async function seedUsers(positionByName: Map<string, string>) {
 }
 
 async function seed() {
-  await seedLetterTypes();
+  // await seedLetterTypes();
   const positionByName = await seedPositions();
   await seedUsers(positionByName);
   console.log("Selesai.");

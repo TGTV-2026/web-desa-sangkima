@@ -196,7 +196,7 @@ export const letterRequestService = {
     }
 
     const type = await letterTypeRepository.findById(data.letterTypeId);
-    if (!type) throw new AppError("Jenis surat tidak ditemukan");
+    if (!type || type.deletedAt) throw new AppError("Jenis surat tidak ditemukan");
     if (!type.active) throw new AppError("Jenis surat sedang tidak aktif");
 
     // tidak boleh ada 2 pengajuan jenis surat sama yang masih berjalan (DIAJUKAN/DIPROSES) sekaligus
