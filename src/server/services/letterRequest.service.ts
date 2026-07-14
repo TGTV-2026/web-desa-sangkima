@@ -356,6 +356,12 @@ export const letterRequestService = {
     appUrl: string,
   ): Promise<LetterRequestDTO> {
     requirePosition(actor, APPROVER_CATEGORIES, "menyetujui surat");
+    
+    const approverUser = await userRepository.findById(actor.id);
+    if (!approverUser?.signatureUrl) {
+      throw new AppError("Anda harus mengunggah scan tanda tangan (QR/digital) pada halaman Profil sebelum dapat menyetujui surat.");
+    }
+
     const { note } = approveLetterRequestSchema.parse(input ?? {});
     const row = await getRowOrThrow(id);
     if (row.request.status !== "DIPROSES") {
