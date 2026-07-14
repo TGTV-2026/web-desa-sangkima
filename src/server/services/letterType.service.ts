@@ -1,11 +1,12 @@
 import { AppError } from "../utils/appError";
 import { letterTypeRepository } from "../repositories/letterType.repository";
-import { allowedTags, docxTemplateService } from "./docxTemplate.service";
+import { docxTemplateService } from "./docxTemplate.service";
 import {
   createLetterTypeSchema,
   updateLetterTypeSchema,
   normalizeRequiredFields,
   getSupportingDocs,
+  type LetterFieldDef,
   type LetterTypeAdminDTO,
   type LetterTypeDTO,
   type TemplateReport,
@@ -108,31 +109,41 @@ export const letterTypeService = {
     return { ...toDTO(updated), ...(templateWarnings ? { templateWarnings } : {}) };
   },
 
-  // Unggah template .docx: validasi tag → smoke render dummy → simpan file → set kolom.
-  // Tag tak dikenal DITOLAK di sini (kalau lolos, surat asli mencetak "...").
+  // Validasi TAG saja (tanpa LibreOffice): compile docx + tag dikenal. Dipakai
+  // sebagai gate sebelum jenis surat dibuat — tag terpenuhi = boleh dibuat.
+  validateTemplateTags(buffer: Buffer, fields: LetterFieldDef[]): TemplateReport {
+    const full = docxTemplateService.validateTemplate(buffer, fields);
+    if (full.unknownTags.length) {
+      // pesan ringkas; klien merender jadi chip: tag bermasalah + tag template yang
+      // sudah aman, plus status placeholder QR/TTD (sudah terdeteksi walau tag salah).
+      throw new AppError("Ada tag yang tidak dikenal di template.", {
+        code: "TEMPLATE_TAGS",
+        detail: {
+          unknownTags: full.unknownTags,
+          knownTags: full.tags.filter((t) => !full.unknownTags.includes(t)),
+          hasQr: full.hasQr,
+          hasTtd: full.hasTtd,
+        },
+      });
+    }
+    return { tags: full.tags, hasQr: full.hasQr, hasTtd: full.hasTtd };
+  },
+
+  // Unggah template .docx: validasi tag → smoke render (LibreOffice) → simpan & set kolom.
   async uploadTemplate(id: string, buffer: Buffer): Promise<TemplateReport> {
     const row = await letterTypeRepository.findById(id);
     if (!row) throw new AppError("Jenis surat tidak ditemukan");
 
     const fields = normalizeRequiredFields(row.requiredFields);
-    const report = docxTemplateService.validateTemplate(buffer, fields);
-    if (report.unknownTags.length) {
-      throw new AppError(
-        `Tag tidak dikenal di template: ${report.unknownTags.map((t) => `{${t}}`).join(", ")}. ` +
-          `Tag yang tersedia: ${allowedTags(fields)
-            .map((t) => `{${t}}`)
-            .join(", ")}`,
-      );
-    }
-
-    const fileName = await docxTemplateService.saveTemplateFile(id, buffer);
-    // smoke test: render data dummy sampai PDF — menangkap docx rusak atau
-    // LibreOffice hilang SEKARANG, bukan nanti saat kepala desa menyetujui surat
-    await docxTemplateService.renderLetterPdfFromDocx(
-      fileName,
+    const report = this.validateTemplateTags(buffer, fields);
+    // smoke test dari buffer — menangkap docx rusak / LibreOffice hilang SEKARANG,
+    // bukan nanti saat kepala desa menyetujui surat.
+    await docxTemplateService.renderLetterPdfFromBuffer(
+      buffer,
       docxTemplateService.buildDummyInput({ name: row.name, requiredFields: fields }),
     );
 
+    const fileName = await docxTemplateService.saveTemplateFile(id, buffer);
     await letterTypeRepository.setTemplateDocx(id, fileName);
     return report;
   },

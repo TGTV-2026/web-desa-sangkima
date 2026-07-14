@@ -13,7 +13,7 @@ export default async function TambahJenisSuratPage() {
       <PageHeader
         overline="Pengaturan Layanan"
         title="Tambah Jenis Surat"
-        description="Setelah jenis surat tersimpan, template DOCX bisa diunggah dari halaman ubah."
+        description="Lengkapi data jenis surat. Template DOCX (opsional) bisa langsung diunggah di panel kanan — divalidasi otomatis begitu jenis surat tersimpan."
         descriptionClassName="max-w-xl"
       />
       <LetterTypeForm />

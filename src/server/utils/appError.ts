@@ -18,16 +18,24 @@ export class AppError extends Error {
   readonly code?: string;
   /** Konteks tambahan yang menyertai `code`. */
   readonly userId?: string;
+  /** Petunjuk terstruktur untuk klien (mis. daftar tag tak dikenal, flag placeholder) — dirender jadi UI, bukan sekadar teks. */
+  readonly detail?: Record<string, unknown>;
 
   constructor(
     message: string,
-    opts?: { field?: string; code?: string; userId?: string },
+    opts?: {
+      field?: string;
+      code?: string;
+      userId?: string;
+      detail?: Record<string, unknown>;
+    },
   ) {
     super(message);
     this.name = "AppError";
     this.field = opts?.field;
     this.code = opts?.code;
     this.userId = opts?.userId;
+    this.detail = opts?.detail;
   }
 }
 

@@ -13,7 +13,7 @@ import type {
 import FieldBuilder from "./FieldBuilder";
 import SupportingDocsBuilder from "./SupportingDocsBuilder";
 import TagDictionary from "./TagDictionary";
-import TemplateUploadSection from "./TemplateUploadSection";
+import TemplateUploadSection, { type TemplateError } from "./TemplateUploadSection";
 
 /** Form tambah/ubah jenis surat; mode edit juga memuat pengelolaan template DOCX. */
 export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminDTO }) {
@@ -29,21 +29,79 @@ export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminD
   const [requireManualNumber, setRequireManualNumber] = useState(initial?.requireManualNumber ?? true);
   const [fields, setFields] = useState<LetterFieldDef[]>(initial?.requiredFields ?? []);
   const [docs, setDocs] = useState<SupportingDoc[]>(initial?.supportingDocs ?? []);
+  // Alur buat: id baru ada setelah tersimpan; template DOCX di-stage lalu diunggah
+  // otomatis setelah createdId terisi. ponytail: reload di jeda ini memunculkan
+  // form buat lagi, tapi keunikan `code` di service mencegah duplikat.
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const [stagedTemplate, setStagedTemplate] = useState<File | null>(null);
+  const [templateError, setTemplateError] = useState<TemplateError | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const isEdit = !!initial;
+  const currentId = initial?.id ?? createdId;
+
+  // Gate mode buat: pastikan template ter-stage valid (tag dikenal + bisa dirender)
+  // SEBELUM jenis surat dibuat — tanpa menyimpan apa pun.
+  const validateStagedTemplate = async (
+    file: File,
+    requiredFields: unknown[],
+  ): Promise<boolean> => {
+    setChecking(true);
+    setTemplateError(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("fields", JSON.stringify(requiredFields));
+      const res = await fetch("/esurat/api/letter-types/validate-template", {
+        method: "POST",
+        body: fd,
+      });
+      const json = (await res.json()) as {
+        message?: string;
+        errors?: Partial<TemplateError>;
+      };
+      if (!res.ok) {
+        const errs = json.errors;
+        setTemplateError({
+          message: json.message ?? "Template ditolak.",
+          unknownTags: errs?.unknownTags,
+          knownTags: errs?.knownTags,
+          reasons: errs?.reasons,
+          hasQr: errs?.hasQr,
+          hasTtd: errs?.hasTtd,
+        });
+        toast(json.message ?? "Template ditolak.", "Template Ditolak", "error", 5000);
+        return false;
+      }
+      return true;
+    } catch {
+      toast("Gagal memvalidasi template.", "Gagal", "error", 4000);
+      return false;
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const requiredFields = fields.map((f) => ({
+      ...f,
+      // opsi kosong sisa pengetikan koma dibuang saat submit
+      options: f.type === "select" ? f.options?.filter(Boolean) : undefined,
+    }));
+
+    // Jenis surat TIDAK dibuat bila template masih punya tag tak dikenal.
+    if (!isEdit && stagedTemplate) {
+      const ok = await validateStagedTemplate(stagedTemplate, requiredFields);
+      if (!ok) return;
+    }
+
     const payload = {
       code: code.trim().toUpperCase(),
       name: name.trim(),
       description: description.trim() || undefined,
       template: template.trim() || undefined,
-      requiredFields: fields.map((f) => ({
-        ...f,
-        // opsi kosong sisa pengetikan koma dibuang saat submit
-        options: f.type === "select" ? f.options?.filter(Boolean) : undefined,
-      })),
+      requiredFields,
       supportingDocs: docs.filter((d) => d.label.trim()),
       requireManualNumber,
       active,
@@ -59,7 +117,9 @@ export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminD
       {
         successMessage: isEdit
           ? "Perubahan jenis surat tersimpan."
-          : "Jenis surat dibuat. Unggah template DOCX di bawah bila diperlukan.",
+          : stagedTemplate
+            ? "Jenis surat dibuat — mengunggah template…"
+            : "Jenis surat dibuat.",
         successTitle: "Tersimpan",
         errorFallback: "Gagal menyimpan jenis surat",
         // error Zod per-field lebih informatif daripada "Validasi gagal"
@@ -73,8 +133,16 @@ export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminD
           data?.templateWarnings?.forEach((w) =>
             toast(w, "Periksa Template DOCX", "error", 8000),
           );
-          if (isEdit) router.refresh();
-          else if (data?.id) router.push(`/esurat/dashboard/jenis-surat/${data.id}`);
+          if (isEdit) {
+            router.refresh();
+            return;
+          }
+          if (data?.id) {
+            // Template sudah lolos gate di atas → TemplateUploadSection auto-unggah
+            // (simpan) lalu menavigasi via onUploaded. Tanpa template, langsung ke ubah.
+            setCreatedId(data.id);
+            if (!stagedTemplate) router.push(`/esurat/dashboard/jenis-surat/${data.id}`);
+          }
         },
       },
     ).catch(() => {});
@@ -174,8 +242,20 @@ export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminD
         </section>
 
         <div className="flex items-center gap-3">
-          <button type="submit" disabled={busy} className="btn-primary disabled:opacity-60">
-            {busy ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Buat Jenis Surat"}
+          <button
+            type="submit"
+            disabled={busy || checking || (!!createdId && !isEdit)}
+            className="btn-primary disabled:opacity-60"
+          >
+            {checking
+              ? "Memvalidasi template…"
+              : createdId && !isEdit
+                ? "Mengunggah template…"
+                : busy
+                  ? "Menyimpan..."
+                  : isEdit
+                    ? "Simpan Perubahan"
+                    : "Buat Jenis Surat"}
           </button>
           <button
             type="button"
@@ -188,14 +268,24 @@ export default function LetterTypeForm({ initial }: { initial?: LetterTypeAdminD
       </form>
 
       <div className="flex flex-col gap-6">
-        {isEdit && (
-          <TemplateUploadSection
-            id={initial.id}
-            code={initial.code}
-            templateDocx={initial.templateDocx}
-          />
-        )}
-        
+        <TemplateUploadSection
+          id={currentId}
+          code={initial?.code ?? code}
+          templateDocx={initial?.templateDocx ?? null}
+          onStageChange={(f) => {
+            setStagedTemplate(f);
+            setTemplateError(null);
+          }}
+          onUploaded={
+            isEdit
+              ? undefined
+              : () => {
+                  if (createdId) router.push(`/esurat/dashboard/jenis-surat/${createdId}`);
+                }
+          }
+          externalError={templateError}
+        />
+
         <section className="card-doc p-6 rise-in" style={{ animationDelay: "30ms" }}>
           <p className="overline-doc mb-1">Pengaturan Nomor Surat</p>
           <label className="flex items-start gap-2.5 cursor-pointer group mt-3">

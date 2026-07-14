@@ -111,6 +111,8 @@ export async function POST(req: Request, { params }: RouteContext) {
       {
         success: false,
         message: pesanAman(error, "Gagal mengunggah template"),
+        // detail terstruktur (daftar tag/alasan) untuk dirender jadi chip di klien
+        ...(error instanceof AppError && error.detail ? { errors: error.detail } : {}),
       },
       { status: 400 },
     );

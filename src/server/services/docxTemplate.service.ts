@@ -90,14 +90,16 @@ function findPlaceholderEntries(zip: PizZip): Record<string, "qr" | "ttd"> {
 function toReadableError(err: unknown): AppError {
   const sub = (err as { properties?: { errors?: unknown[] } })?.properties?.errors;
   if (Array.isArray(sub) && sub.length) {
-    const details = sub
+    const reasons = sub
       .map((e) => {
         const p = (e as { properties?: { explanation?: string } }).properties;
         return p?.explanation ?? String(e);
       })
-      .slice(0, 5)
-      .join("; ");
-    return new AppError(`Template .docx tidak valid: ${details}`);
+      .slice(0, 5);
+    return new AppError(
+      "Template .docx tidak valid — ada tag yang rusak atau tidak ditutup.",
+      { code: "TEMPLATE_INVALID", detail: { reasons } },
+    );
   }
   if (err instanceof AppError) return err;
   console.error("[docx template]", err);
@@ -192,6 +194,16 @@ export const docxTemplateService = {
     opts?: { keepPlaceholders?: boolean },
   ): Promise<Uint8Array> {
     const buffer = await this.readTemplateFile(fileName);
+    return this.renderLetterPdfFromBuffer(buffer, input, opts);
+  },
+
+  // Versi dari buffer langsung (tanpa baca file) — dipakai smoke test validasi
+  // template SEBELUM berkas disimpan ke disk.
+  async renderLetterPdfFromBuffer(
+    buffer: Buffer,
+    input: LetterPdfInput,
+    opts?: { keepPlaceholders?: boolean },
+  ): Promise<Uint8Array> {
     const surat = await siteContentService.get("surat");
     const { zip, doc } = loadDocx(buffer);
     try {
