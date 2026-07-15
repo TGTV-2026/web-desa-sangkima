@@ -19,6 +19,9 @@ export default async function AdminPanelLayout({
 }) {
   const user = await requireCmsUser();
 
+  // Akun pengawas tidak boleh masuk CMS konten — arahkan ke hub monitoring.
+  if (user.role === "monitoring") redirect("/admin/monitoring");
+
   // Sandi masih sandi sementara dari super_admin (akun hasil bulk-CSV) —
   // wajib diganti dulu sebelum boleh menyentuh apa pun di CMS.
   if (user.mustChangePassword) redirect("/admin/ganti-sandi");

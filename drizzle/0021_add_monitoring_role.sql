@@ -1,0 +1,1 @@
+ALTER TABLE `cms_users` MODIFY COLUMN `role` enum('super_admin','editor','rt','monitoring') NOT NULL DEFAULT 'editor';

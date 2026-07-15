@@ -1,13 +1,16 @@
 import { z } from "zod";
 
-// Zod + tipe untuk akun CMS (super_admin / editor / rt). Dipakai di service & form.
-
-export type CmsRole = "super_admin" | "editor" | "rt";
+// Zod + tipe untuk akun CMS. Dipakai di service & form.
+// - super_admin/editor/rt: mengelola konten & laporan (CMS).
+// - monitoring: akun khusus pengawasan sistem — HANYA hub /admin/monitoring
+//   (dashboard, audit, infrastruktur, kelola akun). TIDAK bisa membuka CMS.
+export type CmsRole = "super_admin" | "editor" | "rt" | "monitoring";
 
 export const CMS_ROLE_LABELS: Record<CmsRole, string> = {
   super_admin: "Super Admin",
   editor: "Editor",
   rt: "Ketua RT",
+  monitoring: "Pengawas Sistem",
 };
 
 export const cmsLoginSchema = z.object({
@@ -16,11 +19,14 @@ export const cmsLoginSchema = z.object({
 });
 export type CmsLoginInput = z.infer<typeof cmsLoginSchema>;
 
-// Buat akun baru — selalu sebagai editor (super_admin tidak bisa dibuat lewat UI).
+// Buat akun baru: editor (kelola konten) atau monitoring (pengawas sistem).
+// super_admin & rt tidak bisa dibuat lewat form ini — super_admin lewat seed,
+// rt lewat unggah CSV massal.
 export const cmsUserCreateSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter").max(255),
   email: z.string().email("Email tidak valid").max(255),
   password: z.string().min(6, "Kata sandi minimal 6 karakter"),
+  role: z.enum(["editor", "monitoring"]).default("editor"),
 });
 export type CmsUserCreateInput = z.infer<typeof cmsUserCreateSchema>;
 

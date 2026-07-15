@@ -33,7 +33,7 @@ export default function AuditFilterBar({
     if (value) next.set(key, value);
     else next.delete(key);
     next.delete("page"); // ganti filter → balik ke halaman 1
-    router.push(`/admin/audit?${next.toString()}`);
+    router.push(`/admin/monitoring/audit?${next.toString()}`);
   }
 
   function unduhCsv() {
@@ -113,7 +113,7 @@ export default function AuditFilterBar({
         />
       </label>
 
-      <label className="flex flex-1 min-w-40 flex-col gap-1">
+      <label className="flex min-w-40 flex-1 flex-col gap-1">
         <span className="label-doc text-[10px]">Cari (aktor / ringkasan)</span>
         <input
           type="search"

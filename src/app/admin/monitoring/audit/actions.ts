@@ -1,6 +1,6 @@
 "use server";
 
-import { requireSuperAdmin } from "@/server/utils/cmsSession";
+import { requireMonitoringUser } from "@/server/utils/cmsSession";
 import { activityLogService } from "@/server/services/activityLog.service";
 import { formatTanggalWaktu } from "@/lib/format";
 import { ACTOR_TYPE_LABELS } from "@/server/types/activityLog";
@@ -13,11 +13,11 @@ function sel(v: string): string {
 }
 
 /**
- * Export hasil filter jadi CSV (US-9). Ambil lebih banyak baris dari tampilan
- * (limit besar) supaya export tak terpotong paginasi layar.
+ * Export hasil filter jadi CSV. Ambil lebih banyak baris dari tampilan (limit
+ * besar) supaya export tak terpotong paginasi layar.
  */
 export async function exportAuditCsv(filter: ActivityLogFilter): Promise<string> {
-  await requireSuperAdmin();
+  await requireMonitoringUser();
   const { items } = await activityLogService.list({ ...filter, limit: 5000, offset: 0 });
   const header = ["Waktu", "Tipe Aktor", "Aktor", "Aksi", "Target", "Ringkasan", "IP"];
   const rows = items.map((i) =>

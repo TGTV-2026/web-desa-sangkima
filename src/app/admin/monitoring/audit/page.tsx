@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireSuperAdmin } from "@/server/utils/cmsSession";
+import { requireMonitoringUser } from "@/server/utils/cmsSession";
 import { activityLogService } from "@/server/services/activityLog.service";
 import { formatTanggalWaktu } from "@/lib/format";
 import {
@@ -32,7 +32,7 @@ export default async function AuditPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  await requireSuperAdmin();
+  await requireMonitoringUser();
   const sp = await searchParams;
 
   const page = Math.max(1, Number(sp.page) || 1);
@@ -55,13 +55,13 @@ export default async function AuditPage({
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(sp)) if (v && k !== "page") q.set(k, v);
     q.set("page", String(p));
-    return `/admin/audit?${q.toString()}`;
+    return `/admin/monitoring/audit?${q.toString()}`;
   };
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <span className="overline-doc text-brass">Keamanan & Akuntabilitas</span>
+      <div className="border-b border-line pb-4">
+        <span className="overline-doc text-brass">Keamanan &amp; Akuntabilitas</span>
         <h1 className="mt-1 font-serif text-[28px] font-medium text-pine-900">
           Log Audit Terpadu
         </h1>

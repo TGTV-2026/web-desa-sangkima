@@ -8,7 +8,7 @@ import { cmsUserService } from "@/server/services/cmsUser.service";
 import { siteContentService } from "@/server/services/siteContent.service";
 import { requireSuperAdmin } from "@/server/utils/cmsSession";
 import { catatAksiCms } from "@/server/utils/audit";
-import type { BulkRtResult } from "@/server/types/cmsUser";
+import { CMS_ROLE_LABELS, type BulkRtResult } from "@/server/types/cmsUser";
 
 export type CmsUserResult =
   | { success: true }
@@ -107,7 +107,7 @@ export async function createCmsUser(input: unknown): Promise<CmsUserResult> {
     await catatAksiCms(me, "cms_user.create", {
       targetType: "Akun CMS",
       targetId: created.id,
-      summary: `Membuat akun editor: ${created.email}.`,
+      summary: `Membuat akun ${CMS_ROLE_LABELS[created.role]}: ${created.email}.`,
     });
     revalidatePath("/admin/pengguna");
   } catch (err) {
