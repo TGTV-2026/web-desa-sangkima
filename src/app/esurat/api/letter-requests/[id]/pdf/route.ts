@@ -43,7 +43,8 @@ export async function GET(req: Request, { params }: RouteContext) {
 
     const { id } = await params;
     const url = new URL(req.url);
-    const appUrl = url.origin;
+    // di balik reverse proxy (Coolify) req.url origin = host internal container → pakai env dulu
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || url.origin;
     const noSignature = url.searchParams.get("nosig") === "1";
     const signatoryId = url.searchParams.get("signatoryId") ?? undefined;
     

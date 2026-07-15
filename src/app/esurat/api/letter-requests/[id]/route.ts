@@ -110,7 +110,8 @@ export async function PATCH(req: Request, { params }: RouteContext) {
 
     const { id } = await params;
     const body = await req.json();
-    const appUrl = new URL(req.url).origin;
+    // di balik reverse proxy (Coolify) req.url origin = host internal container → pakai env dulu
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
     const data = await letterRequestService.changeStatus(auth, id, body, appUrl);
 
     return NextResponse.json(

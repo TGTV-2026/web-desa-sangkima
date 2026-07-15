@@ -44,7 +44,8 @@ export async function GET(req: Request, { params }: RouteContext) {
     const auth = await requireRole(req, ["user", "staff", "admin"]);
 
     const { id } = await params;
-    const appUrl = new URL(req.url).origin;
+    // di balik reverse proxy (Coolify) req.url origin = host internal container → pakai env dulu
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
     const pdf = await letterRequestService.previewPdf(id, auth, appUrl);
 
     return new Response(pdf as BodyInit, {
