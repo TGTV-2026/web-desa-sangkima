@@ -14,6 +14,8 @@ import {
 // - editor: kelola konten (berita, produk, PPID) saja.
 // - rt: ketua RT — HANYA modul Laporan RT (isi laporan RT-nya sendiri), tanpa
 //   akses konten lain. Dibuat massal oleh super_admin lewat unggah CSV.
+// - monitoring: akun pengawas — HANYA hub /admin/monitoring (audit, uptime,
+//   kelola akun), tidak bisa membuka CMS konten.
 // deletedAt = nonaktif (soft delete) supaya jejak penulis lama tetap ada.
 export const cmsUsers = mysqlTable("cms_users", {
   id: varchar({ length: 128 })
@@ -22,7 +24,9 @@ export const cmsUsers = mysqlTable("cms_users", {
   name: varchar({ length: 255 }).notNull(),
   email: varchar({ length: 255 }).notNull().unique(),
   password: varchar({ length: 255 }).notNull(),
-  role: mysqlEnum(["super_admin", "editor", "rt"]).notNull().default("editor"),
+  role: mysqlEnum(["super_admin", "editor", "rt", "monitoring"])
+    .notNull()
+    .default("editor"),
   // Identitas wilayah — hanya terisi untuk role "rt" (mis. dusun "Lestari Jaya",
   // rt "05"). rt disimpan varchar agar nol di depan tidak hilang.
   dusun: varchar({ length: 100 }),

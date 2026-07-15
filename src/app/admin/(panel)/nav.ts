@@ -153,10 +153,12 @@ export const ADMIN_NAV: AdminNavItem[] = [
     superAdminOnly: true,
   },
   {
-    key: "audit",
-    href: "/admin/audit",
-    label: "Audit Log",
-    desc: "Jejak aktivitas akun & konten (login, ubah data, tutup sesi RT).",
+    // Pintu menuju hub Monitoring yang BERDIRI SENDIRI (di luar CMS): dashboard,
+    // audit, infrastruktur, kelola akun. Dibuka super_admin & akun pengawas.
+    key: "monitoring",
+    href: "/admin/monitoring",
+    label: "Monitoring Sistem ↗",
+    desc: "Buka hub pengawasan: audit, uptime, performa, kelola akun.",
     group: "pengaturan",
     ready: true,
     superAdminOnly: true,

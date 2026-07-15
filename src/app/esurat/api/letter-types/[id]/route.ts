@@ -52,8 +52,11 @@ import { pesanAman } from "@/server/utils/appError";
  *   delete:
  *     tags:
  *       - E-Surat - Jenis Surat
- *     summary: "🚫 Nonaktifkan jenis surat (admin)"
- *     description: Menonaktifkan jenis surat (active=false), bukan menghapus permanen, agar surat lama tetap utuh.
+ *     summary: "🗑️ Hapus jenis surat (admin)"
+ *     description: >
+ *       Hapus cerdas: jenis surat yang belum pernah dipakai permohonan dihapus
+ *       permanen (baris + file template); yang sudah dipakai di-soft-delete
+ *       (disembunyikan) agar permohonan lama tetap utuh. Selalu aman.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -64,7 +67,7 @@ import { pesanAman } from "@/server/utils/appError";
  *           type: string
  *     responses:
  *       200:
- *         description: Jenis surat dinonaktifkan
+ *         description: Jenis surat dihapus (permanen atau disembunyikan)
  *       401:
  *         description: Unauthorized
  *       403:
@@ -145,11 +148,18 @@ export async function DELETE(req: Request, { params }: RouteContext) {
     await requireRole(req, ["admin"]);
 
     const { id } = await params;
-    // soft-disable: set active=false agar surat lama tetap valid
-    const data = await letterTypeService.update(id, { active: false });
+    // hapus cerdas: hapus permanen bila belum dipakai, soft delete bila sudah
+    const { mode } = await letterTypeService.remove(id);
 
     return NextResponse.json(
-      { success: true, message: "Jenis surat dinonaktifkan", data },
+      {
+        success: true,
+        message:
+          mode === "hard"
+            ? "Jenis surat dihapus permanen."
+            : "Jenis surat dihapus — permohonan lama tetap tersimpan.",
+        data: { mode },
+      },
       { status: 200 },
     );
   } catch (error) {

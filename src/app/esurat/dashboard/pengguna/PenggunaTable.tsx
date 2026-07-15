@@ -29,7 +29,10 @@ export default function PenggunaTable({ users, currentUserId, canDelete }: Pengg
       render: (u) => (
         <>
           <p className="font-semibold">{u.name}</p>
-          <p className="font-mono text-xs text-inkmut mt-0.5">{u.nik}</p>
+          <p className="font-mono text-xs text-inkmut mt-0.5">
+            {u.nik}
+            {u.nip ? <span className="ml-2 pl-2 border-l border-line/50">NIP: {u.nip}</span> : null}
+          </p>
         </>
       ),
     },

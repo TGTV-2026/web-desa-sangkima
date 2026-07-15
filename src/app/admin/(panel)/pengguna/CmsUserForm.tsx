@@ -13,13 +13,13 @@ export default function CmsUserForm({ initial }: { initial?: CmsUserDTO }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"editor" | "monitoring">("editor");
 
   function save() {
     startTransition(async () => {
-      const payload = { name, email, password };
       const res = initial
-        ? await updateCmsUser(initial.id, payload)
-        : await createCmsUser(payload);
+        ? await updateCmsUser(initial.id, { name, email, password })
+        : await createCmsUser({ name, email, password, role });
       if (res && !res.success) toast(res.message, "Gagal", "error");
     });
   }
@@ -43,17 +43,38 @@ export default function CmsUserForm({ initial }: { initial?: CmsUserDTO }) {
           placeholder="editor@sangkima.desa.id"
           autoComplete="off"
         />
-        <div>
-          <span className="label-doc text-xs">Peran</span>
-          <p className="mt-1 rounded-sm border border-line bg-paper2/40 px-3 py-2 text-sm text-ink">
-            {initial ? CMS_ROLE_LABELS[initial.role] : "Editor"}
-            <span className="ml-2 text-[11px] text-inkmut">
-              {initial
-                ? "(peran tidak dapat diubah)"
-                : "— akun baru selalu dibuat sebagai Editor"}
+        {initial ? (
+          <div>
+            <span className="label-doc text-xs">Peran</span>
+            <p className="mt-1 rounded-sm border border-line bg-paper2/40 px-3 py-2 text-sm text-ink">
+              {CMS_ROLE_LABELS[initial.role]}
+              <span className="ml-2 text-[11px] text-inkmut">
+                (peran tidak dapat diubah)
+              </span>
+            </p>
+          </div>
+        ) : (
+          <label className="flex flex-col gap-1">
+            <span className="label-doc text-xs">Peran</span>
+            <select
+              className="input-doc px-3 py-2 text-sm"
+              value={role}
+              onChange={(e) =>
+                setRole(e.target.value as "editor" | "monitoring")
+              }
+            >
+              <option value="editor">Editor — kelola konten web</option>
+              <option value="monitoring">
+                Pengawas Sistem — hanya hub monitoring
+              </option>
+            </select>
+            <span className="text-[11px] text-inkmut">
+              {role === "monitoring"
+                ? "Akun ini hanya bisa membuka hub Monitoring (audit, uptime, kelola akun) — tidak bisa mengubah konten CMS."
+                : "Akun ini mengelola konten web profil (berita, produk, dll)."}
             </span>
-          </p>
-        </div>
+          </label>
+        )}
         <FormField
           id="password"
           label={

@@ -96,6 +96,21 @@ export async function requireSuperAdmin(): Promise<CmsSessionUser> {
   return user;
 }
 
+/**
+ * Guard hub monitoring (dashboard, audit, infrastruktur, kelola akun). Dibuka
+ * oleh akun berperan "monitoring" (khusus pengawasan) DAN super_admin (lapisan
+ * pengawas tertinggi). Editor & RT ditolak — dialihkan ke ringkasan CMS.
+ */
+export async function requireMonitoringUser(): Promise<CmsSessionUser> {
+  const user = await requireCmsUser();
+  if (user.role !== "monitoring" && user.role !== "super_admin") {
+    redirect("/admin");
+  }
+  // Akun monitoring hasil sandi sementara wajib menggantinya dulu.
+  if (user.mustChangePassword) redirect("/admin/ganti-sandi");
+  return user;
+}
+
 /** Guard khusus ketua RT (modul Laporan RT — mengisi laporan sendiri). */
 export async function requireRtUser(): Promise<CmsSessionUser> {
   const user = await requireCmsUser();

@@ -123,8 +123,8 @@ export const cmsUserService = {
       id,
       name: data.name,
       email: data.email,
-      // Selalu editor — super_admin tidak bisa dibuat lewat UI.
-      role: "editor",
+      // editor atau monitoring (super_admin/rt lewat jalur lain).
+      role: data.role,
       password: await hashPassword(data.password),
     });
     const created = await cmsUserRepository.findById(id);

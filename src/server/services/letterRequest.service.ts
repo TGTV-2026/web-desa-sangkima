@@ -18,7 +18,7 @@ import {
   buildLetterDataSchema,
   normalizeRequiredFields,
   parseJsonColumn,
-  SUPPORTING_DOCS,
+  getSupportingDocs,
   type LetterAttachment,
   type LetterLogDTO,
   type LetterRequestDTO,
@@ -28,7 +28,13 @@ import {
 } from "../types/letter";
 import type { PaginationMeta } from "../types/pagination";
 import { formatLetterNumber } from "../utils/letter-number";
-import { generateLetterPdf, savePdf, readPdf } from "./pdf.service";
+import { docxTemplateService } from "./docxTemplate.service";
+import {
+  generateLetterPdf,
+  savePdf,
+  readPdf,
+  type LetterPdfInput,
+} from "./pdf.service";
 
 function toDTO(row: LetterRequestJoinedRow): LetterRequestDTO {
   const r = row.request;
@@ -52,6 +58,8 @@ function toDTO(row: LetterRequestJoinedRow): LetterRequestDTO {
       code: row.typeCode,
       name: row.typeName,
       requiredFields: normalizeRequiredFields(row.typeRequiredFields),
+      supportingDocs: getSupportingDocs(row.typeCode, row.typeSupportingDocs),
+      requireManualNumber: row.typeRequireManualNumber,
     },
     createdAt: (r.createdAt ?? new Date()).toISOString(),
     approvedAt: r.approvedAt ? r.approvedAt.toISOString() : null,
@@ -123,11 +131,12 @@ async function renderPdf(
         name: approver.user.name,
         positionCategory: approver.positionCategory ?? "Kepala Desa",
         signatureUrl: approver.user.signatureUrl ?? null,
+        nip: approver.user.nip ?? null,
       };
     }
   }
 
-  return generateLetterPdf({
+  const input: LetterPdfInput = {
     letterNumber: row.request.letterNumber ?? "-",
     verificationCode: row.request.verificationCode ?? "",
     approvedAt: row.request.approvedAt ?? row.request.verifiedAt ?? new Date(),
@@ -140,6 +149,11 @@ async function renderPdf(
       placeOfBirth: user?.placeOfBirth ?? null,
       birthday: user?.birthday ?? null,
       job: user?.job ?? null,
+      religion: user?.religion ?? null,
+      gender: user?.gender ?? null,
+      citizenship: user?.citizenship ?? null,
+      status: user?.status ?? null,
+      education: user?.education ?? null,
     },
     purpose: row.request.purpose,
     data: parseJsonColumn<LetterRequestData | null>(row.request.data, null),
@@ -147,7 +161,14 @@ async function renderPdf(
     draft,
     noSignature,
     signatory,
-  });
+  };
+
+  // Jenis surat dengan template .docx terunggah dirender lewat pipeline
+  // docxtemplater + LibreOffice; sisanya tetap layout pdf-lib bawaan.
+  if (type?.templateDocx) {
+    return docxTemplateService.renderLetterPdfFromDocx(type.templateDocx, input);
+  }
+  return generateLetterPdf(input);
 }
 
 export const letterRequestService = {
@@ -176,7 +197,7 @@ export const letterRequestService = {
     }
 
     const type = await letterTypeRepository.findById(data.letterTypeId);
-    if (!type) throw new AppError("Jenis surat tidak ditemukan");
+    if (!type || type.deletedAt) throw new AppError("Jenis surat tidak ditemukan");
     if (!type.active) throw new AppError("Jenis surat sedang tidak aktif");
 
     // tidak boleh ada 2 pengajuan jenis surat sama yang masih berjalan (DIAJUKAN/DIPROSES) sekaligus
@@ -189,7 +210,7 @@ export const letterRequestService = {
     const cleanData = parseLetterData(type.requiredFields, data.data);
 
     // pastikan tiap dokumen pendukung wajib sudah terunggah (pengaman; client juga memblok)
-    const docs = SUPPORTING_DOCS[type.code] ?? [];
+    const docs = getSupportingDocs(type.code, type.supportingDocs);
     const uploadedDocIndexes = new Set(attachments.map((a) => a.docIndex));
     docs.forEach((doc, i) => {
       if (doc.required && !uploadedDocIndexes.has(i)) {
@@ -292,9 +313,28 @@ export const letterRequestService = {
       throw new AppError("Surat hanya bisa diproses dari status Diajukan");
     }
     
+    const type = await letterTypeRepository.findById(row.request.letterTypeId);
+    if (type?.requireManualNumber && !sequence) {
+      throw new AppError("Nomor urut surat wajib diisi untuk jenis surat ini", { field: "sequence" });
+    }
+
     const now = new Date();
-    // Gunakan urutan yang dimasukkan secara manual oleh verifikator
-    const letterNumber = formatLetterNumber(parseInt(sequence, 10), now);
+    // Gunakan nomor surat yang dimasukkan secara manual oleh verifikator, atau lewati jika dinonaktifkan
+    let letterNumber = null;
+    if (type?.requireManualNumber && sequence) {
+      letterNumber = sequence;
+    }
+
+    // Tolak nomor duplikat dengan pesan jelas sebelum kena unique constraint DB.
+    // ponytail: pre-check + unique index DB sebagai jaring pengaman; race dua
+    // verifikator bersamaan sangat jarang di alur satu-operator ini.
+    if (letterNumber) {
+      const existing = await letterRequestRepository.findByLetterNumber(letterNumber);
+      if (existing) {
+        throw new AppError("Nomor surat sudah digunakan, masukkan nomor lain", { field: "sequence" });
+      }
+    }
+
     const verificationCode = createId();
 
     await letterRequestRepository.update(id, {
@@ -327,6 +367,12 @@ export const letterRequestService = {
     appUrl: string,
   ): Promise<LetterRequestDTO> {
     requirePosition(actor, APPROVER_CATEGORIES, "menyetujui surat");
+    
+    const approverUser = await userRepository.findById(actor.id);
+    if (!approverUser?.signatureUrl) {
+      throw new AppError("Anda harus mengunggah scan tanda tangan (QR/digital) pada halaman Profil sebelum dapat menyetujui surat.");
+    }
+
     const { note } = approveLetterRequestSchema.parse(input ?? {});
     const row = await getRowOrThrow(id);
     if (row.request.status !== "DIPROSES") {
@@ -346,11 +392,14 @@ export const letterRequestService = {
       changedBy: actor.id,
     });
 
-    // terbitkan PDF dengan tanda tangan. Versi tanpa tanda tangan
-    // sudah dibuat saat status DIPROSES.
+    // terbitkan PDF dengan tanda tangan.
     const approvedRow = await getRowOrThrow(id);
     const pdf = await renderPdf(approvedRow, appUrl);
     const pdfPath = await savePdf(id, pdf);
+
+    // Buat ulang versi tanpa tanda tangan (nosig) dengan nama & NIP approver
+    const pdfNoSig = await renderPdf(approvedRow, appUrl, false, true);
+    await savePdf(id, pdfNoSig, true);
 
     await letterRequestRepository.update(id, { pdfPath });
 
@@ -433,7 +482,8 @@ export const letterRequestService = {
     id: string,
     actor: AuthUser,
     appUrl: string,
-    noSignature?: boolean
+    noSignature?: boolean,
+    signatoryId?: string
   ): Promise<Uint8Array> {
     const row = await getRowOrThrow(id);
     if (actor.role === "user" && row.request.userId !== actor.id) {
@@ -445,6 +495,11 @@ export const letterRequestService = {
       !(row.request.status === "DIPROSES" && noSignature)
     ) {
       throw new AppError("Surat belum disetujui, PDF belum bisa diunduh");
+    }
+
+    if (signatoryId && noSignature) {
+      const customRow = { ...row, request: { ...row.request, approvedBy: signatoryId } };
+      return renderPdf(customRow, appUrl, false, true);
     }
 
     // surat normalnya sudah punya PDF tersimpan sejak di-approve (snapshot data

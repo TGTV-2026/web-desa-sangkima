@@ -1,20 +1,19 @@
 import { and, desc, eq, gte, like, lte, or, type SQL } from "drizzle-orm";
 import { db } from "../db";
-import { activityLogs, letterRequestLogs, users } from "../db/schema";
-import type { ActivityLogInput, AuditFilter } from "../types/activityLog";
+import {
+  activityLogs,
+  letterRequestLogs,
+  letterRequests,
+  users,
+} from "../db/schema";
+import type { ActivityLogInput } from "../types/activityLog";
 
-// Rentang tanggal inklusif: `from` mulai 00:00, `to` sampai 23:59:59.999.
-function dateBounds(from?: string, to?: string) {
-  const conds: SQL[] = [];
-  if (from) conds.push(gte(activityLogs.createdAt, new Date(`${from}T00:00:00`)));
-  if (to) conds.push(lte(activityLogs.createdAt, new Date(`${to}T23:59:59.999`)));
-  return conds;
-}
-
+// Akses data audit log. Penggabungan dua sumber (activity_logs +
+// letter_request_logs) & pembentukan DTO ada di service.
 export const activityLogRepository = {
-  async insert(entry: ActivityLogInput) {
+  async insert(entry: ActivityLogInput & { actorType: string }) {
     await db.insert(activityLogs).values({
-      actorType: entry.actorType,
+      actorType: entry.actorType as "warga" | "cms" | "system",
       actorId: entry.actorId ?? null,
       actorName: entry.actorName ?? null,
       action: entry.action,
@@ -26,56 +25,77 @@ export const activityLogRepository = {
     });
   },
 
-  // Baris activity_logs sesuai filter, terbaru dulu.
-  async listActivity(f: AuditFilter, limit: number) {
+  /** Baris activity_logs dalam rentang waktu. Filter aktor/aksi/teks di sini. */
+  async listActivity(opts: {
+    actorType?: string;
+    actions?: string[];
+    dari?: Date;
+    sampai?: Date;
+    q?: string;
+    limit: number;
+  }) {
     const conds: SQL[] = [];
-    if (f.actorType) conds.push(eq(activityLogs.actorType, f.actorType));
-    if (f.action) conds.push(eq(activityLogs.action, f.action));
-    conds.push(...dateBounds(f.from, f.to));
-    if (f.q) {
-      const kw = `%${f.q}%`;
-      const byKw = or(
-        like(activityLogs.summary, kw),
-        like(activityLogs.actorName, kw),
-        like(activityLogs.action, kw),
+    if (opts.actorType) {
+      conds.push(eq(activityLogs.actorType, opts.actorType as "warga" | "cms" | "system"));
+    }
+    if (opts.actions && opts.actions.length > 0) {
+      const ors = opts.actions.map((a) => eq(activityLogs.action, a));
+      const combined = or(...ors);
+      if (combined) conds.push(combined);
+    }
+    if (opts.dari) conds.push(gte(activityLogs.createdAt, opts.dari));
+    if (opts.sampai) conds.push(lte(activityLogs.createdAt, opts.sampai));
+    if (opts.q) {
+      const q = `%${opts.q}%`;
+      const combined = or(
+        like(activityLogs.summary, q),
+        like(activityLogs.actorName, q),
+        like(activityLogs.action, q),
       );
-      if (byKw) conds.push(byKw);
+      if (combined) conds.push(combined);
     }
     return db
       .select()
       .from(activityLogs)
       .where(conds.length ? and(...conds) : undefined)
       .orderBy(desc(activityLogs.createdAt))
-      .limit(limit);
+      .limit(opts.limit);
   },
 
-  // Log status surat (sumber lama) + nama pengubah, untuk ditampilkan menyatu.
-  async listLetterLogs(f: AuditFilter, limit: number) {
+  /**
+   * Baris letter_request_logs (status surat) + nama pengubah + nomor surat,
+   * untuk ditampilkan menyatu di halaman audit. Rentang waktu diterapkan;
+   * filter aktor/aksi non-surat ditangani di service (kalau memfilter kategori
+   * selain "surat", sumber ini dilewati).
+   */
+  async listLetterLogs(opts: { dari?: Date; sampai?: Date; q?: string; limit: number }) {
     const conds: SQL[] = [];
-    if (f.from)
-      conds.push(gte(letterRequestLogs.createdAt, new Date(`${f.from}T00:00:00`)));
-    if (f.to)
-      conds.push(
-        lte(letterRequestLogs.createdAt, new Date(`${f.to}T23:59:59.999`)),
+    if (opts.dari) conds.push(gte(letterRequestLogs.createdAt, opts.dari));
+    if (opts.sampai) conds.push(lte(letterRequestLogs.createdAt, opts.sampai));
+    if (opts.q) {
+      const q = `%${opts.q}%`;
+      const combined = or(
+        like(users.name, q),
+        like(letterRequests.letterNumber, q),
+        like(letterRequestLogs.note, q),
       );
-    if (f.q) {
-      const kw = `%${f.q}%`;
-      const byKw = or(like(users.name, kw), like(letterRequestLogs.note, kw));
-      if (byKw) conds.push(byKw);
+      if (combined) conds.push(combined);
     }
     return db
       .select({
         id: letterRequestLogs.id,
-        requestId: letterRequestLogs.requestId,
         status: letterRequestLogs.status,
         note: letterRequestLogs.note,
         actorName: users.name,
+        letterNumber: letterRequests.letterNumber,
+        requestId: letterRequestLogs.requestId,
         createdAt: letterRequestLogs.createdAt,
       })
       .from(letterRequestLogs)
       .leftJoin(users, eq(letterRequestLogs.changedBy, users.id))
+      .leftJoin(letterRequests, eq(letterRequestLogs.requestId, letterRequests.id))
       .where(conds.length ? and(...conds) : undefined)
       .orderBy(desc(letterRequestLogs.createdAt))
-      .limit(limit);
+      .limit(opts.limit);
   },
 };

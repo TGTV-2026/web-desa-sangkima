@@ -122,7 +122,7 @@ async function parseUserBody(req: Request) {
       const buffer = Buffer.from(await entry.arrayBuffer());
       const url = await saveProfileImage(
         { mime: entry.type, size: entry.size, buffer },
-        { variant: "graphic" }
+        { variant: "signature" }
       );
       body.signatureUrl = url;
     } else if (typeof entry === "string") {

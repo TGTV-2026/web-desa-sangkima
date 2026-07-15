@@ -16,9 +16,10 @@ type Props = {
   status: LetterStatus;
   role: "staff" | "admin" | "user";
   positionCategory: string | null;
+  requireManualNumber: boolean;
 };
 
-export default function PermohonanActions({ id, status, role, positionCategory }: Props) {
+export default function PermohonanActions({ id, status, role, positionCategory, requireManualNumber }: Props) {
   const router = useRouter();
   const { busy, submit } = useSubmitAction();
   const [showReject, setShowReject] = useState(false);
@@ -40,6 +41,7 @@ export default function PermohonanActions({ id, status, role, positionCategory }
         errorFallback: "Aksi gagal",
         onSuccess: () => {
           setShowReject(false);
+          setShowSequence(false);
           router.refresh();
         },
       },
@@ -68,7 +70,10 @@ export default function PermohonanActions({ id, status, role, positionCategory }
           {/* DIAJUKAN: Kepala Urusan bisa proses & tolak */}
           {status === "DIAJUKAN" && isVerifier && (
             <button
-              onClick={() => setShowSequence(true)}
+              onClick={() => {
+                if (requireManualNumber) setShowSequence(true);
+                else doAction({ action: "process" }, "Permohonan mulai diproses.");
+              }}
               disabled={busy}
               className="btn-primary flex-1"
             >

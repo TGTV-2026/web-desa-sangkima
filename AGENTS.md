@@ -116,6 +116,7 @@ Deploy ke **Coolify** (VPS Hostinger Debian, build Nixpacks, MySQL & app dalam c
 - **`EMAIL_MODE=smtp`** wajib di produksi, kalau `console` warga tak menerima OTP dan tak bisa daftar.
 - **Base URL / QR** harus domain produksi (bukan `localhost`), kalau tidak verifikasi surat rusak.
 - **Super admin CMS pertama** tidak dibuat oleh seed biasa — pakai `src/server/db/seedCms.ts` atau endpoint setup sekali-pakai.
+- **Template surat .docx butuh LibreOffice** (`libreoffice-writer` + `fonts-liberation` di `nixpacks.toml`; dev Windows: set `SOFFICE_PATH`). Jenis surat ber-template DOCX dirender via docxtemplater → soffice → PDF (`src/server/services/docxTemplate.service.ts`); tanpa soffice, penerbitannya gagal keras dengan `AppError` — SENGAJA tidak fallback diam-diam ke pdf-lib supaya surat tidak berubah tampilan tanpa disadari. Template diunggah admin ke `uploads/templates/` (ikut persistent volume); panduan operator di `docs/TEMPLATE-SURAT.md`.
 - **Tailwind v4 membungkus semua varian `hover:`/`group-hover:` di `@media (hover: hover)`** → efek hover mati di perangkat sentuh (`hover: none`). Untuk reveal-on-hover yang tetap jalan di layar sentuh, pakai CSS eksplisit (lihat `.thumb-actions` di `globals.css`), bukan utility `group-hover:` Tailwind.
 
 Checklist lengkap sebelum go-live ada di `docs/TESTING-DEPLOYMENT.md`.

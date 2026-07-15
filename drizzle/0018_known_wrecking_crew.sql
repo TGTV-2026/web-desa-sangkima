@@ -1,0 +1,1 @@
+ALTER TABLE `letter_types` ADD `require_letter_number` boolean DEFAULT false NOT NULL;

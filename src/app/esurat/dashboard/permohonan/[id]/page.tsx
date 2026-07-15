@@ -40,7 +40,13 @@ export default async function DetailPermohonanPage({ params }: PageProps) {
         ) : undefined
       }
     >
-      <PermohonanActions id={surat.id} status={surat.status} role={session.role} positionCategory={session.positionCategory} />
+      <PermohonanActions
+        id={surat.id}
+        status={surat.status}
+        role={session.role}
+        positionCategory={session.positionCategory}
+        requireManualNumber={surat.letterType.requireManualNumber}
+      />
     </LetterDetailCard>
   );
 }
