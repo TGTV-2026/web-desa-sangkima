@@ -91,8 +91,7 @@ export default async function SiteFooter() {
       {/* Bottom bar */}
       <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between border-t border-pine-800/40 px-5 pt-8 md:flex-row md:px-12">
         <p className="mb-4 text-sm text-paper/70 md:mb-0">
-          © {new Date().getFullYear()} Pemerintah Desa Sangkima. Hak Cipta
-          Dilindungi Undang-Undang.
+          © {new Date().getFullYear()} Desa Sangkima | Developed by TGTV 2026
         </p>
         <div className="flex gap-4 text-paper/70">
           <Link
