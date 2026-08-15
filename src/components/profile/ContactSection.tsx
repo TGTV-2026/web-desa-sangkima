@@ -25,7 +25,7 @@ export default function ContactSection({
             Hubungi Kami
           </span>
           <h2 className="mb-6 font-serif text-[40px] font-medium leading-[44px] tracking-[-0.02em] text-pine-900 md:text-[48px] md:leading-[52px]">
-            Temukan Kami di Jantung Sangkima
+            Peta Interaktif Sangkima
           </h2>
           <p className="text-sm leading-6 text-inkmut">
             Hubungi pemerintah desa untuk keperluan administratif, pelaporan,
